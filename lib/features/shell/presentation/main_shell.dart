@@ -4,7 +4,8 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/child_profile.dart';
-import '../../../shared/services/mock_app_repository.dart';
+import '../../../shared/services/app_repository.dart';
+import '../../onboarding/presentation/onboarding_screen.dart';
 import '../../home/presentation/home_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -134,7 +135,7 @@ class _ProgressScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final profile = MockAppRepository.instance.childProfile;
+    final profile = AppRepository.instance.childProfile;
 
     return _ShellPage(
       title: 'Progresso',
@@ -191,7 +192,7 @@ class _ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final profile = MockAppRepository.instance.childProfile;
+    final profile = AppRepository.instance.childProfile;
 
     return _ShellPage(
       title: 'Perfil',
@@ -229,6 +230,18 @@ class _ProfileScreen extends StatelessWidget {
           icon: Icons.lock_outline,
           color: LigaColors.adventurePurple,
           onPressed: () => showComingSoon(context),
+        ),
+        LigaActionButton(
+          label: 'Sair da conta',
+          icon: Icons.logout,
+          color: LigaColors.actionCoral,
+          onPressed: () async {
+            await AppRepository.instance.signOut();
+            if (!context.mounted) return;
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil(OnboardingScreen.routeName, (_) => false);
+          },
         ),
       ],
     );

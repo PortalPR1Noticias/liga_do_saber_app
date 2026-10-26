@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Necessário para falar com o Supabase no build de release. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="liga_do_saber_app"
         android:name="${applicationName}"
