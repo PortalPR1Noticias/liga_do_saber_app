@@ -388,6 +388,7 @@ class MockAppRepository extends AppRepository {
 
   /// Mesma regra da função SQL `conceder_xp`, em versão simplificada.
   ProgressUpdate _grantXp(int xp, String origin) {
+    _activityCounts.update(origin, (n) => n + 1, ifAbsent: () => 1);
     final current = childProfile;
     var bonus = 0;
     String? missionTitle;
@@ -1230,6 +1231,12 @@ class MockAppRepository extends AppRepository {
         ),
     ];
   }
+
+  final _activityCounts = <String, int>{};
+
+  @override
+  Future<Map<String, int>> loadActivityCounts() async =>
+      Map.of(_activityCounts);
 
   @override
   Future<void> setAiConsent(bool allowed) async {

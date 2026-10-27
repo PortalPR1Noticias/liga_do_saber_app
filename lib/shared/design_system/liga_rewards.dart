@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../models/progress_update.dart';
+import 'liga_sound.dart';
+import 'liga_victory.dart';
 import 'liga_widgets.dart';
 
 /// Ícone de uma medalha ou missão pelo nome guardado no banco.
@@ -41,14 +43,29 @@ Color ligaColorFor(String? name) {
 }
 
 /// Cartão de recompensa depois de uma atividade: XP ganho, missão do dia
-/// concluída, nível novo e medalhas novas.
-class LigaRewardCard extends StatelessWidget {
+/// concluída, nível novo e medalhas novas. Na primeira vez que aparece, abre
+/// a tela de vitória por cima ([LigaVictory]).
+class LigaRewardCard extends StatefulWidget {
   const LigaRewardCard({super.key, required this.progress});
 
   final ProgressUpdate progress;
 
   @override
+  State<LigaRewardCard> createState() => _LigaRewardCardState();
+}
+
+class _LigaRewardCardState extends State<LigaRewardCard> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) LigaVictory.maybeShow(context, widget.progress);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final progress = widget.progress;
     final textTheme = Theme.of(context).textTheme;
     return LigaPanel(
       borderColor: LigaColors.achievementYellow,
@@ -181,7 +198,8 @@ class LigaErrorCard extends StatelessWidget {
 enum LigaChoiceState { idle, selected, right, wrong }
 
 /// Opção de resposta em bloco (Detetive da Leitura e Arena Matemática).
-class LigaChoiceButton extends StatelessWidget {
+/// Toca o som de acerto ou de erro quando a resposta é conferida.
+class LigaChoiceButton extends StatefulWidget {
   const LigaChoiceButton({
     super.key,
     required this.label,
@@ -198,7 +216,36 @@ class LigaChoiceButton extends StatelessWidget {
   final Color color;
 
   @override
+  State<LigaChoiceButton> createState() => _LigaChoiceButtonState();
+}
+
+class _LigaChoiceButtonState extends State<LigaChoiceButton> {
+  /// Só a opção que a criança tocou faz barulho quando é conferida (a
+  /// resposta mostrada no "ver solução" fica em silêncio).
+  bool _tapped = false;
+
+  @override
+  void didUpdateWidget(LigaChoiceButton old) {
+    super.didUpdateWidget(old);
+    if (old.state == widget.state || !_tapped) return;
+    if (widget.state == LigaChoiceState.right) {
+      LigaSound.play(LigaSfx.acerto);
+    } else if (widget.state == LigaChoiceState.wrong) {
+      LigaSound.play(LigaSfx.erro);
+    }
+  }
+
+  void _tap() {
+    _tapped = true;
+    widget.onTap?.call();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
+    final color = widget.color;
+    final label = widget.label;
+    final onTap = widget.onTap == null ? null : _tap;
     final fill = switch (state) {
       LigaChoiceState.idle => Colors.white,
       LigaChoiceState.selected => color,

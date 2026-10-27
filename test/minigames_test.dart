@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liga_do_saber_app/app/theme.dart';
+import 'package:liga_do_saber_app/shared/design_system/liga_sound.dart';
+import 'package:liga_do_saber_app/shared/design_system/liga_victory.dart';
 import 'package:liga_do_saber_app/features/minigames/presentation/lightning_challenge_screen.dart';
 import 'package:liga_do_saber_app/features/minigames/presentation/minigames_hub_screen.dart';
 import 'package:liga_do_saber_app/features/minigames/presentation/order_puzzle_screen.dart';
@@ -42,6 +44,8 @@ void main() {
   setUp(() {
     AppRepository.instance = MockAppRepository();
     LigaMotion.ambient = false;
+    LigaSound.enabled = false;
+    LigaVictory.enabled = false;
   });
 
   test('word search line only accepts straight lines', () {

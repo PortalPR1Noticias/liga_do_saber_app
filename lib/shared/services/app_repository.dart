@@ -202,6 +202,10 @@ abstract class AppRepository extends ChangeNotifier {
   /// Todas as medalhas, marcando as que a criança já conquistou.
   Future<List<Achievement>> loadAchievements();
 
+  /// Quantas atividades já valeram XP em cada origem (`matematica`,
+  /// `leitura`, `arquivo`...). É o que avança as fases do Mundo da Liga.
+  Future<Map<String, int>> loadActivityCounts();
+
   /// Liga ou desliga a autorização do responsável para a Foto + IA.
   Future<void> setAiConsent(bool allowed);
 

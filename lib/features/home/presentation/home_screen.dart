@@ -2,189 +2,172 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_avatars.dart';
+import '../../../shared/design_system/liga_game.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/models/league_progress.dart';
 import '../../../shared/services/app_repository.dart';
-import '../../math_arena/presentation/math_arena_screen.dart';
-import '../../mila_archive/presentation/mila_archive_screen.dart';
 import '../../minigames/presentation/minigames_hub_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
-import '../../reading_detective/presentation/reading_detective_screen.dart';
-import '../../teo_trail/presentation/teo_trail_screen.dart';
-import '../../writing_workshop/presentation/writing_workshop_screen.dart';
-import '../../zuri_atelier/presentation/zuri_atelier_screen.dart';
+import '../../world/world_islands.dart';
 
+/// A Base do jogador: o herói escolhido em destaque, o HUD com nível e
+/// sequência, o baú das missões do dia e o botão JOGAR, que leva direto para
+/// a próxima fase do Mundo da Liga.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.onOpenTab});
+
+  /// Troca a aba do jogo (1 = Mundo, 2 = Missões, 3 = Conquistas).
+  final ValueChanged<int>? onOpenTab;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  /// Tipos das missões do dia já concluídas (leitura, matematica...).
-  Set<String> _doneToday = const {};
+  List<DailyMission>? _missions;
+  Map<String, int> _counts = const {};
 
   @override
   void initState() {
     super.initState();
-    AppRepository.instance
+    final repository = AppRepository.instance;
+    repository
         .loadDailyMissions()
         .then((missions) {
-          if (!mounted) return;
-          setState(() {
-            _doneToday = {
-              for (final m in missions)
-                if (m.done) m.type,
-            };
-          });
+          if (mounted) setState(() => _missions = missions);
+        })
+        .catchError((_) {});
+    repository
+        .loadActivityCounts()
+        .then((counts) {
+          if (mounted) setState(() => _counts = counts);
         })
         .catchError((_) {});
   }
 
-  double _progressOf(String type) => _doneToday.contains(type) ? 1 : 0;
+  void _play() {
+    final island = LigaIsland.next(_counts);
+    Navigator.of(
+      context,
+    ).pushNamed(island.routeFor(island.currentPhase(_counts)));
+  }
 
   @override
   Widget build(BuildContext context) {
     final profile = AppRepository.instance.childProfile;
+    final avatar = LigaAvatar.byId(profile.avatarId);
+    final island = LigaIsland.next(_counts);
+    final missions = _missions;
+    final missionsLeft = missions?.where((m) => !m.done).length ?? 0;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-      children: [
-        PopIn(
-          child: _Header(
-            nickname: profile.nickname,
-            avatarId: profile.avatarId,
-            level: profile.level,
-            levelProgress: profile.levelProgress,
-            levelXp: profile.levelXp,
-            levelXpGoal: profile.levelXpGoal,
-            streakDays: profile.streakDays,
+    return LigaNightBackground(
+      glow: avatar.color,
+      child: SafeArea(
+        bottom: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight - 28,
+              ),
+              child: IntrinsicHeight(
+                child: Column(
+                  children: [
+                    _Hud(
+                      avatarId: profile.avatarId,
+                      nickname: profile.nickname,
+                      level: profile.level,
+                      levelProgress: profile.levelProgress,
+                      levelXp: profile.levelXp,
+                      levelXpGoal: profile.levelXpGoal,
+                      streakDays: profile.streakDays,
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          children: [
+                            _SideTile(
+                              label: 'Missões',
+                              icon: Icons.flag_rounded,
+                              color: LigaColors.actionCoral,
+                              badge: missionsLeft,
+                              onTap: () => widget.onOpenTab?.call(2),
+                            ),
+                            const SizedBox(height: 14),
+                            _SideTile(
+                              label: 'Troféus',
+                              icon: Icons.emoji_events_rounded,
+                              color: LigaColors.adventurePurple,
+                              onTap: () => widget.onOpenTab?.call(3),
+                            ),
+                          ],
+                        ),
+                        Expanded(child: _Hero(avatar: avatar)),
+                        Column(
+                          children: [
+                            _SideTile(
+                              label: 'Jogos',
+                              icon: Icons.sports_esports_rounded,
+                              color: LigaColors.sunsetOrange,
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(MinigamesHubScreen.routeName),
+                            ),
+                            const SizedBox(height: 14),
+                            _SideTile(
+                              label: 'Foto + IA',
+                              icon: Icons.camera_alt_rounded,
+                              color: LigaColors.primaryBlue,
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(PhotoSolverFlowScreen.routeName),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _DailyChest(
+                      done: missions == null
+                          ? 0
+                          : missions.length - missionsLeft,
+                      total: missions?.length ?? 0,
+                      onTap: () => widget.onOpenTab?.call(2),
+                    ),
+                    const SizedBox(height: 14),
+                    _IslandStrip(
+                      counts: _counts,
+                      onTap: () => widget.onOpenTab?.call(1),
+                    ),
+                    const Spacer(),
+                    const SizedBox(height: 18),
+                    LigaPlayButton(
+                      label: 'JOGAR',
+                      subtitle:
+                          '${island.name} · Fase ${island.currentPhase(_counts)}',
+                      color: LigaColors.progressGreen,
+                      textColor: Colors.white,
+                      onPressed: _play,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 20),
-        PopIn(
-          delay: const Duration(milliseconds: 90),
-          child: _DailyMission(
-            onTap: () => Navigator.of(
-              context,
-            ).pushNamed(ReadingDetectiveScreen.routeName),
-          ),
-        ),
-        const SizedBox(height: 20),
-        PopIn(
-          delay: const Duration(milliseconds: 160),
-          child: LigaActionButton(
-            label: 'Enviar foto da atividade',
-            icon: Icons.camera_alt_rounded,
-            onPressed: () => Navigator.of(
-              context,
-            ).pushNamed(PhotoSolverFlowScreen.routeName),
-          ),
-        ),
-        const SizedBox(height: 14),
-        PopIn(
-          delay: const Duration(milliseconds: 190),
-          child: MissionCard(
-            title: 'Jogos da Liga',
-            subtitle: 'Caça-palavras, quebra-cabeça e Desafio Relâmpago.',
-            icon: Icons.sports_esports_rounded,
-            color: LigaColors.adventurePurple,
-            progress: _progressOf('minijogo'),
-            onTap: () =>
-                Navigator.of(context).pushNamed(MinigamesHubScreen.routeName),
-          ),
-        ),
-        const SizedBox(height: 24),
-        const SectionTitle('Áreas em destaque', icon: Icons.star_rounded),
-        PopIn(
-          delay: const Duration(milliseconds: 220),
-          child: MissionCard(
-            title: 'Oficina de Texto',
-            subtitle: 'Planeje, escreva, receba feedback e reescreva melhor.',
-            icon: Icons.edit_rounded,
-            color: LigaColors.actionCoral,
-            progress: _progressOf('texto_reescrita'),
-            onTap: () => Navigator.of(
-              context,
-            ).pushNamed(WritingWorkshopScreen.routeName),
-          ),
-        ),
-        const SizedBox(height: 14),
-        PopIn(
-          delay: const Duration(milliseconds: 280),
-          child: MissionCard(
-            title: 'Detetive da Leitura',
-            subtitle: 'Encontre pistas, interprete e conclua o caso.',
-            icon: Icons.search_rounded,
-            color: LigaColors.actionCoral,
-            progress: _progressOf('leitura'),
-            onTap: () => Navigator.of(
-              context,
-            ).pushNamed(ReadingDetectiveScreen.routeName),
-          ),
-        ),
-        const SizedBox(height: 14),
-        PopIn(
-          delay: const Duration(milliseconds: 340),
-          child: MissionCard(
-            title: 'Arena Matemática',
-            subtitle: 'Treinos rápidos de cálculo e raciocínio.',
-            icon: Icons.calculate_rounded,
-            color: LigaColors.primaryBlue,
-            progress: _progressOf('matematica'),
-            onTap: () =>
-                Navigator.of(context).pushNamed(MathArenaScreen.routeName),
-          ),
-        ),
-        const SizedBox(height: 14),
-        PopIn(
-          delay: const Duration(milliseconds: 400),
-          child: MissionCard(
-            title: 'Trilha do Teo',
-            subtitle: 'Investigações de Ciências e Geografia.',
-            icon: Icons.explore_rounded,
-            color: LigaColors.progressGreen,
-            progress: _progressOf('expedicao'),
-            onTap: () =>
-                Navigator.of(context).pushNamed(TeoTrailScreen.routeName),
-          ),
-        ),
-        const SizedBox(height: 14),
-        PopIn(
-          delay: const Duration(milliseconds: 450),
-          child: MissionCard(
-            title: 'Arquivo da Mila',
-            subtitle: 'Caça-palavras, linha do tempo e enigmas de História.',
-            icon: Icons.history_edu_rounded,
-            color: LigaColors.adventurePurple,
-            progress: _progressOf('arquivo'),
-            onTap: () =>
-                Navigator.of(context).pushNamed(MilaArchiveScreen.routeName),
-          ),
-        ),
-        const SizedBox(height: 14),
-        PopIn(
-          delay: const Duration(milliseconds: 480),
-          child: MissionCard(
-            title: 'Oficina do Zuri',
-            subtitle: 'Caça-palavras, mapas mentais e projetos.',
-            icon: Icons.lightbulb_rounded,
-            color: LigaColors.sunsetOrange,
-            progress: _progressOf('atelie'),
-            onTap: () =>
-                Navigator.of(context).pushNamed(ZuriAtelierScreen.routeName),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.nickname,
+class _Hud extends StatelessWidget {
+  const _Hud({
     required this.avatarId,
+    required this.nickname,
     required this.level,
     required this.levelProgress,
     required this.levelXp,
@@ -192,8 +175,8 @@ class _Header extends StatelessWidget {
     required this.streakDays,
   });
 
-  final String nickname;
   final String avatarId;
+  final String nickname;
   final int level;
   final double levelProgress;
   final int levelXp;
@@ -202,152 +185,385 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LigaPanel(
-      child: Column(
-        children: [
-          Row(
+    return Row(
+      children: [
+        SizedBox(
+          width: 52,
+          height: 52,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              LigaAvatarBadge(avatarId: avatarId, radius: 32),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Olá,', style: Theme.of(context).textTheme.bodyMedium),
-                    Text(
-                      nickname,
-                      style: Theme.of(context).textTheme.titleLarge,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              LigaAvatarBadge(avatarId: avatarId, radius: 24),
+              Positioned(
+                left: -6,
+                bottom: -8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  decoration: BoxDecoration(
+                    color: LigaColors.adventurePurple,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: LigaColors.ink, width: 2),
+                  ),
+                  child: Text(
+                    '$level',
+                    style: TextStyle(
+                      fontFamily: LigaTheme.displayFont,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      fontSize: 15,
+                      shadows: ligaOutline(1),
                     ),
-                  ],
+                  ),
                 ),
               ),
-              _StreakFlame(days: streakDays),
             ],
           ),
-          const SizedBox(height: 14),
-          Row(
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LigaPill(
-                icon: Icons.military_tech_rounded,
-                label: 'Nível $level',
-                color: LigaColors.adventurePurple,
+              Text(
+                nickname,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: LigaTheme.displayFont,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  fontSize: 18,
+                  height: 1.1,
+                  shadows: ligaOutline(1.2),
+                ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: LigaProgressBar(
-                  value: levelProgress,
-                  color: LigaColors.achievementYellow,
+              const SizedBox(height: 4),
+              _XpBar(value: levelProgress),
+              const SizedBox(height: 2),
+              Text(
+                'Nível $level · $levelXp/$levelXpGoal XP',
+                style: const TextStyle(
+                  color: LigaNight.textSoft,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11.5,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '$levelXp / $levelXpGoal XP',
-              style: const TextStyle(
-                color: LigaColors.inkSoft,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 8),
+        LigaHudChip(
+          icon: Icons.local_fire_department_rounded,
+          label: '$streakDays',
+          color: LigaColors.sunsetOrange,
+        ),
+        const SizedBox(width: 8),
+        const LigaSoundButton(),
+      ],
     );
   }
 }
 
-class _StreakFlame extends StatelessWidget {
-  const _StreakFlame({required this.days});
+class _XpBar extends StatelessWidget {
+  const _XpBar({required this.value});
 
-  final int days;
+  final double value;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
+      height: 14,
       decoration: BoxDecoration(
-        color: const Color(0xFFFFE3C7),
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0x73000000),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: LigaColors.ink, width: 2.5),
-        boxShadow: const [
-          BoxShadow(color: LigaColors.ink, offset: Offset(0, 3)),
-        ],
       ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.local_fire_department_rounded,
-            color: LigaColors.sunsetOrange,
-            size: 28,
-          ),
-          Text(
-            '$days dias',
-            style: const TextStyle(
-              color: LigaColors.ink,
-              fontWeight: FontWeight.w900,
-              fontSize: 13,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: value.clamp(0.02, 1.0),
+            heightFactor: 1,
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFFFF3A0), LigaColors.achievementYellow],
+                ),
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Destaque da missão do dia, com a Luma convidando a criança.
-class _DailyMission extends StatelessWidget {
-  const _DailyMission({required this.onTap});
+/// O herói da criança no centro da Base, em cima de um pedestal brilhante.
+class _Hero extends StatelessWidget {
+  const _Hero({required this.avatar});
 
+  final LigaAvatar avatar;
+
+  @override
+  Widget build(BuildContext context) {
+    final character = avatar.character;
+    return Column(
+      children: [
+        LigaBob(
+          tilt: 0.04,
+          duration: const Duration(milliseconds: 1500),
+          child: LigaPortrait(character: character, size: 164),
+        ),
+        Container(
+          width: 150,
+          height: 22,
+          margin: const EdgeInsets.only(top: 8),
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.all(Radius.elliptical(75, 11)),
+            color: character.color.withValues(alpha: 0.7),
+            border: Border.all(color: LigaColors.ink, width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: character.color.withValues(alpha: 0.8),
+                blurRadius: 24,
+                spreadRadius: 4,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        LigaGameText(character.displayName, size: 26),
+        Text(
+          character.title,
+          style: TextStyle(
+            color: Color.lerp(character.color, Colors.white, 0.35),
+            fontWeight: FontWeight.w900,
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Atalho quadrado nas laterais da Base, com contador opcional.
+class _SideTile extends StatelessWidget {
+  const _SideTile({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    this.badge = 0,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final int badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return LigaPressable(
+      onTap: onTap,
+      child: SizedBox(
+        width: 62,
+        height: 64,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 62,
+              height: 60,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: LigaColors.ink, width: 3),
+                boxShadow: const [
+                  BoxShadow(color: LigaColors.ink, offset: Offset(0, 4)),
+                ],
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0, 0.5, 0.5, 1],
+                  colors: [
+                    Color.lerp(color, Colors.white, 0.3)!,
+                    Color.lerp(color, Colors.white, 0.15)!,
+                    color,
+                    color,
+                  ],
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    color: Colors.white,
+                    size: 26,
+                    shadows: ligaOutline(1.4),
+                  ),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10.5,
+                      shadows: ligaOutline(1),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (badge > 0)
+              Positioned(
+                top: -8,
+                right: -8,
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 24),
+                  height: 24,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF4757),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: LigaColors.ink, width: 2.5),
+                  ),
+                  child: Text(
+                    '$badge',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Baú das missões do dia: enche conforme a criança cumpre as missões, e
+/// cada missão cumprida dá XP de bônus.
+class _DailyChest extends StatelessWidget {
+  const _DailyChest({
+    required this.done,
+    required this.total,
+    required this.onTap,
+  });
+
+  final int done;
+  final int total;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final complete = total > 0 && done >= total;
+    return LigaPressable(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: LigaNight.glass,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: LigaColors.ink, width: 3),
+        ),
+        child: Row(
+          children: [
+            LigaChestIcon(open: complete, size: 46),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LigaGameText(
+                    complete ? 'Baú do dia completo!' : 'Baú do dia',
+                    size: 17,
+                  ),
+                  const SizedBox(height: 4),
+                  LigaProgressBar(
+                    value: total == 0 ? 0 : done / total,
+                    color: LigaColors.achievementYellow,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    complete
+                        ? 'Todas as missões de hoje feitas. Volte amanhã!'
+                        : '$done de $total missões · cada uma dá XP extra',
+                    style: const TextStyle(
+                      color: LigaNight.textSoft,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// As cinco ilhas com as fases vencidas em cada uma: o que a criança já
+/// treinou de cada matéria.
+class _IslandStrip extends StatelessWidget {
+  const _IslandStrip({required this.counts, required this.onTap});
+
+  final Map<String, int> counts;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return LigaPressable(
       onTap: onTap,
-      child: LigaSceneCard(
-        character: LigaCharacter.luma,
-        color: LigaColors.actionCoral,
-        height: 220,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        decoration: BoxDecoration(
+          color: LigaNight.glass,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: LigaColors.ink, width: 3),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const LigaPill(
-              icon: Icons.bolt_rounded,
-              label: 'Missão do dia · +25 XP',
-              color: LigaColors.achievementYellow,
-              solid: true,
-            ),
+            const LigaGameText('Suas ilhas', size: 17),
             const SizedBox(height: 8),
-            Text(
-              'O Mistério da Biblioteca Viva',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(color: Colors.white),
-            ),
-            const SizedBox(height: 4),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    'Investigue pistas no texto com a Luma e desbloqueie o próximo caso.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
+                for (final island in LigaIsland.all)
+                  Column(
+                    children: [
+                      LigaPortrait(character: island.character, size: 46),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${island.clearedPhases(counts)}/${LigaIsland.phases}',
+                        style: TextStyle(
+                          color: Color.lerp(
+                            island.character.color,
+                            Colors.white,
+                            0.35,
+                          ),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.play_circle_fill_rounded,
-                  color: Colors.white,
-                  size: 40,
-                ),
               ],
             ),
           ],

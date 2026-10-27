@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import 'liga_mascots.dart';
+import 'liga_sound.dart';
 
 /// Céu azul com pinos de Lego/Roblox, blocos e estrelinhas que flutuam.
 class LigaBackground extends StatefulWidget {
@@ -264,7 +265,12 @@ class _LigaActionButtonState extends State<LigaActionButton> {
         onTapDown: (_) => _setPressed(true),
         onTapUp: (_) => _setPressed(false),
         onTapCancel: () => _setPressed(false),
-        onTap: widget.onPressed,
+        onTap: _enabled
+            ? () {
+                LigaSound.play(LigaSfx.toque);
+                widget.onPressed!();
+              }
+            : null,
         child: SizedBox(
           width: double.infinity,
           height: 62,

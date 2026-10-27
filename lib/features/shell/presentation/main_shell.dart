@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_avatars.dart';
+import '../../../shared/design_system/liga_game.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
+import '../../../shared/design_system/liga_sound.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/league_progress.dart';
 import '../../../shared/services/app_repository.dart';
@@ -18,6 +20,7 @@ import '../../practice_exam/presentation/revanche_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../teo_trail/presentation/teo_trail_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
+import '../../world/world_map_screen.dart';
 import '../../zuri_atelier/presentation/zuri_atelier_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -32,83 +35,102 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  late final List<Widget> _pages = const [
-    HomeScreen(),
-    _MapScreen(),
-    _MissionsScreen(),
-    _ProgressScreen(),
-    _ProfileScreen(),
+  static const _tabs = [
+    (Icons.home_rounded, 'Base', LigaColors.cyanGlow),
+    (Icons.public_rounded, 'Mundo', LigaColors.progressGreen),
+    (Icons.flag_rounded, 'Missões', LigaColors.actionCoral),
+    (Icons.emoji_events_rounded, 'Conquistas', LigaColors.achievementYellow),
+    (Icons.person_rounded, 'Perfil', LigaColors.adventurePurple),
   ];
+
+  void _openTab(int index) => setState(() => _currentIndex = index);
+
+  Widget _page() {
+    return switch (_currentIndex) {
+      0 => HomeScreen(onOpenTab: _openTab),
+      1 => const WorldMapScreen(),
+      2 => const _MissionsScreen(),
+      3 => const _ProgressScreen(),
+      _ => const _ProfileScreen(),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
+    // A Base e o Mundo são telas de jogo, com fundo próprio de ponta a
+    // ponta; as outras abas ficam no céu da Liga.
+    final gameScreen = _currentIndex <= 1;
     return Scaffold(
-      body: LigaBackground(
-        child: SafeArea(
-          // Recria a página quando o XP, o nível ou o avatar mudam.
-          child: ListenableBuilder(
-            listenable: AppRepository.instance,
-            builder: (context, _) => KeyedSubtree(
-              key: ValueKey(AppRepository.instance.childProfile),
-              child: _pages[_currentIndex],
-            ),
-          ),
-        ),
+      backgroundColor: LigaNight.deep,
+      body: ListenableBuilder(
+        listenable: AppRepository.instance,
+        // Recria a página quando o XP, o nível ou o avatar mudam.
+        builder: (context, _) {
+          final page = KeyedSubtree(
+            key: ValueKey((AppRepository.instance.childProfile, _currentIndex)),
+            child: _page(),
+          );
+          return gameScreen
+              ? page
+              : LigaBackground(child: SafeArea(child: page));
+        },
       ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          border: Border(top: BorderSide(color: LigaColors.ink, width: 3.5)),
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          child: NavigationBar(
-            selectedIndex: _currentIndex,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            onDestinationSelected: (index) =>
-                setState(() => _currentIndex = index),
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(
-                  Icons.home_rounded,
-                  color: LigaColors.primaryBlue,
+      bottomNavigationBar: _GameNavBar(
+        tabs: _tabs,
+        selected: _currentIndex,
+        onSelect: _openTab,
+      ),
+    );
+  }
+}
+
+/// Barra de abas no estilo dos jogos: blocos escuros com ícone grande, e a
+/// aba escolhida sobe e acende na cor dela.
+class _GameNavBar extends StatelessWidget {
+  const _GameNavBar({
+    required this.tabs,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final List<(IconData, String, Color)> tabs;
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: LigaNight.deep,
+        border: Border(top: BorderSide(color: LigaColors.ink, width: 3)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
+          child: Row(
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                Expanded(
+                  child: Semantics(
+                    button: true,
+                    selected: i == selected,
+                    child: GestureDetector(
+                      key: ValueKey('tab-${tabs[i].$2}'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (i != selected) LigaSound.play(LigaSfx.toque);
+                        onSelect(i);
+                      },
+                      child: _NavItem(
+                        icon: tabs[i].$1,
+                        label: tabs[i].$2,
+                        color: tabs[i].$3,
+                        active: i == selected,
+                      ),
+                    ),
+                  ),
                 ),
-                label: 'Início',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.map_outlined),
-                selectedIcon: Icon(
-                  Icons.map_rounded,
-                  color: LigaColors.progressGreen,
-                ),
-                label: 'Mapa',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.flag_outlined),
-                selectedIcon: Icon(
-                  Icons.flag_rounded,
-                  color: LigaColors.actionCoral,
-                ),
-                label: 'Missões',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.emoji_events_outlined),
-                selectedIcon: Icon(
-                  Icons.emoji_events_rounded,
-                  color: LigaColors.sunsetOrange,
-                ),
-                label: 'Conquistas',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_outline_rounded),
-                selectedIcon: Icon(
-                  Icons.person_rounded,
-                  color: LigaColors.adventurePurple,
-                ),
-                label: 'Perfil',
-              ),
             ],
           ),
         ),
@@ -117,292 +139,58 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-class _MapScreen extends StatelessWidget {
-  const _MapScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return _ShellPage(
-      title: 'Mapa da Liga',
-      subtitle: 'Escolha um portal e comece a aventura!',
-      character: LigaCharacter.nico,
-      children: [
-        _PortalTrail(
-          portals: [
-            _Portal(
-              'Biblioteca Viva',
-              'Leitura com a Luma',
-              Icons.menu_book_rounded,
-              LigaColors.actionCoral,
-              LigaCharacter.luma,
-              stars: 3,
-              onTap: () => Navigator.of(
-                context,
-              ).pushNamed(ReadingDetectiveScreen.routeName),
-            ),
-            _Portal(
-              'Oficina de Texto',
-              'Redação com a Luma',
-              Icons.edit_rounded,
-              LigaColors.actionCoral,
-              LigaCharacter.luma,
-              stars: 2,
-              onTap: () => Navigator.of(
-                context,
-              ).pushNamed(WritingWorkshopScreen.routeName),
-            ),
-            _Portal(
-              'Ilha dos Números',
-              'Matemática com o Nico',
-              Icons.calculate_rounded,
-              LigaColors.primaryBlue,
-              LigaCharacter.nico,
-              stars: 1,
-              onTap: () =>
-                  Navigator.of(context).pushNamed(MathArenaScreen.routeName),
-            ),
-            _Portal(
-              'Arquivo da Mila',
-              'História com a Mila',
-              Icons.manage_search_rounded,
-              LigaColors.adventurePurple,
-              LigaCharacter.mila,
-              onTap: () =>
-                  Navigator.of(context).pushNamed(MilaArchiveScreen.routeName),
-            ),
-            _Portal(
-              'Trilha do Teo',
-              'Ciências e Geografia',
-              Icons.terrain_rounded,
-              LigaColors.progressGreen,
-              LigaCharacter.teo,
-              onTap: () =>
-                  Navigator.of(context).pushNamed(TeoTrailScreen.routeName),
-            ),
-            _Portal(
-              'Oficina do Zuri',
-              'Projetos e ideias',
-              Icons.lightbulb_rounded,
-              LigaColors.sunsetOrange,
-              LigaCharacter.zuri,
-              onTap: () =>
-                  Navigator.of(context).pushNamed(ZuriAtelierScreen.routeName),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _Portal {
-  const _Portal(
-    this.title,
-    this.subject,
-    this.icon,
-    this.color,
-    this.character, {
-    this.stars = 0,
-    required this.onTap,
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.active,
   });
 
-  final String title;
-  final String subject;
   final IconData icon;
+  final String label;
   final Color color;
-  final LigaCharacter character;
-  final int stars;
-  final VoidCallback onTap;
-}
-
-/// Trilha em zigue-zague ligando os portais, como num mapa de jogo.
-class _PortalTrail extends StatelessWidget {
-  const _PortalTrail({required this.portals});
-
-  final List<_Portal> portals;
-
-  static const _rowHeight = 186.0;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: _rowHeight * portals.length,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _TrailPainter(portals.length, _rowHeight),
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutBack,
+          width: active ? 52 : 44,
+          height: active ? 42 : 36,
+          transform: Matrix4.translationValues(0, active ? -4 : 0, 0),
+          decoration: BoxDecoration(
+            color: active ? color : const Color(0xFF1A2275),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: LigaColors.ink, width: 2.5),
+            boxShadow: active
+                ? const [BoxShadow(color: LigaColors.ink, offset: Offset(0, 4))]
+                : null,
           ),
-          for (var i = 0; i < portals.length; i++)
-            Positioned(
-              top: i * _rowHeight,
-              left: 0,
-              right: 0,
-              height: _rowHeight,
-              child: Align(
-                alignment: Alignment(i.isEven ? -0.75 : 0.75, 0),
-                child: PopIn(
-                  delay: Duration(milliseconds: 120 * i),
-                  child: _PortalNode(portal: portals[i]),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TrailPainter extends CustomPainter {
-  _TrailPainter(this.count, this.rowHeight);
-
-  final int count;
-  final double rowHeight;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Mesmo cálculo do Align(±0.75) dos portais, que têm 170 de largura.
-    final sideX = (size.width - 170) * 0.125 + 85;
-    final points = [
-      for (var i = 0; i < count; i++)
-        Offset(
-          i.isEven ? sideX : size.width - sideX,
-          i * rowHeight + rowHeight * 0.3,
+          child: Icon(
+            icon,
+            size: active ? 26 : 22,
+            color: active ? Colors.white : LigaNight.textSoft,
+            shadows: active ? ligaOutline(1.2) : null,
+          ),
         ),
-    ];
-    final path = Path()..moveTo(points.first.dx, points.first.dy);
-    for (var i = 1; i < points.length; i++) {
-      final a = points[i - 1];
-      final b = points[i];
-      path.cubicTo(
-        a.dx,
-        (a.dy + b.dy) / 2,
-        b.dx,
-        (a.dy + b.dy) / 2,
-        b.dx,
-        b.dy,
-      );
-    }
-
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 18
-        ..strokeCap = StrokeCap.round,
-    );
-
-    final dash = Paint()
-      ..color = LigaColors.achievementYellow
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round;
-    for (final metric in path.computeMetrics()) {
-      for (var d = 0.0; d < metric.length; d += 22) {
-        canvas.drawPath(metric.extractPath(d, d + 10), dash);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_TrailPainter oldDelegate) =>
-      oldDelegate.count != count || oldDelegate.rowHeight != rowHeight;
-}
-
-class _PortalNode extends StatelessWidget {
-  const _PortalNode({required this.portal});
-
-  final _Portal portal;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = portal.color;
-    return LigaPressable(
-      onTap: portal.onTap,
-      child: SizedBox(
-        width: 170,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox.square(
-              dimension: 96,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  LigaPortrait(character: portal.character, size: 96),
-                  Positioned(
-                    right: -4,
-                    bottom: -2,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: color,
-                        border: Border.all(color: LigaColors.ink, width: 3),
-                      ),
-                      child: Icon(portal.icon, color: Colors.white, size: 18),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var s = 0; s < 3; s++)
-                  Icon(
-                    Icons.star_rounded,
-                    size: 20,
-                    color: s < portal.stars
-                        ? LigaColors.achievementYellow
-                        : LigaColors.disabled,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: LigaColors.ink, width: 2.5),
-                boxShadow: const [
-                  BoxShadow(color: LigaColors.ink, offset: Offset(0, 3)),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    portal.title,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: LigaColors.ink,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    portal.subject,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: LigaColors.inkSoft,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        const SizedBox(height: 2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.fade,
+          softWrap: false,
+          style: TextStyle(
+            color: active ? Colors.white : LigaNight.textSoft,
+            fontWeight: FontWeight.w900,
+            fontSize: 11,
+          ),
         ),
-      ),
+      ],
     );
   }
 }
