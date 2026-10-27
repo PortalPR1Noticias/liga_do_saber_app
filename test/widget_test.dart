@@ -400,7 +400,7 @@ void main() {
 
     await tester.tap(find.text('Missões'));
     await tester.pumpAndSettle();
-    expect(find.text('Hoje: 1 de 6 missões'), findsOneWidget);
+    expect(find.text('Hoje: 1 de 7 missões'), findsOneWidget);
     expect(find.text('Feita!'), findsOneWidget);
   });
 

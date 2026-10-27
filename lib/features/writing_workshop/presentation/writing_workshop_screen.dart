@@ -5,7 +5,9 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/writing_feedback.dart';
+import '../../../shared/models/minigame.dart';
 import '../../../shared/services/app_repository.dart';
+import '../../minigames/presentation/minigame_style.dart';
 
 /// Oficina de Texto: planejar, escrever, receber o feedback da Luma (IA) e
 /// reescrever. A reescrita vale XP pela evolução, não só pelo acerto.
@@ -225,6 +227,7 @@ class _WritingWorkshopScreenState extends State<WritingWorkshopScreen> {
                   icon: Icons.add_rounded,
                   onPressed: _restart,
                 ),
+              const MinigameShortcuts(subject: MinigameSubject.portugues),
             ],
           ),
         ),

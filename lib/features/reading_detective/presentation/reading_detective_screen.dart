@@ -5,7 +5,9 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/reading_case.dart';
+import '../../../shared/models/minigame.dart';
 import '../../../shared/services/app_repository.dart';
+import '../../minigames/presentation/minigame_style.dart';
 
 /// Detetive da Leitura: a Luma (IA) cria um texto curto com três perguntas
 /// de interpretação; a criança responde e vê a pista de cada resposta.
@@ -152,6 +154,7 @@ class _ReadingDetectiveScreenState extends State<ReadingDetectiveScreen> {
                   onPressed: _loading ? null : _openCase,
                 ),
               ],
+              const MinigameShortcuts(subject: MinigameSubject.portugues),
             ],
           ),
         ),

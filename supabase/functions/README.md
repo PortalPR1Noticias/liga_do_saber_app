@@ -45,6 +45,7 @@ medalhas) que todas as funções usam, inclusive a `explicar-foto`.
 | `oficina-texto` | Oficina de Texto (Luma) | Feedback da versão 1 (15 XP) e avaliação da reescrita (10 a 34 XP, pela evolução). |
 | `expedicao-teo` | Trilha do Teo (Ciências e Geografia) | Cria uma investigação do ano escolar (cena, pistas e pergunta) e corrige: 20 XP de primeira, 10 depois de errar, 0 depois de revelar a descoberta. |
 | `arquivo-mila` | Arquivo da Mila (História) | Minijogos do ano escolar: caça-palavras (grade montada no servidor; achar todas vale 20 XP), linha do tempo (4 fichas para ordenar) e enigma do documento (foto, carta ou objeto antigo). 20 XP de primeira, 10 depois de errar, 0 depois de revelar. |
+| `minijogo` | Jogos da Liga (caça-palavras, quebra-cabeça, Desafio Relâmpago) | Caça-palavras e quebra-cabeça criados pela IA para o ano escolar e a matéria (a grade e a ordem certa ficam no servidor); o Relâmpago gera 40 contas sem IA. Caça-palavras completo: 20 XP; quebra-cabeça: 20 de primeira, 10 depois; Relâmpago: 5 + 2 por acerto, até 25. |
 
 Todas usam o código comum de `_shared/liga.ts`, o mesmo secret
 `OPENAI_API_KEY` e o mesmo `OPENAI_MODEL`. As respostas certas ficam
@@ -52,6 +53,13 @@ guardadas em `correcoes_ia` e nunca vão para o app, e todo XP é dado no
 servidor. Limites diários opcionais (secrets): `LIMITE_CASOS_POR_DIA`
 (padrão 15), `LIMITE_DESAFIOS_POR_DIA` (40), `LIMITE_TEXTOS_POR_DIA` (20) e
 `LIMITE_EXPEDICOES_POR_DIA` (40) e `LIMITE_ARQUIVO_POR_DIA` (40).
+
+A `minijogo` precisa da migration `supabase/migrations/0008_minijogos.sql`
+(missão do dia "Vencer um Jogo da Liga" e medalha Mestre dos Jogos). Como a
+Trilha do Teo, só manda à OpenAI o ano escolar e a matéria. Secrets
+opcionais: `LIMITE_MINIJOGOS_POR_DIA` (padrão 60 jogos abertos por dia) e
+`MINIJOGOS_COM_XP_POR_DIA` (padrão 15: depois disso a criança ainda joga,
+mas sem XP, para o tempo de tela não virar uso compulsivo).
 
 A `expedicao-teo` precisa também da migration
 `supabase/migrations/0005_trilha_do_teo.sql` (missão do dia e medalha

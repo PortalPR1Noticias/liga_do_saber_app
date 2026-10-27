@@ -5,6 +5,7 @@ import '../models/child_profile.dart';
 import '../models/expedition.dart';
 import '../models/league_progress.dart';
 import '../models/math_challenge.dart';
+import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
 import '../models/reading_case.dart';
 import '../models/writing_feedback.dart';
@@ -127,6 +128,31 @@ abstract class AppRepository extends ChangeNotifier {
     required String productionId,
     required String text,
   });
+
+  /// Jogos da Liga: caça-palavras com palavras do tema escolhido.
+  Future<WordSearchGame> newWordSearch(MinigameSubject subject);
+
+  /// Confere a palavra marcada do [start] ao [end] na grade.
+  Future<WordSearchCheck> checkWordSearch(
+    String gameId,
+    GridCell start,
+    GridCell end,
+  );
+
+  /// Jogos da Liga: quebra-cabeça de colocar as peças na ordem certa.
+  Future<OrderPuzzle> newOrderPuzzle(MinigameSubject subject);
+
+  /// Confere a ordem (índices das peças como vieram em [OrderPuzzle.pieces]).
+  Future<OrderPuzzleCheck> checkOrderPuzzle(String gameId, List<int> order);
+
+  /// Jogos da Liga: Desafio Relâmpago, 60 segundos de contas.
+  Future<LightningRound> newLightningRound(LightningTopic topic);
+
+  /// Fecha a rodada com as respostas dadas (na ordem das contas).
+  Future<LightningResult> finishLightningRound(
+    String roundId,
+    List<int> answers,
+  );
 
   /// Missões do dia, com as que já foram concluídas hoje.
   Future<List<DailyMission>> loadDailyMissions();

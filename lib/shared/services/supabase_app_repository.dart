@@ -8,6 +8,7 @@ import '../models/child_profile.dart';
 import '../models/league_progress.dart';
 import '../models/expedition.dart';
 import '../models/math_challenge.dart';
+import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
 import '../models/progress_update.dart';
 import '../models/reading_case.dart';
@@ -298,6 +299,89 @@ class SupabaseAppRepository extends AppRepository {
     return ArchiveSolution.fromJson(
       await _invoke('arquivo-mila', {'acao': 'revelar', 'caso_id': caseId}),
     );
+  }
+
+  @override
+  Future<WordSearchGame> newWordSearch(MinigameSubject subject) async {
+    return WordSearchGame.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'novo',
+        'jogo': 'caca_palavras',
+        'materia': subject.name,
+      }),
+    );
+  }
+
+  @override
+  Future<WordSearchCheck> checkWordSearch(
+    String gameId,
+    GridCell start,
+    GridCell end,
+  ) async {
+    final result = WordSearchCheck.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'conferir_palavra',
+        'jogo_id': gameId,
+        'inicio': start.toJson(),
+        'fim': end.toJson(),
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<OrderPuzzle> newOrderPuzzle(MinigameSubject subject) async {
+    return OrderPuzzle.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'novo',
+        'jogo': 'quebra_cabeca',
+        'materia': subject.name,
+      }),
+    );
+  }
+
+  @override
+  Future<OrderPuzzleCheck> checkOrderPuzzle(
+    String gameId,
+    List<int> order,
+  ) async {
+    final result = OrderPuzzleCheck.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'conferir_ordem',
+        'jogo_id': gameId,
+        'ordem': order,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<LightningRound> newLightningRound(LightningTopic topic) async {
+    return LightningRound.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'novo',
+        'jogo': 'relampago',
+        'tema': topic.name,
+      }),
+    );
+  }
+
+  @override
+  Future<LightningResult> finishLightningRound(
+    String roundId,
+    List<int> answers,
+  ) async {
+    final result = LightningResult.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'fechar_relampago',
+        'jogo_id': roundId,
+        'respostas': answers,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
   }
 
   @override
