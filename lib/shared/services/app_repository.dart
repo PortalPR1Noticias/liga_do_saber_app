@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import '../models/child_profile.dart';
+import '../models/photo_explanation.dart';
 import '../models/responsible_account.dart';
 import 'mock_app_repository.dart';
 
@@ -56,4 +59,7 @@ abstract class AppRepository {
   });
 
   Future<void> saveAvatar(String avatarId);
+
+  /// Manda a foto da atividade para a IA e devolve a explicação passo a passo.
+  Future<PhotoExplanation> explainPhoto(Uint8List imageBytes);
 }

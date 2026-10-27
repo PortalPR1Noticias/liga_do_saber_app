@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import '../models/child_profile.dart';
+import '../models/photo_explanation.dart';
 import '../models/responsible_account.dart';
 import 'app_repository.dart';
 
@@ -79,5 +82,30 @@ class MockAppRepository implements AppRepository {
   @override
   Future<void> saveAvatar(String avatarId) async {
     _childProfile = childProfile.copyWith(avatarId: avatarId);
+  }
+
+  @override
+  Future<PhotoExplanation> explainPhoto(Uint8List imageBytes) async {
+    return const PhotoExplanation(
+      readable: true,
+      subject: 'matematica',
+      characterId: 'nico',
+      title: 'Dividindo figurinhas',
+      statement: 'Dividir 24 figurinhas entre 3 amigos.',
+      steps: [
+        ExplanationStep(
+          title: 'Entenda a missão',
+          explanation: 'Temos 24 figurinhas e 3 amigos.',
+        ),
+        ExplanationStep(
+          title: 'Escolha a operação',
+          explanation: 'Repartir em partes iguais é dividir: 24 ÷ 3.',
+        ),
+      ],
+      finalAnswer: 'Cada amigo fica com 8 figurinhas.',
+      tip: 'Confira multiplicando: 8 × 3 = 24.',
+      closingMessage: 'Estratégia certeira! Você consegue!',
+      xp: 20,
+    );
   }
 }
