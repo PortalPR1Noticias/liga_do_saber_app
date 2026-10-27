@@ -11,6 +11,7 @@ import 'package:liga_do_saber_app/features/onboarding/presentation/onboarding_sc
 import 'package:liga_do_saber_app/features/photo_solver/presentation/photo_solver_flow_screen.dart';
 import 'package:liga_do_saber_app/features/reading_detective/presentation/reading_detective_screen.dart';
 import 'package:liga_do_saber_app/features/shell/presentation/main_shell.dart';
+import 'package:liga_do_saber_app/features/teo_trail/presentation/teo_trail_screen.dart';
 import 'package:liga_do_saber_app/features/writing_workshop/presentation/writing_workshop_screen.dart';
 import 'package:liga_do_saber_app/shared/design_system/liga_widgets.dart';
 import 'package:liga_do_saber_app/shared/models/photo_explanation.dart';
@@ -175,6 +176,49 @@ void main() {
     );
   });
 
+  testWidgets('teo trail gives XP and shows the discovery', (tester) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: TeoTrailScreen()));
+
+    await scrollAndTap(tester, find.text('Geografia'));
+    await scrollAndTap(tester, find.text('Começar expedição'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('O mistério da poça sumida'), findsOneWidget);
+    expect(find.textContaining('Geografia · +20 XP'), findsOneWidget);
+
+    await scrollAndTap(tester, find.text('Evaporou com o calor do sol'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.text('Mistério desvendado! Que explorador!'));
+    // Acertou de primeira: 20 XP + 20 de bônus da missão do dia.
+    await scrollTo(tester, find.text('+40 XP'));
+    expect(find.text('+40 XP'), findsOneWidget);
+    await scrollTo(tester, find.textContaining('Você sabia?'));
+  });
+
+  testWidgets('teo trail reveals the discovery without XP', (tester) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: TeoTrailScreen()));
+
+    await scrollAndTap(tester, find.text('Começar expedição'));
+    await tester.pump();
+    await tester.pump();
+    await scrollAndTap(tester, find.text('Virou terra'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('calor faz com a água'));
+
+    await scrollAndTap(tester, find.text('Revelar a descoberta'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(
+      tester,
+      find.textContaining('a água da poça evaporou com o calor do sol'),
+    );
+    expect(find.text('+20 XP'), findsNothing);
+  });
+
   testWidgets('reading detective checks the answers and shows clues', (
     tester,
   ) async {
@@ -235,7 +279,7 @@ void main() {
 
     await tester.tap(find.text('Missões'));
     await tester.pumpAndSettle();
-    expect(find.text('Hoje: 1 de 4 missões'), findsOneWidget);
+    expect(find.text('Hoje: 1 de 5 missões'), findsOneWidget);
     expect(find.text('Feita!'), findsOneWidget);
   });
 

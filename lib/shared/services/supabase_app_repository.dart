@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/child_profile.dart';
 import '../models/league_progress.dart';
+import '../models/expedition.dart';
 import '../models/math_challenge.dart';
 import '../models/photo_explanation.dart';
 import '../models/progress_update.dart';
@@ -224,6 +225,42 @@ class SupabaseAppRepository extends AppRepository {
       await _invoke('desafio-matematica', {
         'acao': 'passo_a_passo',
         'desafio_id': challengeId,
+      }),
+    );
+  }
+
+  @override
+  Future<Expedition> newExpedition(ExpeditionSubject subject) async {
+    return Expedition.fromJson(
+      await _invoke('expedicao-teo', {
+        'acao': 'nova_expedicao',
+        'materia': subject.name,
+      }),
+    );
+  }
+
+  @override
+  Future<ExpeditionAnswerResult> answerExpedition(
+    String expeditionId,
+    int choice,
+  ) async {
+    final result = ExpeditionAnswerResult.fromJson(
+      await _invoke('expedicao-teo', {
+        'acao': 'responder',
+        'expedicao_id': expeditionId,
+        'escolha': choice,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<ExpeditionDiscovery> revealExpedition(String expeditionId) async {
+    return ExpeditionDiscovery.fromJson(
+      await _invoke('expedicao-teo', {
+        'acao': 'revelar',
+        'expedicao_id': expeditionId,
       }),
     );
   }

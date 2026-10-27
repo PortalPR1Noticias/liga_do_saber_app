@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/child_profile.dart';
+import '../models/expedition.dart';
 import '../models/league_progress.dart';
 import '../models/math_challenge.dart';
 import '../models/photo_explanation.dart';
@@ -84,6 +85,17 @@ abstract class AppRepository extends ChangeNotifier {
 
   /// Mostra a resolução (depois disso o desafio não vale mais XP).
   Future<MathSolution> revealMathSolution(String challengeId);
+
+  /// Trilha do Teo: o Teo cria uma investigação de Ciências ou Geografia.
+  Future<Expedition> newExpedition(ExpeditionSubject subject);
+
+  Future<ExpeditionAnswerResult> answerExpedition(
+    String expeditionId,
+    int choice,
+  );
+
+  /// Mostra a descoberta (depois disso a expedição não vale mais XP).
+  Future<ExpeditionDiscovery> revealExpedition(String expeditionId);
 
   /// Oficina de Texto: feedback da Luma sobre a primeira versão.
   Future<WritingFeedback> requestWritingFeedback({

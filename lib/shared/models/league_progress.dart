@@ -14,8 +14,8 @@ class DailyMission {
   final String title;
   final String description;
 
-  /// Atividade que conclui a missão: leitura, texto_reescrita, matematica ou
-  /// foto.
+  /// Atividade que conclui a missão: leitura, texto_reescrita, matematica,
+  /// expedicao ou foto.
   final String type;
   final int xp;
   final bool done;
