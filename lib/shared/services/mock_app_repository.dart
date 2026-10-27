@@ -1,14 +1,24 @@
 import 'dart:typed_data';
 
 import '../models/child_profile.dart';
+import '../models/league_progress.dart';
+import '../models/math_challenge.dart';
 import '../models/photo_explanation.dart';
+import '../models/progress_update.dart';
+import '../models/reading_case.dart';
 import '../models/responsible_account.dart';
+import '../models/writing_feedback.dart';
 import 'app_repository.dart';
 
 /// Repositório em memória, usado nos testes e como padrão sem Supabase.
-class MockAppRepository implements AppRepository {
+/// Os módulos devolvem sempre o mesmo conteúdo e o XP é somado aqui mesmo.
+class MockAppRepository extends AppRepository {
   ResponsibleAccount? _responsible;
   ChildProfile? _childProfile;
+  final _missionsDone = <String>{};
+  final _badges = <String>{};
+  int _mathAttempts = 0;
+  bool _mathRevealed = false;
 
   @override
   ResponsibleAccount get responsible {
@@ -27,7 +37,7 @@ class MockAppRepository implements AppRepository {
           schoolYear: 5,
           focusAreas: ['Leitura', 'Texto'],
           avatarId: 'estrategista',
-          level: 14,
+          level: 11,
           totalXp: 5840,
           streakDays: 19,
         );
@@ -63,6 +73,8 @@ class MockAppRepository implements AppRepository {
   Future<void> signOut() async {
     _responsible = null;
     _childProfile = null;
+    _missionsDone.clear();
+    _badges.clear();
   }
 
   @override
@@ -77,16 +89,18 @@ class MockAppRepository implements AppRepository {
       schoolYear: schoolYear,
       focusAreas: focusAreas,
     );
+    notifyListeners();
   }
 
   @override
   Future<void> saveAvatar(String avatarId) async {
     _childProfile = childProfile.copyWith(avatarId: avatarId);
+    notifyListeners();
   }
 
   @override
   Future<PhotoExplanation> explainPhoto(Uint8List imageBytes) async {
-    return const PhotoExplanation(
+    return PhotoExplanation(
       readable: true,
       subject: 'matematica',
       characterId: 'nico',
@@ -106,6 +120,311 @@ class MockAppRepository implements AppRepository {
       tip: 'Confira multiplicando: 8 × 3 = 24.',
       closingMessage: 'Estratégia certeira! Você consegue!',
       xp: 20,
+      progress: _grantXp(20, 'foto'),
     );
+  }
+
+  static const _missions = [
+    DailyMission(
+      code: 'caso_leitura',
+      title: 'Resolver um caso de leitura',
+      description: 'Abra um caso no Detetive da Leitura.',
+      type: 'leitura',
+      xp: 25,
+      done: false,
+      icon: 'search',
+    ),
+    DailyMission(
+      code: 'reescrever_texto',
+      title: 'Reescrever um texto',
+      description: 'Use o feedback da Luma para melhorar um texto.',
+      type: 'texto_reescrita',
+      xp: 35,
+      done: false,
+      icon: 'edit',
+    ),
+    DailyMission(
+      code: 'desafio_matematica',
+      title: 'Vencer um desafio do Nico',
+      description: 'Acerte um desafio na Arena Matemática.',
+      type: 'matematica',
+      xp: 20,
+      done: false,
+      icon: 'calculate',
+    ),
+    DailyMission(
+      code: 'foto_tarefa',
+      title: 'Enviar foto da tarefa',
+      description: 'Mande a foto de uma lição.',
+      type: 'foto',
+      xp: 15,
+      done: false,
+      icon: 'camera',
+    ),
+  ];
+
+  /// Mesma regra da função SQL `conceder_xp`, em versão simplificada.
+  ProgressUpdate _grantXp(int xp, String origin) {
+    final current = childProfile;
+    var bonus = 0;
+    String? missionTitle;
+    for (final mission in _missions) {
+      if (mission.type == origin && _missionsDone.add(mission.code)) {
+        bonus = mission.xp;
+        missionTitle = mission.title;
+      }
+    }
+    final newBadges = <EarnedBadge>[
+      if (missionTitle != null && _badges.add('primeiro_passo'))
+        const EarnedBadge(
+          id: 'primeiro_passo',
+          name: 'Primeiro Passo',
+          icon: 'rocket',
+        ),
+    ];
+    final total = current.totalXp + xp + bonus;
+    var level = current.level;
+    while (ChildProfile.levelStartXp(level + 1) <= total) {
+      level++;
+    }
+    final progress = ProgressUpdate(
+      xpGained: xp + bonus,
+      totalXp: total,
+      level: level,
+      leveledUp: level > current.level,
+      streakDays: current.streakDays == 0 ? 1 : current.streakDays,
+      missionTitle: missionTitle,
+      missionXp: bonus,
+      newBadges: newBadges,
+    );
+    _childProfile = current.withProgress(progress);
+    notifyListeners();
+    return progress;
+  }
+
+  @override
+  Future<ReadingCase> newReadingCase() async {
+    return const ReadingCase(
+      id: 'caso-1',
+      title: 'O bilhete desaparecido',
+      text:
+          'Na segunda-feira, a bibliotecária encontrou um bilhete na mesa: '
+          '"Volto amanhã para devolver o livro dos planetas". Ao lado havia '
+          'um marcador de página com um foguete desenhado. Na terça, Caio '
+          'chegou correndo, com o livro dos planetas debaixo do braço.',
+      intro: 'Pegue sua lupa: cada resposta tem uma pista no texto!',
+      questions: [
+        ReadingQuestion(
+          skill: 'ideia_principal',
+          question: 'Sobre o que é o texto?',
+          options: [
+            'Um bilhete deixado na biblioteca',
+            'Uma viagem ao espaço',
+            'Uma aula de matemática',
+          ],
+        ),
+        ReadingQuestion(
+          skill: 'inferencia',
+          question: 'Quem provavelmente deixou o bilhete?',
+          options: ['A bibliotecária', 'Caio', 'Um astronauta'],
+        ),
+        ReadingQuestion(
+          skill: 'localizar',
+          question: 'O que estava desenhado no marcador?',
+          options: ['Uma estrela', 'Um foguete', 'Um livro'],
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<ReadingCaseResult> answerReadingCase(
+    String caseId,
+    List<int> answers,
+  ) async {
+    const correct = [0, 1, 1];
+    const clues = [
+      'a bibliotecária encontrou um bilhete na mesa',
+      'Caio chegou correndo, com o livro dos planetas',
+      'um marcador de página com um foguete desenhado',
+    ];
+    final feedback = [
+      for (var i = 0; i < correct.length; i++)
+        ReadingAnswerFeedback(
+          chosen: i < answers.length ? answers[i] : -1,
+          correct: correct[i],
+          hit: i < answers.length && answers[i] == correct[i],
+          clue: clues[i],
+          explanation: 'A pista no texto mostra a resposta certa.',
+        ),
+    ];
+    final hits = feedback.where((f) => f.hit).length;
+    final xp = hits * 10;
+    return ReadingCaseResult(
+      answers: feedback,
+      hits: hits,
+      total: correct.length,
+      xp: xp,
+      progress: xp > 0 ? _grantXp(xp, 'leitura') : null,
+    );
+  }
+
+  @override
+  Future<MathChallenge> newMathChallenge(MathTopic topic) async {
+    _mathAttempts = 0;
+    _mathRevealed = false;
+    return const MathChallenge(
+      id: 'desafio-1',
+      title: 'Figurinhas da Liga',
+      statement:
+          'Se 24 figurinhas forem divididas entre 3 amigos, quantas ficam '
+          'para cada um?',
+      options: ['6', '8', '12', '21'],
+    );
+  }
+
+  static const _mathSteps = [
+    'São 24 figurinhas para dividir igualmente entre 3 amigos.',
+    'Dividir é repartir em partes iguais: 24 ÷ 3.',
+    'Pense na tabuada do 3: 3 × 8 = 24.',
+    'Então cada amigo fica com 8 figurinhas.',
+  ];
+
+  @override
+  Future<MathAnswerResult> answerMathChallenge(
+    String challengeId,
+    int choice,
+  ) async {
+    final hit = choice == 1;
+    final xp = !hit || _mathRevealed ? 0 : (_mathAttempts == 0 ? 20 : 10);
+    _mathAttempts++;
+    return MathAnswerResult(
+      hit: hit,
+      tip: hit ? '' : 'Pense na tabuada do 3.',
+      steps: hit ? _mathSteps : const [],
+      xp: xp,
+      progress: xp > 0 ? _grantXp(xp, 'matematica') : null,
+    );
+  }
+
+  @override
+  Future<MathSolution> revealMathSolution(String challengeId) async {
+    _mathRevealed = true;
+    return const MathSolution(steps: _mathSteps, correct: 1);
+  }
+
+  @override
+  Future<WritingFeedback> requestWritingFeedback({
+    required String theme,
+    required WritingPlan plan,
+    required String text,
+  }) async {
+    return WritingFeedback(
+      productionId: 'texto-1',
+      appropriate: true,
+      criteria: const [
+        WritingCriterion(
+          id: 'clareza',
+          stars: 2,
+          comment: 'Dá para entender a ideia.',
+        ),
+        WritingCriterion(
+          id: 'organizacao',
+          stars: 2,
+          comment: 'Tem começo e meio; capriche no final.',
+        ),
+        WritingCriterion(
+          id: 'pontuacao',
+          stars: 1,
+          comment: 'Faltam pontos finais.',
+        ),
+        WritingCriterion(
+          id: 'criatividade',
+          stars: 3,
+          comment: 'Que ideia divertida!',
+        ),
+      ],
+      strengths: const ['Sua história tem uma ideia original.'],
+      suggestions: const ['Termine cada frase com ponto final.'],
+      message: 'Agora reescreva usando as dicas. Você consegue!',
+      xp: 15,
+      progress: _grantXp(15, 'texto'),
+    );
+  }
+
+  @override
+  Future<RewriteFeedback> submitRewrite({
+    required String productionId,
+    required String text,
+  }) async {
+    return RewriteFeedback(
+      appropriate: true,
+      evolution: 2,
+      criteria: const [
+        WritingCriterion(
+          id: 'pontuacao',
+          stars: 2,
+          comment: 'Agora as frases terminam certinho.',
+        ),
+      ],
+      improvements: const ['Você colocou os pontos finais.'],
+      nextStep: 'No próximo texto, use parágrafos.',
+      message: 'Seu texto evoluiu muito!',
+      xp: 26,
+      progress: _grantXp(26, 'texto_reescrita'),
+    );
+  }
+
+  @override
+  Future<List<DailyMission>> loadDailyMissions() async {
+    return [
+      for (final m in _missions)
+        DailyMission(
+          code: m.code,
+          title: m.title,
+          description: m.description,
+          type: m.type,
+          xp: m.xp,
+          done: _missionsDone.contains(m.code),
+          icon: m.icon,
+        ),
+    ];
+  }
+
+  @override
+  Future<List<Achievement>> loadAchievements() async {
+    const catalog = [
+      (
+        'primeiro_passo',
+        'Primeiro Passo',
+        'Concluiu a primeira missão.',
+        'rocket',
+      ),
+      (
+        'detetive_leitura',
+        'Detetive da Leitura',
+        'Resolveu 5 casos.',
+        'search',
+      ),
+      ('texto_melhorado', 'Texto Melhorado', 'Reescreveu 3 textos.', 'edit'),
+      ('estrategista', 'Estrategista', 'Venceu 10 desafios.', 'calculate'),
+      (
+        'sequencia_fogo',
+        'Sequência de Fogo',
+        'Estudou 7 dias seguidos.',
+        'fire',
+      ),
+      ('olho_de_aguia', 'Olho de Águia', 'Mandou 5 fotos de lição.', 'camera'),
+    ];
+    return [
+      for (final (id, name, description, icon) in catalog)
+        Achievement(
+          id: id,
+          name: name,
+          description: description,
+          icon: icon,
+          earned: _badges.contains(id),
+        ),
+    ];
   }
 }

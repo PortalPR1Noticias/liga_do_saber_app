@@ -30,3 +30,40 @@ npx supabase link --project-ref hhcdsnfcthyqpxinoyzi
 npx supabase secrets set OPENAI_API_KEY=sk-...
 npx supabase functions deploy explicar-foto --no-verify-jwt
 ```
+
+## Módulos com IA e XP
+
+Antes de publicar as funções abaixo, rode a migration
+`supabase/migrations/0003_progresso_xp_missoes.sql` no SQL Editor. Ela cria
+a função `conceder_xp` (XP, nível, sequência de dias, missões do dia e
+medalhas) que todas as funções usam, inclusive a `explicar-foto`.
+
+| Função | Módulo | O que faz |
+| --- | --- | --- |
+| `detetive-leitura` | Detetive da Leitura (Luma) | Cria um caso (texto + 3 perguntas) e corrige as respostas: 10 XP por acerto. |
+| `desafio-matematica` | Arena Matemática (Nico) | Cria um desafio do ano escolar e corrige: 20 XP de primeira, 10 depois de errar, 0 depois de ver o passo a passo. |
+| `oficina-texto` | Oficina de Texto (Luma) | Feedback da versão 1 (15 XP) e avaliação da reescrita (10 a 34 XP, pela evolução). |
+
+As três usam o código comum de `_shared/liga.ts`, o mesmo secret
+`OPENAI_API_KEY` e o mesmo `OPENAI_MODEL`. As respostas certas ficam
+guardadas em `correcoes_ia` e nunca vão para o app, e todo XP é dado no
+servidor. Limites diários opcionais (secrets): `LIMITE_CASOS_POR_DIA`
+(padrão 15), `LIMITE_DESAFIOS_POR_DIA` (40) e `LIMITE_TEXTOS_POR_DIA` (20).
+
+O texto que a criança escreve na Oficina vai para a OpenAI (`store: false`)
+e fica guardado em `producoes_textuais` para o responsável acompanhar.
+
+### Publicar
+
+Pela linha de comando (recomendado, porque inclui a pasta `_shared`):
+
+```bash
+npx supabase functions deploy detetive-leitura --no-verify-jwt
+npx supabase functions deploy desafio-matematica --no-verify-jwt
+npx supabase functions deploy oficina-texto --no-verify-jwt
+npx supabase functions deploy explicar-foto --no-verify-jwt
+```
+
+Essas três funções importam `../_shared/liga.ts`, então publique pela linha
+de comando (o editor do painel não leva a pasta `_shared` junto). O
+`--no-verify-jwt` já deixa o "Enforce JWT verification" desligado.

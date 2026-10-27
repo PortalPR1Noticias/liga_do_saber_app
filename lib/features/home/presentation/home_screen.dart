@@ -4,15 +4,41 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
-import '../../../shared/models/child_profile.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  /// Tipos das missões do dia já concluídas (leitura, matematica...).
+  Set<String> _doneToday = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    AppRepository.instance
+        .loadDailyMissions()
+        .then((missions) {
+          if (!mounted) return;
+          setState(() {
+            _doneToday = {
+              for (final m in missions)
+                if (m.done) m.type,
+            };
+          });
+        })
+        .catchError((_) {});
+  }
+
+  double _progressOf(String type) => _doneToday.contains(type) ? 1 : 0;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +53,8 @@ class HomeScreen extends StatelessWidget {
             avatarId: profile.avatarId,
             level: profile.level,
             levelProgress: profile.levelProgress,
-            levelXp: profile.totalXp % ChildProfile.levelXpGoal,
+            levelXp: profile.levelXp,
+            levelXpGoal: profile.levelXpGoal,
             streakDays: profile.streakDays,
           ),
         ),
@@ -60,7 +87,7 @@ class HomeScreen extends StatelessWidget {
             subtitle: 'Planeje, escreva, receba feedback e reescreva melhor.',
             icon: Icons.edit_rounded,
             color: LigaColors.actionCoral,
-            progress: 0.65,
+            progress: _progressOf('texto_reescrita'),
             onTap: () => Navigator.of(
               context,
             ).pushNamed(WritingWorkshopScreen.routeName),
@@ -74,7 +101,7 @@ class HomeScreen extends StatelessWidget {
             subtitle: 'Encontre pistas, interprete e conclua o caso.',
             icon: Icons.search_rounded,
             color: LigaColors.actionCoral,
-            progress: 0.78,
+            progress: _progressOf('leitura'),
             onTap: () => Navigator.of(
               context,
             ).pushNamed(ReadingDetectiveScreen.routeName),
@@ -88,7 +115,7 @@ class HomeScreen extends StatelessWidget {
             subtitle: 'Treinos rápidos de cálculo e raciocínio.',
             icon: Icons.calculate_rounded,
             color: LigaColors.primaryBlue,
-            progress: 0.42,
+            progress: _progressOf('matematica'),
             onTap: () =>
                 Navigator.of(context).pushNamed(MathArenaScreen.routeName),
           ),
@@ -105,6 +132,7 @@ class _Header extends StatelessWidget {
     required this.level,
     required this.levelProgress,
     required this.levelXp,
+    required this.levelXpGoal,
     required this.streakDays,
   });
 
@@ -113,6 +141,7 @@ class _Header extends StatelessWidget {
   final int level;
   final double levelProgress;
   final int levelXp;
+  final int levelXpGoal;
   final int streakDays;
 
   @override
@@ -162,7 +191,7 @@ class _Header extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              '$levelXp / ${ChildProfile.levelXpGoal} XP',
+              '$levelXp / $levelXpGoal XP',
               style: const TextStyle(
                 color: LigaColors.inkSoft,
                 fontWeight: FontWeight.w800,
@@ -234,7 +263,7 @@ class _DailyMission extends StatelessWidget {
           children: [
             const LigaPill(
               icon: Icons.bolt_rounded,
-              label: 'Missão do dia · +50 XP',
+              label: 'Missão do dia · +25 XP',
               color: LigaColors.achievementYellow,
               solid: true,
             ),

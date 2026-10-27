@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
+import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/photo_explanation.dart';
 import '../../../shared/services/app_repository.dart';
@@ -237,7 +238,10 @@ class _PhotoSolverFlowScreenState extends State<PhotoSolverFlowScreen> {
             ].where((t) => t.isNotEmpty).join('\n\n'),
           ),
         ],
-        if (result.xp > 0) ...[
+        if (result.progress != null) ...[
+          const SizedBox(height: 14),
+          PopIn(child: LigaRewardCard(progress: result.progress!)),
+        ] else if (result.xp > 0) ...[
           const SizedBox(height: 14),
           Align(
             alignment: Alignment.centerLeft,

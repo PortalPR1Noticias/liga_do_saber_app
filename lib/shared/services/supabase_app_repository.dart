@@ -4,14 +4,21 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/child_profile.dart';
+import '../models/league_progress.dart';
+import '../models/math_challenge.dart';
 import '../models/photo_explanation.dart';
+import '../models/progress_update.dart';
+import '../models/reading_case.dart';
 import '../models/responsible_account.dart';
+import '../models/writing_feedback.dart';
 import 'app_repository.dart';
 
 /// Repositório real: Supabase Auth (e-mail e senha do responsável) e as
-/// tabelas `responsaveis` e `perfis_criancas` das migrations 0001 e 0002.
-/// A Foto + IA chama a Edge Function `explicar-foto` (supabase/functions).
-class SupabaseAppRepository implements AppRepository {
+/// tabelas das migrations em supabase/migrations.
+/// Os módulos com IA chamam as Edge Functions (supabase/functions):
+/// `explicar-foto`, `detetive-leitura`, `desafio-matematica` e
+/// `oficina-texto`. Todo XP é dado no servidor; o app só lê o progresso.
+class SupabaseAppRepository extends AppRepository {
   SupabaseAppRepository(this._client);
 
   final SupabaseClient _client;
@@ -87,6 +94,7 @@ class SupabaseAppRepository implements AppRepository {
     _childProfileId = null;
     _responsible = null;
     _childProfile = null;
+    notifyListeners();
   }
 
   @override
@@ -141,41 +149,218 @@ class SupabaseAppRepository implements AppRepository {
 
   @override
   Future<PhotoExplanation> explainPhoto(Uint8List imageBytes) async {
-    if (_childProfileId == null) {
-      throw const AppRepositoryException(
-        'Cadastre o perfil da criança antes de enviar fotos.',
-      );
-    }
+    final data = await _invoke(
+      'explicar-foto',
+      {
+        'imagem_base64': base64Encode(imageBytes),
+        'tipo': _imageType(imageBytes),
+      },
+      notReady: 'A Foto + IA ainda não foi publicada no Supabase.',
+      noProfile: 'Cadastre o perfil da criança antes de enviar fotos.',
+    );
+    final explanation = PhotoExplanation.fromJson(data);
+    _applyProgress(explanation.progress);
+    return explanation;
+  }
+
+  @override
+  Future<ReadingCase> newReadingCase() async {
+    return ReadingCase.fromJson(
+      await _invoke('detetive-leitura', {'acao': 'novo_caso'}),
+    );
+  }
+
+  @override
+  Future<ReadingCaseResult> answerReadingCase(
+    String caseId,
+    List<int> answers,
+  ) async {
+    final result = ReadingCaseResult.fromJson(
+      await _invoke('detetive-leitura', {
+        'acao': 'responder',
+        'caso_id': caseId,
+        'respostas': answers,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<MathChallenge> newMathChallenge(MathTopic topic) async {
+    return MathChallenge.fromJson(
+      await _invoke('desafio-matematica', {
+        'acao': 'novo_desafio',
+        'tema': topic.name,
+      }),
+    );
+  }
+
+  @override
+  Future<MathAnswerResult> answerMathChallenge(
+    String challengeId,
+    int choice,
+  ) async {
+    final result = MathAnswerResult.fromJson(
+      await _invoke('desafio-matematica', {
+        'acao': 'responder',
+        'desafio_id': challengeId,
+        'escolha': choice,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<MathSolution> revealMathSolution(String challengeId) async {
+    return MathSolution.fromJson(
+      await _invoke('desafio-matematica', {
+        'acao': 'passo_a_passo',
+        'desafio_id': challengeId,
+      }),
+    );
+  }
+
+  @override
+  Future<WritingFeedback> requestWritingFeedback({
+    required String theme,
+    required WritingPlan plan,
+    required String text,
+  }) async {
+    final feedback = WritingFeedback.fromJson(
+      await _invoke('oficina-texto', {
+        'acao': 'feedback',
+        'tema': theme,
+        'planejamento': plan.toJson(),
+        'texto': text,
+      }),
+    );
+    _applyProgress(feedback.progress);
+    return feedback;
+  }
+
+  @override
+  Future<RewriteFeedback> submitRewrite({
+    required String productionId,
+    required String text,
+  }) async {
+    final feedback = RewriteFeedback.fromJson(
+      await _invoke('oficina-texto', {
+        'acao': 'reescrita',
+        'producao_id': productionId,
+        'texto': text,
+      }),
+    );
+    _applyProgress(feedback.progress);
+    return feedback;
+  }
+
+  @override
+  Future<List<DailyMission>> loadDailyMissions() {
+    return _guard(() async {
+      final missions = await _client
+          .from('missoes')
+          .select('id, codigo, titulo, descricao, tipo, xp_base, icone')
+          .not('codigo', 'is', null)
+          .order('ordem');
+      final done = <String>{};
+      if (_childProfileId != null) {
+        final rows = await _client
+            .from('progresso_missoes')
+            .select('missao_id')
+            .eq('perfil_crianca_id', _childProfileId!)
+            .eq('dia', _todayInBrazil())
+            .eq('status', 'concluida');
+        done.addAll(rows.map((r) => r['missao_id'] as String));
+      }
+      return [
+        for (final m in missions)
+          DailyMission(
+            code: m['codigo'] as String,
+            title: m['titulo'] as String,
+            description: m['descricao'] as String? ?? '',
+            type: m['tipo'] as String,
+            xp: m['xp_base'] as int,
+            icon: m['icone'] as String?,
+            done: done.contains(m['id']),
+          ),
+      ];
+    });
+  }
+
+  @override
+  Future<List<Achievement>> loadAchievements() {
+    return _guard(() async {
+      final badges = await _client
+          .from('badges')
+          .select('id, nome, descricao, icone')
+          .order('id');
+      final earned = <String>{};
+      if (_childProfileId != null) {
+        final rows = await _client
+            .from('badges_criancas')
+            .select('badge_id')
+            .eq('perfil_crianca_id', _childProfileId!);
+        earned.addAll(rows.map((r) => r['badge_id'] as String));
+      }
+      final achievements = [
+        for (final b in badges)
+          Achievement(
+            id: b['id'] as String,
+            name: b['nome'] as String,
+            description: b['descricao'] as String? ?? '',
+            icon: b['icone'] as String?,
+            earned: earned.contains(b['id']),
+          ),
+      ];
+      // Conquistadas primeiro.
+      achievements.sort((a, b) => (b.earned ? 1 : 0) - (a.earned ? 1 : 0));
+      return achievements;
+    });
+  }
+
+  /// Chama uma Edge Function da Liga com o perfil da criança e devolve o
+  /// JSON. Erros viram [AppRepositoryException] com a mensagem do servidor.
+  Future<Map<String, dynamic>> _invoke(
+    String function,
+    Map<String, dynamic> body, {
+    String notReady = 'Essa parte da Liga ainda não foi publicada.',
+    String noProfile = 'Cadastre o perfil da criança primeiro.',
+  }) async {
+    if (_childProfileId == null) throw AppRepositoryException(noProfile);
     try {
       final response = await _client.functions.invoke(
-        'explicar-foto',
-        body: {
-          'perfil_id': _childProfileId,
-          'imagem_base64': base64Encode(imageBytes),
-          'tipo': _imageType(imageBytes),
-        },
+        function,
+        body: {...body, 'perfil_id': _childProfileId},
       );
-      return PhotoExplanation.fromJson(
-        Map<String, dynamic>.from(response.data as Map),
-      );
+      return Map<String, dynamic>.from(response.data as Map);
     } on FunctionException catch (error) {
       final details = error.details;
       if (details is Map && details['erro'] is String) {
         throw AppRepositoryException(details['erro'] as String);
       }
-      if (error.status == 404) {
-        throw const AppRepositoryException(
-          'A Foto + IA ainda não foi publicada no Supabase.',
-        );
-      }
+      if (error.status == 404) throw AppRepositoryException(notReady);
       throw const AppRepositoryException(
-        'Não consegui analisar a foto agora. Tente de novo.',
+        'Não consegui falar com a Liga agora. Tente de novo.',
       );
     } on Exception {
       throw const AppRepositoryException(
         'Sem conexão com o servidor. Verifique a internet e tente de novo.',
       );
     }
+  }
+
+  void _applyProgress(ProgressUpdate? progress) {
+    if (progress == null || _childProfile == null) return;
+    _childProfile = _childProfile!.withProgress(progress);
+    notifyListeners();
+  }
+
+  /// Data de hoje no horário de Brasília (o mesmo dia das missões no banco).
+  static String _todayInBrazil() {
+    final now = DateTime.now().toUtc().subtract(const Duration(hours: 3));
+    return now.toIso8601String().substring(0, 10);
   }
 
   /// Descobre o formato pela assinatura do arquivo (o image_picker devolve
@@ -237,6 +422,25 @@ class SupabaseAppRepository implements AppRepository {
   }
 
   void _setChildProfile(Map<String, dynamic> row) {
+    // A sequência só continua valendo se a última atividade foi hoje ou
+    // ontem; senão o banco ainda guarda o número antigo.
+    final lastActivity = DateTime.tryParse(
+      row['ultima_atividade_em'] as String? ?? '',
+    );
+    final yesterday = DateTime.parse(
+      _todayInBrazil(),
+    ).subtract(const Duration(days: 1));
+    final lastDay = lastActivity == null
+        ? null
+        : DateTime.parse(
+            lastActivity
+                .toUtc()
+                .subtract(const Duration(hours: 3))
+                .toIso8601String()
+                .substring(0, 10),
+          );
+    final streakAlive = lastDay != null && !lastDay.isBefore(yesterday);
+
     _childProfileId = row['id'] as String;
     _childProfile = ChildProfile(
       nickname: row['apelido'] as String,
@@ -245,8 +449,9 @@ class SupabaseAppRepository implements AppRepository {
       avatarId: row['avatar_id'] as String,
       level: row['nivel'] as int,
       totalXp: row['xp_total'] as int,
-      streakDays: row['sequencia_dias'] as int,
+      streakDays: streakAlive ? row['sequencia_dias'] as int : 0,
     );
+    notifyListeners();
   }
 
   /// Converte erros do Supabase em mensagens em português.
@@ -261,7 +466,7 @@ class SupabaseAppRepository implements AppRepository {
       if (error.code == '42P01' || error.code == 'PGRST205') {
         throw const AppRepositoryException(
           'O banco ainda não tem as tabelas da Liga. '
-          'Rode as migrations 0001 e 0002 no Supabase.',
+          'Rode as migrations do Supabase (pasta supabase/migrations).',
         );
       }
       throw AppRepositoryException(

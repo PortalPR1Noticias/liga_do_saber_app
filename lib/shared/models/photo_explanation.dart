@@ -1,3 +1,5 @@
+import 'progress_update.dart';
+
 /// Um passo da explicação da Foto + IA.
 class ExplanationStep {
   const ExplanationStep({required this.title, required this.explanation});
@@ -19,6 +21,7 @@ class PhotoExplanation {
     required this.tip,
     required this.closingMessage,
     required this.xp,
+    this.progress,
   });
 
   factory PhotoExplanation.fromJson(Map<String, dynamic> json) {
@@ -39,6 +42,7 @@ class PhotoExplanation {
       tip: json['dica'] as String? ?? '',
       closingMessage: json['mensagem_final'] as String? ?? '',
       xp: json['xp'] as int? ?? 0,
+      progress: ProgressUpdate.fromJson(json['progresso']),
     );
   }
 
@@ -59,4 +63,7 @@ class PhotoExplanation {
   final String tip;
   final String closingMessage;
   final int xp;
+
+  /// XP, nível e missão do dia atualizados (null se não ganhou XP).
+  final ProgressUpdate? progress;
 }
