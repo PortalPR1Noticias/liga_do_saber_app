@@ -4,6 +4,7 @@ import '../models/child_profile.dart';
 import '../models/expedition.dart';
 import '../models/league_progress.dart';
 import '../models/math_challenge.dart';
+import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
 import '../models/progress_update.dart';
 import '../models/reading_case.dart';
@@ -22,6 +23,8 @@ class MockAppRepository extends AppRepository {
   bool _mathRevealed = false;
   int _expeditionAttempts = 0;
   bool _expeditionRevealed = false;
+  final _wordsFound = <int>{};
+  int _puzzleAttempts = 0;
 
   @override
   ResponsibleAccount get responsible {
@@ -164,6 +167,15 @@ class MockAppRepository extends AppRepository {
       xp: 15,
       done: false,
       icon: 'camera',
+    ),
+    DailyMission(
+      code: 'jogar_minijogo',
+      title: 'Vencer um Jogo da Liga',
+      description: 'Complete um caça-palavras, quebra-cabeça ou Relâmpago.',
+      type: 'minijogo',
+      xp: 15,
+      done: false,
+      icon: 'extension',
     ),
     DailyMission(
       code: 'expedicao_teo',
@@ -389,6 +401,142 @@ class MockAppRepository extends AppRepository {
   Future<ExpeditionDiscovery> revealExpedition(String expeditionId) async {
     _expeditionRevealed = true;
     return _expeditionDiscovery;
+  }
+
+  /// Caça-palavras fixo: VERBO na linha 0, RIMA na coluna 6 e FRASE na
+  /// linha 6.
+  static const _wordSearchWords = [
+    ('VERBO', [GridCell(0, 0), GridCell(0, 4)]),
+    ('RIMA', [GridCell(1, 6), GridCell(4, 6)]),
+    ('FRASE', [GridCell(6, 2), GridCell(6, 6)]),
+  ];
+
+  @override
+  Future<WordSearchGame> newWordSearch(MinigameSubject subject) async {
+    _wordsFound.clear();
+    return WordSearchGame(
+      id: 'caca-1',
+      subject: subject,
+      title: 'Palavras da Luma',
+      rows: const [
+        'VERBOKLM',
+        'ATQUXZRP',
+        'SDFGHJIW',
+        'CBNMLKMY',
+        'TYUIOPAQ',
+        'GHJKLZXC',
+        'QWFRASEN',
+        'MNBVCXZL',
+      ],
+      clues: const [
+        WordClue(clue: 'Palavra que indica ação, como correr.', length: 5),
+        WordClue(clue: 'Som igual no fim dos versos de um poema.', length: 4),
+        WordClue(clue: 'Conjunto de palavras com sentido completo.', length: 5),
+      ],
+    );
+  }
+
+  @override
+  Future<WordSearchCheck> checkWordSearch(
+    String gameId,
+    GridCell start,
+    GridCell end,
+  ) async {
+    for (var i = 0; i < _wordSearchWords.length; i++) {
+      final (word, ends) = _wordSearchWords[i];
+      final hit =
+          (ends[0] == start && ends[1] == end) ||
+          (ends[0] == end && ends[1] == start);
+      if (!hit || !_wordsFound.add(i)) continue;
+      final cells = [
+        for (var k = 0; k < word.length; k++)
+          GridCell(
+            ends[0].row + (ends[1].row - ends[0].row).sign * k,
+            ends[0].col + (ends[1].col - ends[0].col).sign * k,
+          ),
+      ];
+      final finished = _wordsFound.length == _wordSearchWords.length;
+      return WordSearchCheck(
+        found: true,
+        index: i,
+        word: word,
+        cells: cells,
+        finished: finished,
+        xp: finished ? 20 : 0,
+        progress: finished ? _grantXp(20, 'minijogo') : null,
+      );
+    }
+    return const WordSearchCheck(found: false);
+  }
+
+  @override
+  Future<OrderPuzzle> newOrderPuzzle(MinigameSubject subject) async {
+    _puzzleAttempts = 0;
+    return OrderPuzzle(
+      id: 'quebra-1',
+      subject: subject,
+      title: 'Monte a frase',
+      instruction: 'Coloque os pedaços na ordem para formar a frase.',
+      pieces: const [
+        'de aventuras',
+        'A Luma',
+        'na biblioteca.',
+        'leu um livro',
+      ],
+    );
+  }
+
+  @override
+  Future<OrderPuzzleCheck> checkOrderPuzzle(
+    String gameId,
+    List<int> order,
+  ) async {
+    const correct = [1, 3, 0, 2];
+    final places = [
+      for (var i = 0; i < correct.length; i++)
+        i < order.length && order[i] == correct[i],
+    ];
+    final solved = places.every((p) => p);
+    final xp = solved ? (_puzzleAttempts == 0 ? 20 : 10) : 0;
+    _puzzleAttempts++;
+    return OrderPuzzleCheck(
+      solved: solved,
+      rightPlaces: places,
+      explanation: solved
+          ? 'Primeiro quem faz (A Luma), depois o que fez e onde.'
+          : '',
+      xp: xp,
+      progress: xp > 0 ? _grantXp(xp, 'minijogo') : null,
+    );
+  }
+
+  @override
+  Future<LightningRound> newLightningRound(LightningTopic topic) async {
+    return LightningRound(
+      id: 'relampago-1',
+      questions: [
+        for (var n = 2; n <= 9; n++)
+          LightningQuestion(text: '$n × 3', answer: n * 3),
+      ],
+    );
+  }
+
+  @override
+  Future<LightningResult> finishLightningRound(
+    String roundId,
+    List<int> answers,
+  ) async {
+    var hits = 0;
+    for (var i = 0; i < answers.length && i < 8; i++) {
+      if (answers[i] == (i + 2) * 3) hits++;
+    }
+    final xp = hits == 0 ? 0 : (5 + 2 * hits).clamp(0, 25);
+    return LightningResult(
+      hits: hits,
+      answered: answers.length,
+      xp: xp,
+      progress: xp > 0 ? _grantXp(xp, 'minijogo') : null,
+    );
   }
 
   @override
