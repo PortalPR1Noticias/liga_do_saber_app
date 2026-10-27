@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liga_do_saber_app/app/liga_do_saber_app.dart';
 import 'package:liga_do_saber_app/app/theme.dart';
+import 'package:liga_do_saber_app/shared/design_system/liga_sound.dart';
+import 'package:liga_do_saber_app/shared/design_system/liga_victory.dart';
 import 'package:liga_do_saber_app/features/auth/presentation/auth_screen.dart';
 import 'package:liga_do_saber_app/features/math_arena/presentation/math_arena_screen.dart';
 import 'package:liga_do_saber_app/features/mila_archive/presentation/mila_archive_screen.dart';
@@ -56,21 +58,25 @@ void main() {
   setUp(() {
     AppRepository.instance = MockAppRepository();
     LigaMotion.ambient = false;
+    LigaSound.enabled = false;
+    LigaVictory.enabled = false;
   });
 
-  testWidgets('Liga do Saber starts at the splash screen', (tester) async {
+  testWidgets('Liga do Saber starts at the title screen', (tester) async {
+    usePhoneScreen(tester);
     await tester.pumpWidget(const LigaDoSaberApp());
+    await tester.pumpAndSettle();
 
     expect(find.byKey(LigaLogo.imageKey), findsOneWidget);
     expect(find.text('Aprender vira missão'), findsOneWidget);
 
-    await tester.pump(const Duration(milliseconds: 950));
+    // Sem sessão salva, o JOGAR leva para a conta do responsável.
+    await tester.tap(find.text('JOGAR'));
     await tester.pumpAndSettle();
-
-    expect(find.text('Entre para a Liga do Saber'), findsOneWidget);
+    expect(find.byType(AuthScreen), findsOneWidget);
   });
 
-  testWidgets('onboarding fits on a small screen', (tester) async {
+  testWidgets('title screen fits on a small screen', (tester) async {
     tester.view.physicalSize = const Size(320, 480);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -78,7 +84,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: OnboardingScreen()));
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Criar conta do responsável'), findsOneWidget);
+    expect(find.text('JOGAR'), findsOneWidget);
   });
 
   testWidgets('auth form validates e-mail and password', (tester) async {
@@ -547,10 +553,85 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: MainShell()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Missões'));
+    await tester.tap(find.byKey(const ValueKey('tab-Missões')));
     await tester.pumpAndSettle();
     expect(find.text('Hoje: 1 de 8 missões'), findsOneWidget);
     expect(find.text('Feita!'), findsOneWidget);
+  });
+
+  testWidgets('base shows the hero, the daily chest and the next phase', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    // Uma vitória na matemática: a Ilha dos Números deixa de ser a mais
+    // atrasada, e o JOGAR sugere a próxima ilha.
+    await AppRepository.instance.answerMathChallenge('desafio-1', 1);
+    await tester.pumpWidget(
+      MaterialApp(
+        routes: {
+          ReadingDetectiveScreen.routeName: (_) =>
+              const ReadingDetectiveScreen(),
+        },
+        home: const MainShell(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nico'), findsOneWidget);
+    expect(find.text('1 de 8 missões · cada uma dá XP extra'), findsOneWidget);
+    expect(find.text('Floresta das Palavras · Fase 1'), findsOneWidget);
+
+    await tester.tap(find.text('JOGAR'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ReadingDetectiveScreen), findsOneWidget);
+  });
+
+  testWidgets('world map opens phases won with right answers', (tester) async {
+    usePhoneScreen(tester);
+    await AppRepository.instance.answerMathChallenge('desafio-1', 1);
+    await tester.pumpWidget(
+      MaterialApp(
+        routes: {MathArenaScreen.routeName: (_) => const MathArenaScreen()},
+        home: const MainShell(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('tab-Mundo')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ilha dos Números'), findsOneWidget);
+    expect(find.text('1/10'), findsOneWidget);
+
+    // A fase 3 ainda está trancada: só abre depois de vencer a fase 2.
+    await tester.tap(find.byKey(const ValueKey('fase-nico-3')));
+    await tester.pump();
+    expect(find.text('Vença a fase 2 para abrir esta.'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('fase-nico-2')));
+    await tester.pumpAndSettle();
+    expect(find.byType(MathArenaScreen), findsOneWidget);
+  });
+
+  testWidgets('a win opens the victory screen with the XP earned', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    LigaVictory.enabled = true;
+    await tester.pumpWidget(const MaterialApp(home: MathArenaScreen()));
+
+    await scrollAndTap(tester, find.text('Começar desafio'));
+    await tester.pump();
+    await tester.pump();
+    await scrollAndTap(tester, find.text('8'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('VITÓRIA!'), findsOneWidget);
+    // Primeira tentativa certa: 20 XP + 20 de bônus da missão do dia.
+    expect(find.text('+40'), findsOneWidget);
+    await tester.tap(find.text('CONTINUAR'));
+    await tester.pumpAndSettle();
+    expect(find.text('VITÓRIA!'), findsNothing);
+    await scrollTo(tester, find.text('+40 XP'));
   });
 
   testWidgets('full sign-up flow reaches the home with chosen data', (
@@ -559,10 +640,9 @@ void main() {
     usePhoneScreen(tester);
 
     await tester.pumpWidget(const LigaDoSaberApp());
-    await tester.pump(const Duration(milliseconds: 950));
     await tester.pumpAndSettle();
 
-    await scrollAndTap(tester, find.text('Criar conta do responsável'));
+    await tester.tap(find.text('JOGAR'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(0), 'Giovany');
     await tester.enterText(

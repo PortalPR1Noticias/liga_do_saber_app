@@ -680,6 +680,26 @@ class SupabaseAppRepository extends AppRepository {
   }
 
   @override
+  Future<Map<String, int>> loadActivityCounts() {
+    return _guard(() async {
+      final counts = <String, int>{};
+      if (_childProfileId == null) return counts;
+      // Cada linha é uma atividade que deu XP; o bônus da missão do dia
+      // ('missao') não conta como fase.
+      final rows = await _client
+          .from('eventos_xp')
+          .select('origem')
+          .eq('perfil_crianca_id', _childProfileId!)
+          .neq('origem', 'missao');
+      for (final row in rows) {
+        final origin = row['origem'] as String;
+        counts.update(origin, (n) => n + 1, ifAbsent: () => 1);
+      }
+      return counts;
+    });
+  }
+
+  @override
   Future<void> setAiConsent(bool allowed) {
     return _guard(() async {
       final responsibleId = _responsibleId ?? await _ensureResponsible();
