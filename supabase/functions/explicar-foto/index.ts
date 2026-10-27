@@ -1,16 +1,19 @@
 // Liga do Saber - Edge Function "explicar-foto".
 //
-// Recebe a foto de uma atividade escolar, pede ao Claude uma explicação passo a
-// passo no tom do personagem da matéria e grava o resultado em `correcoes_ia`.
-// A chave da Anthropic fica só aqui no servidor (secret ANTHROPIC_API_KEY).
+// Recebe a foto de uma atividade escolar, pede uma explicação passo a
+// passo à OpenAI no tom do personagem da matéria e grava o resultado em
+// `correcoes_ia`. A chave da OpenAI fica só aqui no servidor (secret
+// OPENAI_API_KEY).
 // A foto não é guardada: ela passa pela função e segue apenas para a IA.
 //
 // Deploy: veja supabase/functions/README.md.
 
-import Anthropic from "npm:@anthropic-ai/sdk@1.3.0";
+import OpenAI from "npm:openai@7.43.0";
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 
-const MODELO = Deno.env.get("CLAUDE_MODEL") ?? "claude-opus-5-5";
+/// Modelo com leitura de imagem e saída estruturada. Troque pelo secret
+/// OPENAI_MODEL (por exemplo `gpt-6-luna`, bem mais barato).
+const MODELO = Deno.env.get("OPENAI_MODEL") ?? "gpt-6-sol";
 
 /// Quantas fotos cada criança pode enviar por dia (protege o custo da IA).
 const LIMITE_DIARIO = Number(Deno.env.get("LIMITE_FOTOS_POR_DIA") ?? "30");
@@ -117,9 +120,9 @@ Deno.serve(async (req) => {
   const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return erro(401, "Entre na sua conta para usar a Foto + IA.");
 
-  const chaveAnthropic = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!chaveAnthropic) {
-    console.error("Secret ANTHROPIC_API_KEY não configurado.");
+  const chaveOpenAI = Deno.env.get("OPENAI_API_KEY");
+  if (!chaveOpenAI) {
+    console.error("Secret OPENAI_API_KEY não configurado.");
     return erro(503, "A Foto + IA ainda está sendo preparada. Tente mais tarde.");
   }
 
@@ -176,60 +179,64 @@ Deno.serve(async (req) => {
     );
   }
 
-  const anthropic = new Anthropic({ apiKey: chaveAnthropic });
-  let mensagem: Anthropic.Beta.Messages.BetaMessage;
+  const openai = new OpenAI({ apiKey: chaveOpenAI });
+  let saida: OpenAI.Responses.Response;
   try {
-    mensagem = await anthropic.beta.messages.create({
+    saida = await openai.responses.create({
       model: MODELO,
-      max_tokens: 16000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: {
-        effort: "medium",
-        format: { type: "json_schema", schema: ESQUEMA_DA_RESPOSTA },
-      },
-      system: instrucoes(perfil.ano_escolar),
-      messages: [
+      instructions: instrucoes(perfil.ano_escolar),
+      input: [
         {
           role: "user",
           content: [
             {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: tipo as TipoDeImagem,
-                data: imagem,
-              },
+              type: "input_image",
+              image_url: `data:${tipo};base64,${imagem}`,
+              detail: "high",
             },
-            { type: "text", text: "Me ajuda com essa atividade?" },
+            { type: "input_text", text: "Me ajuda com essa atividade?" },
           ],
         },
       ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "explicacao_da_foto",
+          schema: ESQUEMA_DA_RESPOSTA,
+          strict: true,
+        },
+      },
+      // Não guarda a conversa na OpenAI além do necessário.
+      store: false,
     });
   } catch (falha) {
-    if (falha instanceof Anthropic.RateLimitError) {
+    if (falha instanceof OpenAI.RateLimitError) {
       return erro(503, "A IA está ocupada agora. Tente de novo em instantes.");
     }
-    if (falha instanceof Anthropic.APIError) {
-      console.error("Erro da API da Anthropic", falha.status, falha.message);
+    if (falha instanceof OpenAI.APIError) {
+      console.error("Erro da API da OpenAI", falha.status, falha.message);
     } else {
       console.error("Falha ao falar com a IA", falha);
     }
     return erro(502, "Não consegui analisar a foto agora. Tente de novo.");
   }
 
-  if (mensagem.stop_reason === "refusal") {
+  const recusou = saida.output.some(
+    (item) =>
+      item.type === "message" &&
+      item.content.some((parte) => parte.type === "refusal"),
+  );
+  if (recusou) {
     return erro(
       422,
       "Não consigo ajudar com essa foto. Peça ajuda a um adulto, combinado?",
     );
   }
-  const texto = mensagem.content.find((bloco) => bloco.type === "text");
   let explicacao: Record<string, unknown>;
   try {
-    explicacao = JSON.parse(texto?.type === "text" ? texto.text : "");
+    explicacao = JSON.parse(saida.output_text);
   } catch {
-    console.error("Resposta fora do formato", mensagem.stop_reason);
+    console.error("Resposta fora do formato", saida.status);
     return erro(502, "Não consegui analisar a foto agora. Tente de novo.");
   }
 
@@ -246,7 +253,7 @@ Deno.serve(async (req) => {
     entrada_resumo: String(explicacao.enunciado ?? "").slice(0, 500),
     resposta_json: resultado,
     xp_sugerido: resultado.xp,
-    modelo_usado: mensagem.model,
+    modelo_usado: saida.model,
   });
   if (erroAoSalvar) {
     // A criança recebe a explicação mesmo assim; só fica sem histórico.
