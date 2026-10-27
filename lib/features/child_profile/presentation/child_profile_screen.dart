@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/services/app_repository.dart';
 import 'choose_avatar_screen.dart';
@@ -18,6 +19,13 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
   final _nicknameController = TextEditingController(text: 'Alex G');
   int _selectedYear = 5;
   final Set<String> _focusAreas = {'Leitura', 'Texto'};
+
+  static const _areaColors = {
+    'Leitura': LigaColors.adventurePurple,
+    'Texto': LigaColors.actionCoral,
+    'Matemática': LigaColors.primaryBlue,
+    'Ciências': LigaColors.progressGreen,
+  };
 
   bool get _canContinue =>
       _nicknameController.text.trim().isNotEmpty && _focusAreas.isNotEmpty;
@@ -62,6 +70,22 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              const PopIn(
+                child: Row(
+                  children: [
+                    LigaMascot(character: LigaCharacter.luma, size: 84),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: LigaSpeechBubble(
+                        text:
+                            'Eba, alguém novo na Liga! Como você quer ser chamado?',
+                        color: Color(0x66FF6B8B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
               Text(
                 'Quem vai entrar para a Liga?',
                 style: Theme.of(context).textTheme.headlineMedium,
@@ -78,18 +102,16 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   children: [
                     TextField(
                       controller: _nicknameController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
+                      style: const TextStyle(
+                        color: LigaColors.ink,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                      decoration: const InputDecoration(
                         labelText: 'Nome ou apelido',
-                        labelStyle: const TextStyle(color: Color(0xFFD8E2FF)),
-                        prefixIcon: const Icon(
-                          Icons.badge_outlined,
-                          color: LigaColors.cyanGlow,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.08),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                        prefixIcon: Icon(
+                          Icons.badge_rounded,
+                          color: LigaColors.actionCoral,
                         ),
                       ),
                     ),
@@ -101,6 +123,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
+                      runSpacing: 8,
                       children: List.generate(5, (index) {
                         final year = index + 3;
                         return ChoiceChip(
@@ -120,10 +143,17 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: ['Leitura', 'Texto', 'Matemática', 'Ciências']
+                      children: _areaColors.keys
                           .map(
                             (area) => FilterChip(
                               label: Text(area),
+                              selectedColor: _areaColors[area]!.withValues(
+                                alpha: 0.3,
+                              ),
+                              side: BorderSide(
+                                color: _areaColors[area]!,
+                                width: 2,
+                              ),
                               selected: _focusAreas.contains(area),
                               onSelected: (selected) {
                                 setState(() {
@@ -144,7 +174,8 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
               const SizedBox(height: 20),
               LigaActionButton(
                 label: 'Escolher avatar',
-                icon: Icons.face_6_outlined,
+                icon: Icons.face_rounded,
+                color: LigaColors.adventurePurple,
                 onPressed: _canContinue ? _continue : null,
               ),
             ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../shell/presentation/main_shell.dart';
@@ -59,31 +60,36 @@ class _SplashMark extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 118,
-          height: 118,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [LigaColors.primaryBlue, LigaColors.adventurePurple],
+        const PopIn(child: LigaMascotTrio(size: 92)),
+        const SizedBox(height: 18),
+        PopIn(
+          delay: const Duration(milliseconds: 150),
+          child: Text(
+            'LIGA DO SABER',
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+              color: LigaColors.primaryBlue,
+              letterSpacing: 1.5,
             ),
-            border: Border.all(color: LigaColors.cyanGlow, width: 2),
-          ),
-          child: const Icon(
-            Icons.auto_awesome,
-            color: LigaColors.achievementYellow,
-            size: 56,
           ),
         ),
-        const SizedBox(height: 20),
-        Text(
-          'LIGA DO SABER',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Aprender vira missão',
-          style: Theme.of(context).textTheme.bodyMedium,
+        const SizedBox(height: 6),
+        PopIn(
+          delay: const Duration(milliseconds: 280),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: LigaColors.achievementYellow,
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: const Text(
+              'Aprender vira missão',
+              style: TextStyle(
+                color: LigaColors.ink,
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+              ),
+            ),
+          ),
         ),
       ],
     );

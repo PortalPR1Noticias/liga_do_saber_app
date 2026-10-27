@@ -14,7 +14,7 @@ class LigaAvatar {
     LigaAvatar(
       'estrategista',
       'Estrategista',
-      Icons.psychology_alt,
+      Icons.lightbulb_rounded,
       LigaColors.primaryBlue,
     ),
     LigaAvatar(
@@ -33,7 +33,7 @@ class LigaAvatar {
       'explorador',
       'Explorador',
       Icons.terrain,
-      LigaColors.achievementYellow,
+      LigaColors.sunsetOrange,
     ),
   ];
 
@@ -51,10 +51,25 @@ class LigaAvatarBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final avatar = LigaAvatar.byId(avatarId);
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: avatar.color.withValues(alpha: 0.22),
-      child: Icon(avatar.icon, color: avatar.color, size: radius * 1.05),
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color.lerp(avatar.color, Colors.white, 0.3)!, avatar.color],
+        ),
+        border: Border.all(color: Colors.white, width: radius * 0.1),
+        boxShadow: [
+          BoxShadow(
+            color: LigaColors.shade(avatar.color),
+            offset: Offset(0, radius * 0.1),
+          ),
+        ],
+      ),
+      child: Icon(avatar.icon, color: Colors.white, size: radius * 1.05),
     );
   }
 }

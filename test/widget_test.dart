@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liga_do_saber_app/app/liga_do_saber_app.dart';
+import 'package:liga_do_saber_app/app/theme.dart';
 import 'package:liga_do_saber_app/features/auth/presentation/auth_screen.dart';
 import 'package:liga_do_saber_app/features/math_arena/presentation/math_arena_screen.dart';
 import 'package:liga_do_saber_app/features/onboarding/presentation/onboarding_screen.dart';
@@ -15,10 +16,29 @@ void usePhoneScreen(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
+/// Rola até o widget (as telas têm mascotes e podem passar da tela) e toca.
+Future<void> scrollAndTap(WidgetTester tester, Finder finder) async {
+  await scrollTo(tester, finder);
+  await tester.tap(finder);
+}
+
+Future<void> scrollTo(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   // Os testes nunca falam com o Supabase: cada um começa com um repositório
-  // em memória limpo.
-  setUp(() => AppRepository.instance = MockAppRepository());
+  // em memória limpo. As animações contínuas ficam desligadas para que
+  // `pumpAndSettle` consiga terminar.
+  setUp(() {
+    AppRepository.instance = MockAppRepository();
+    LigaMotion.ambient = false;
+  });
 
   testWidgets('Liga do Saber starts at the splash screen', (tester) async {
     await tester.pumpWidget(const LigaDoSaberApp());
@@ -44,11 +64,12 @@ void main() {
   });
 
   testWidgets('auth form validates e-mail and password', (tester) async {
+    usePhoneScreen(tester);
     await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
 
     await tester.enterText(find.byType(TextFormField).at(1), 'sem-arroba');
     await tester.enterText(find.byType(TextFormField).at(2), '123');
-    await tester.tap(find.text('Continuar'));
+    await scrollAndTap(tester, find.text('Continuar'));
     await tester.pump();
 
     expect(find.text('Informe um e-mail válido.'), findsOneWidget);
@@ -63,7 +84,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: PhotoSolverFlowScreen()));
 
     expect(find.text('Resultado simulado'), findsNothing);
-    await tester.tap(find.text('Simular análise da IA'));
+    await scrollAndTap(tester, find.text('Simular análise da IA'));
     await tester.pump();
     expect(find.text('Resultado simulado'), findsOneWidget);
   });
@@ -72,8 +93,12 @@ void main() {
     usePhoneScreen(tester);
     await tester.pumpWidget(const MaterialApp(home: MathArenaScreen()));
 
-    await tester.tap(find.text('Ver passo a passo'));
+    await scrollAndTap(tester, find.text('Ver passo a passo'));
     await tester.pump();
+    await scrollTo(
+      tester,
+      find.textContaining('Então cada amigo fica com 8 figurinhas.'),
+    );
     expect(
       find.textContaining('Então cada amigo fica com 8 figurinhas.'),
       findsOneWidget,
@@ -97,15 +122,15 @@ void main() {
       'responsavel@ligadosaber.app',
     );
     await tester.enterText(find.byType(TextFormField).at(2), '123456');
-    await tester.tap(find.text('Continuar'));
+    await scrollAndTap(tester, find.text('Continuar'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'Bia');
-    await tester.tap(find.text('Escolher avatar'));
+    await scrollAndTap(tester, find.text('Escolher avatar'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Criadora'));
-    await tester.tap(find.text('Entrar para a Liga'));
+    await scrollAndTap(tester, find.text('Entrar para a Liga'));
     await tester.pumpAndSettle();
 
     expect(find.text('Bia'), findsOneWidget);
@@ -115,6 +140,7 @@ void main() {
   testWidgets('auth error from the server is shown to the user', (
     tester,
   ) async {
+    usePhoneScreen(tester);
     AppRepository.instance = _FailingRepository();
     await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
 
@@ -125,7 +151,7 @@ void main() {
       'responsavel@ligadosaber.app',
     );
     await tester.enterText(find.byType(TextFormField).at(1), 'senha-errada');
-    await tester.tap(find.widgetWithText(LigaActionButton, 'Entrar'));
+    await scrollAndTap(tester, find.widgetWithText(LigaActionButton, 'Entrar'));
     await tester.pump();
     await tester.pump();
 
