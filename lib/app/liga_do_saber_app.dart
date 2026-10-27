@@ -9,6 +9,7 @@ import '../features/minigames/presentation/minigames_hub_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/onboarding/presentation/splash_screen.dart';
 import '../features/photo_solver/presentation/photo_solver_flow_screen.dart';
+import '../features/practice_exam/presentation/revanche_screen.dart';
 import '../features/reading_detective/presentation/reading_detective_screen.dart';
 import '../features/shell/presentation/main_shell.dart';
 import '../features/teo_trail/presentation/teo_trail_screen.dart';
@@ -41,6 +42,7 @@ class LigaDoSaberApp extends StatelessWidget {
         TeoTrailScreen.routeName: (_) => const TeoTrailScreen(),
         ZuriAtelierScreen.routeName: (_) => const ZuriAtelierScreen(),
         MilaArchiveScreen.routeName: (_) => const MilaArchiveScreen(),
+        RevancheScreen.routeName: (_) => const RevancheScreen(),
       },
     );
   }

@@ -11,6 +11,7 @@ import '../models/expedition.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
+import '../models/practice_exam.dart';
 import '../models/progress_update.dart';
 import '../models/reading_case.dart';
 import '../models/responsible_account.dart';
@@ -171,6 +172,81 @@ class SupabaseAppRepository extends AppRepository {
     final explanation = PhotoExplanation.fromJson(data);
     _applyProgress(explanation.progress);
     return explanation;
+  }
+
+  static const _practiceColumns =
+      'id, tipo, titulo, materia, personagem, conteudos, resumo_responsavel, '
+      'total_questoes, questoes_acertadas, estrelas, vencida_em, created_at';
+
+  @override
+  Future<PracticeExamSummary> uploadPracticeExam({
+    required List<Uint8List> photos,
+    required PracticeExamKind kind,
+    String note = '',
+  }) async {
+    return PracticeExamSummary.fromJson(
+      await _invoke(
+        'revanche-prova',
+        {
+          'acao': 'enviar',
+          'material': kind.name,
+          'observacao': note,
+          'imagens': [
+            for (final photo in photos)
+              {'base64': base64Encode(photo), 'tipo': _imageType(photo)},
+          ],
+        },
+        notReady: 'A Revanche da prova ainda não foi publicada no Supabase.',
+        noConsent:
+            'Ligue a autorização de IA acima para enviar provas e tarefas.',
+      ),
+    );
+  }
+
+  @override
+  Future<List<PracticeExamSummary>> loadPracticeExams() {
+    return _guard(() async {
+      if (_childProfileId == null) return const [];
+      final rows = await _client
+          .from('provas_treino')
+          .select(_practiceColumns)
+          .eq('perfil_crianca_id', _childProfileId!)
+          .order('created_at', ascending: false)
+          .limit(30);
+      return [for (final row in rows) PracticeExamSummary.fromJson(row)];
+    });
+  }
+
+  @override
+  Future<PracticeExamRound> openPracticeExam(String examId) async {
+    return PracticeExamRound.fromJson(
+      await _invoke('revanche-prova', {'acao': 'abrir', 'prova_id': examId}),
+    );
+  }
+
+  @override
+  Future<PracticeAnswerResult> answerPracticeQuestion(
+    String examId,
+    String questionId,
+    int choice,
+  ) async {
+    final result = PracticeAnswerResult.fromJson(
+      await _invoke('revanche-prova', {
+        'acao': 'responder',
+        'prova_id': examId,
+        'questao_id': questionId,
+        'escolha': choice,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<void> deletePracticeExam(String examId) {
+    return _guard(() async {
+      await _client.from('provas_treino').delete().eq('id', examId);
+    });
   }
 
   @override

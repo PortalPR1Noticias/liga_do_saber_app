@@ -8,6 +8,7 @@ import '../models/league_progress.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
+import '../models/practice_exam.dart';
 import '../models/reading_case.dart';
 import '../models/writing_feedback.dart';
 import '../models/responsible_account.dart';
@@ -74,6 +75,30 @@ abstract class AppRepository extends ChangeNotifier {
 
   /// Manda a foto da atividade para a IA e devolve a explicação passo a passo.
   Future<PhotoExplanation> explainPhoto(Uint8List imageBytes);
+
+  /// Revanche da prova: o responsável manda fotos (até 4) de uma prova ou
+  /// tarefa já feita e a IA cria questões de treino. As fotos vão para a
+  /// OpenAI, então precisa da autorização do responsável.
+  Future<PracticeExamSummary> uploadPracticeExam({
+    required List<Uint8List> photos,
+    required PracticeExamKind kind,
+    String note = '',
+  });
+
+  /// Provas e tarefas enviadas para a criança treinar, das mais novas.
+  Future<List<PracticeExamSummary>> loadPracticeExams();
+
+  /// Questões de uma prova (sem as respostas).
+  Future<PracticeExamRound> openPracticeExam(String examId);
+
+  Future<PracticeAnswerResult> answerPracticeQuestion(
+    String examId,
+    String questionId,
+    int choice,
+  );
+
+  /// O responsável apaga uma prova enviada (e o treino dela).
+  Future<void> deletePracticeExam(String examId);
 
   /// Detetive da Leitura: a Luma cria um caso novo (texto + 3 perguntas).
   Future<ReadingCase> newReadingCase();

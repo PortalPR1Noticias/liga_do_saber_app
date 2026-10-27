@@ -1,6 +1,6 @@
 // Liga do Saber - código comum das Edge Functions dos módulos
 // (oficina-texto, detetive-leitura, desafio-matematica, expedicao-teo,
-// arquivo-mila, atelie-zuri, minijogo).
+// arquivo-mila, atelie-zuri, minijogo, revanche-prova).
 //
 // Cada função confere o login, acha o perfil da criança, aplica um limite
 // diário, chama a OpenAI com saída estruturada e dá XP pela função SQL
@@ -140,9 +140,10 @@ export async function conferirLimiteDiario(
 }
 
 /// Pede à OpenAI uma resposta no formato do `esquema` e devolve o objeto.
+/// A `entrada` pode ser só texto ou uma mensagem com imagens.
 export async function perguntarIA(opcoes: {
   instrucoes: string;
-  entrada: string;
+  entrada: string | OpenAI.Responses.ResponseInput;
   nomeDoEsquema: string;
   esquema: Record<string, unknown>;
 }): Promise<{ dados: Record<string, unknown>; modelo: string }> {
