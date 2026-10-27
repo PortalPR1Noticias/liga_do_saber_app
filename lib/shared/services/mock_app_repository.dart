@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import '../models/ai_report.dart';
 import '../models/archive_case.dart';
 import '../models/atelier.dart';
 import '../models/child_profile.dart';
@@ -1237,6 +1238,14 @@ class MockAppRepository extends AppRepository {
   @override
   Future<Map<String, int>> loadActivityCounts() async =>
       Map.of(_activityCounts);
+
+  /// Denúncias feitas nesta sessão (os testes conferem aqui).
+  final aiReports = <AiReport>[];
+
+  @override
+  Future<void> reportAiContent(AiReport report) async {
+    aiReports.add(report);
+  }
 
   @override
   Future<void> setAiConsent(bool allowed) async {

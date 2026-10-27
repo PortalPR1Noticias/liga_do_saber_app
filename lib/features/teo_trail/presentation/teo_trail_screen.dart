@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/models/expedition.dart';
 import '../../../shared/models/minigame.dart';
 import '../../../shared/models/progress_update.dart';
@@ -92,7 +93,15 @@ class _TeoTrailScreenState extends State<TeoTrailScreen> {
     final solved = _right != null;
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Trilha do Teo')),
+      appBar: AppBar(
+        title: const Text('Trilha do Teo'),
+        actions: [
+          LigaReportAiButton(
+            module: 'expedicao',
+            reference: () => _expedition?.id,
+          ),
+        ],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,

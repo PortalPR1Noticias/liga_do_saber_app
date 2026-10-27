@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/models/archive_case.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
@@ -196,7 +197,12 @@ class _MilaArchiveScreenState extends State<MilaArchiveScreen> {
     final solution = _solution;
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Arquivo da Mila')),
+      appBar: AppBar(
+        title: const Text('Arquivo da Mila'),
+        actions: [
+          LigaReportAiButton(module: 'arquivo', reference: () => _case?.id),
+        ],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,
