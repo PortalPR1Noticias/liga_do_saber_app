@@ -46,6 +46,7 @@ abstract class AppRepository {
     required String name,
     required String email,
     required String password,
+    required String acceptedTermsVersion,
   });
 
   Future<AuthOutcome> signIn({required String email, required String password});
@@ -62,4 +63,13 @@ abstract class AppRepository {
 
   /// Manda a foto da atividade para a IA e devolve a explicação passo a passo.
   Future<PhotoExplanation> explainPhoto(Uint8List imageBytes);
+
+  /// Liga ou desliga a autorização do responsável para a Foto + IA.
+  Future<void> setAiConsent(bool allowed);
+
+  /// Cópia de todos os dados da conta, em JSON (LGPD art. 18).
+  Future<Map<String, dynamic>> exportMyData();
+
+  /// Apaga a conta do responsável e todos os dados das crianças.
+  Future<void> deleteAccount();
 }

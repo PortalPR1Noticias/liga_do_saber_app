@@ -5,6 +5,7 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../child_profile/presentation/child_profile_screen.dart';
+import '../../legal/presentation/legal_document_screen.dart';
 import '../../shell/presentation/main_shell.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -44,6 +45,7 @@ class _AuthScreenState extends State<AuthScreen> {
               name: _nameController.text,
               email: _emailController.text,
               password: _passwordController.text,
+              acceptedTermsVersion: LegalDocument.version,
             )
           : await repository.signIn(
               email: _emailController.text,
@@ -179,6 +181,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         obscureText: true,
                         validator: _validatePassword,
                       ),
+                      if (_isCreateAccount) ...[
+                        const SizedBox(height: 12),
+                        const _ParentalConsentField(),
+                      ],
                       const SizedBox(height: 16),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,6 +259,76 @@ class _LigaTextField extends StatelessWidget {
         labelText: label,
         prefixIcon: Icon(icon, color: LigaColors.primaryBlue),
       ),
+    );
+  }
+}
+
+/// Consentimento específico e em destaque do responsável (LGPD art. 14,
+/// § 1º): sem marcar, a conta não é criada.
+class _ParentalConsentField extends StatelessWidget {
+  const _ParentalConsentField();
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return FormField<bool>(
+      initialValue: false,
+      validator: (value) => value == true
+          ? null
+          : 'Para criar a conta, confirme que você é o responsável.',
+      builder: (field) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Checkbox(
+                  key: const Key('parentalConsent'),
+                  value: field.value,
+                  onChanged: field.didChange,
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => field.didChange(!(field.value ?? false)),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        'Tenho 18 anos ou mais, sou pai, mãe ou responsável '
+                        'legal pela criança e autorizo o uso dos dados dela '
+                        'como descrito na Política de Privacidade. Li e '
+                        'aceito os Termos de Uso.',
+                        style: textTheme.bodyMedium,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (field.hasError)
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Text(
+                  field.errorText!,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
+            Wrap(
+              spacing: 4,
+              children: [
+                for (final document in LegalDocument.values)
+                  TextButton(
+                    onPressed: () =>
+                        LegalDocumentScreen.open(context, document),
+                    child: Text(document.title),
+                  ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }

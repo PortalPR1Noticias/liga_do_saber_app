@@ -41,6 +41,7 @@ class MockAppRepository implements AppRepository {
     required String name,
     required String email,
     required String password,
+    required String acceptedTermsVersion,
   }) async {
     _responsible = ResponsibleAccount(
       name: name.trim().isEmpty ? 'Responsável' : name.trim(),
@@ -108,4 +109,35 @@ class MockAppRepository implements AppRepository {
       xp: 20,
     );
   }
+
+  @override
+  Future<void> setAiConsent(bool allowed) async {
+    _responsible = ResponsibleAccount(
+      name: responsible.name,
+      email: responsible.email,
+      aiConsent: allowed,
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> exportMyData() async {
+    final profile = childProfile;
+    return {
+      'responsavel': {
+        'nome': responsible.name,
+        'email': responsible.email,
+        'autoriza_ia': responsible.aiConsent,
+      },
+      'perfis_criancas': [
+        {
+          'apelido': profile.nickname,
+          'ano_escolar': profile.schoolYear,
+          'xp_total': profile.totalXp,
+        },
+      ],
+    };
+  }
+
+  @override
+  Future<void> deleteAccount() => signOut();
 }
