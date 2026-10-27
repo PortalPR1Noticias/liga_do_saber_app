@@ -4,6 +4,7 @@ import '../features/auth/presentation/auth_screen.dart';
 import '../features/child_profile/presentation/child_profile_screen.dart';
 import '../features/child_profile/presentation/choose_avatar_screen.dart';
 import '../features/math_arena/presentation/math_arena_screen.dart';
+import '../features/mila_archive/presentation/mila_archive_screen.dart';
 import '../features/minigames/presentation/minigames_hub_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/onboarding/presentation/splash_screen.dart';
@@ -37,6 +38,7 @@ class LigaDoSaberApp extends StatelessWidget {
         ReadingDetectiveScreen.routeName: (_) => const ReadingDetectiveScreen(),
         MathArenaScreen.routeName: (_) => const MathArenaScreen(),
         TeoTrailScreen.routeName: (_) => const TeoTrailScreen(),
+        MilaArchiveScreen.routeName: (_) => const MilaArchiveScreen(),
       },
     );
   }

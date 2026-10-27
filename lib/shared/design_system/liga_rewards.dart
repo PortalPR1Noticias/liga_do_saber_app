@@ -14,6 +14,7 @@ IconData ligaIconFor(String? name) {
     'fire' => Icons.local_fire_department_rounded,
     'camera' => Icons.camera_alt_rounded,
     'explore' => Icons.explore_rounded,
+    'history_edu' => Icons.history_edu_rounded,
     _ => Icons.emoji_events_rounded,
   };
 }
@@ -28,6 +29,7 @@ Color ligaColorFor(String? name) {
     'fire' => LigaColors.sunsetOrange,
     'camera' => LigaColors.progressGreen,
     'explore' => LigaColors.progressGreen,
+    'history_edu' => LigaColors.adventurePurple,
     _ => LigaColors.achievementYellow,
   };
 }

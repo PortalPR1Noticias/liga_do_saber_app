@@ -7,12 +7,14 @@ import 'package:liga_do_saber_app/app/liga_do_saber_app.dart';
 import 'package:liga_do_saber_app/app/theme.dart';
 import 'package:liga_do_saber_app/features/auth/presentation/auth_screen.dart';
 import 'package:liga_do_saber_app/features/math_arena/presentation/math_arena_screen.dart';
+import 'package:liga_do_saber_app/features/mila_archive/presentation/mila_archive_screen.dart';
 import 'package:liga_do_saber_app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:liga_do_saber_app/features/photo_solver/presentation/photo_solver_flow_screen.dart';
 import 'package:liga_do_saber_app/features/reading_detective/presentation/reading_detective_screen.dart';
 import 'package:liga_do_saber_app/features/shell/presentation/main_shell.dart';
 import 'package:liga_do_saber_app/features/teo_trail/presentation/teo_trail_screen.dart';
 import 'package:liga_do_saber_app/features/writing_workshop/presentation/writing_workshop_screen.dart';
+import 'package:liga_do_saber_app/shared/design_system/liga_rewards.dart';
 import 'package:liga_do_saber_app/shared/design_system/liga_widgets.dart';
 import 'package:liga_do_saber_app/shared/models/photo_explanation.dart';
 import 'package:liga_do_saber_app/shared/services/app_repository.dart';
@@ -219,6 +221,125 @@ void main() {
     expect(find.text('+20 XP'), findsNothing);
   });
 
+  testWidgets('mila word search gives XP when every word is found', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: MilaArchiveScreen()));
+
+    await scrollAndTap(tester, find.text('Começar jogo'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Palavras do Império'), findsOneWidget);
+    expect(find.text('Palavras: 0 de 4'), findsOneWidget);
+
+    Future<void> mark(int r1, int c1, int r2, int c2) async {
+      await scrollAndTap(tester, find.byKey(ValueKey('letra-$r1-$c1')));
+      await tester.pump();
+      await scrollAndTap(tester, find.byKey(ValueKey('letra-$r2-$c2')));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    await mark(0, 0, 0, 6); // IMPERIO
+    await scrollTo(tester, find.textContaining('governado por um imperador'));
+    await mark(0, 0, 1, 1); // não é palavra
+    await scrollTo(tester, find.textContaining('não é uma das palavras'));
+    await mark(2, 4, 2, 1); // CAFE, de trás para frente
+    await mark(3, 0, 7, 0); // COROA
+    await mark(3, 6, 6, 6); // OURO
+    await scrollTo(tester, find.text('Achou todas! Olho de historiadora!'));
+    // 20 XP + 20 de bônus da missão do dia.
+    await scrollTo(tester, find.text('+40 XP'));
+    await scrollTo(tester, find.textContaining('Você sabia?'));
+  });
+
+  testWidgets('mila timeline counts the cards in place', (tester) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: MilaArchiveScreen()));
+
+    await scrollAndTap(tester, find.text('Linha do tempo'));
+    await scrollAndTap(tester, find.text('Começar jogo'));
+    await tester.pump();
+    await tester.pump();
+
+    Future<void> pick(String text) async {
+      await scrollAndTap(tester, find.textContaining(text));
+      await tester.pump();
+    }
+
+    // Ordem errada: correio, TV, telefone, celular.
+    await pick('cartas a cavalo');
+    await pick('transmissão de TV');
+    await pick('primeiros telefones');
+    await pick('celulares');
+    await scrollAndTap(tester, find.text('Conferir ordem'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('2 de 4 fichas no lugar certo'));
+
+    // Ordem certa: correio, telefone, TV, celular (vale 10 XP + bônus).
+    await pick('cartas a cavalo');
+    await pick('primeiros telefones');
+    await pick('transmissão de TV');
+    await pick('celulares');
+    await scrollAndTap(tester, find.text('Conferir ordem'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.text('Fichas em ordem! Caso resolvido!'));
+    await scrollTo(tester, find.text('1877'));
+    await scrollTo(tester, find.text('+30 XP'));
+  });
+
+  testWidgets('mila document riddle reveals the answer without XP', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: MilaArchiveScreen()));
+
+    await scrollAndTap(tester, find.text('Enigma do documento'));
+    await scrollAndTap(tester, find.text('Começar jogo'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Foto antiga'), findsOneWidget);
+
+    await scrollAndTap(tester, find.text('Tem um quadro na parede'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('quase ninguém usa hoje'));
+
+    await scrollAndTap(tester, find.text('Revelar a solução'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('os tinteiros mostram'));
+    expect(find.byType(LigaRewardCard), findsNothing);
+  });
+
+  testWidgets('mila games stop giving XP after 15 wins in a day', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: MilaArchiveScreen()));
+    await scrollAndTap(tester, find.text('Enigma do documento'));
+
+    for (var game = 1; game <= 16; game++) {
+      await scrollAndTap(
+        tester,
+        find.text(game == 1 ? 'Começar jogo' : 'Nova partida'),
+      );
+      await tester.pump();
+      await tester.pump();
+      await scrollAndTap(
+        tester,
+        find.text('Há tinteiros para molhar a caneta'),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+    await scrollTo(tester, find.textContaining('já ganhou o XP do Arquivo'));
+    expect(find.byType(LigaRewardCard), findsNothing);
+  });
+
   testWidgets('reading detective checks the answers and shows clues', (
     tester,
   ) async {
@@ -279,7 +400,7 @@ void main() {
 
     await tester.tap(find.text('Missões'));
     await tester.pumpAndSettle();
-    expect(find.text('Hoje: 1 de 6 missões'), findsOneWidget);
+    expect(find.text('Hoje: 1 de 7 missões'), findsOneWidget);
     expect(find.text('Feita!'), findsOneWidget);
   });
 

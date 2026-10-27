@@ -10,6 +10,7 @@ import '../../../shared/services/app_repository.dart';
 import '../../onboarding/presentation/onboarding_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
+import '../../mila_archive/presentation/mila_archive_screen.dart';
 import '../../parent_area/presentation/parent_area_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
@@ -163,8 +164,8 @@ class _MapScreen extends StatelessWidget {
               Icons.manage_search_rounded,
               LigaColors.adventurePurple,
               LigaCharacter.mila,
-              locked: true,
-              onTap: () => showComingSoon(context),
+              onTap: () =>
+                  Navigator.of(context).pushNamed(MilaArchiveScreen.routeName),
             ),
             _Portal(
               'Trilha do Teo',
@@ -458,6 +459,7 @@ class _MissionsScreenState
       'texto' || 'texto_reescrita' => WritingWorkshopScreen.routeName,
       'matematica' => MathArenaScreen.routeName,
       'expedicao' => TeoTrailScreen.routeName,
+      'arquivo' => MilaArchiveScreen.routeName,
       'foto' => PhotoSolverFlowScreen.routeName,
       _ => null,
     };
