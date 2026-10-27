@@ -46,6 +46,7 @@ medalhas) que todas as funções usam, inclusive a `explicar-foto`.
 | `expedicao-teo` | Trilha do Teo (Ciências e Geografia) | Cria uma investigação do ano escolar (cena, pistas e pergunta) e corrige: 20 XP de primeira, 10 depois de errar, 0 depois de revelar a descoberta. |
 | `atelie-zuri` | Oficina do Zuri (projetos e mapas mentais) | Minijogos do ano escolar: caça-palavras (grade montada no servidor), monte o mapa mental e quebra-cabeça das etapas de um projeto. 20 XP de primeira, 10 depois de errar, 0 depois de ver a solução. Em "Meu projeto", o tema escrito pela criança vira mapa mental e etapas (15 XP). XP só nos 15 primeiros jogos e 3 primeiros projetos do dia. |
 | `arquivo-mila` | Arquivo da Mila (História) | Minijogos do ano escolar: caça-palavras (grade montada no servidor; achar todas vale 20 XP), linha do tempo (4 fichas para ordenar) e enigma do documento (foto, carta ou objeto antigo). 20 XP de primeira, 10 depois de errar, 0 depois de revelar. |
+| `revanche-prova` | Revanche da prova (Área dos responsáveis + Missões) | O responsável manda até 4 fotos de uma prova ou tarefa já feita; a IA cria de 6 a 10 questões de treino (as da prova e outras parecidas, começando pelas que a criança errou). 10 XP de primeira, 5 depois de errar; no segundo erro o herói explica e a questão volta no fim da fila, sem XP. Acertar todas vence a revanche: +30 XP e de 1 a 3 estrelas pelos acertos de primeira. |
 | `minijogo` | Jogos da Liga (caça-palavras, quebra-cabeça, Desafio Relâmpago) | Caça-palavras e quebra-cabeça criados pela IA para o ano escolar e a matéria (a grade e a ordem certa ficam no servidor); o Relâmpago gera 40 contas sem IA. Caça-palavras completo: 20 XP; quebra-cabeça: 20 de primeira, 10 depois; Relâmpago: 5 + 2 por acerto, até 25. |
 
 Todas usam o código comum de `_shared/liga.ts`, o mesmo secret
@@ -107,3 +108,15 @@ npx supabase functions deploy explicar-foto --no-verify-jwt
 Essas funções importam `../_shared/liga.ts`, então publique pela linha
 de comando (o editor do painel não leva a pasta `_shared` junto). O
 `--no-verify-jwt` já deixa o "Enforce JWT verification" desligado.
+
+A `revanche-prova` precisa da migration
+`supabase/migrations/0009_revanche_da_prova.sql` (tabela `provas_treino`,
+missão do dia "Treinar na Revanche da prova", medalha Virada de Jogo e a
+cópia dos dados e a retenção de 12 meses incluindo os treinos). As fotos vão
+para a OpenAI, então ela exige a autorização de IA do responsável
+(`responsaveis.autoriza_ia`) e não guarda as fotos. Secret opcional:
+`LIMITE_PROVAS_POR_DIA` (padrão 10 envios por criança a cada 24 horas).
+
+```bash
+npx supabase functions deploy revanche-prova --no-verify-jwt
+```
