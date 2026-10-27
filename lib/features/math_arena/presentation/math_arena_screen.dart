@@ -165,13 +165,10 @@ class _AnswerChip extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: filled ? color : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color, width: 3),
-          boxShadow: [
-            BoxShadow(
-              color: LigaColors.shade(color),
-              offset: const Offset(0, 5),
-            ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: LigaColors.ink, width: 3),
+          boxShadow: const [
+            BoxShadow(color: LigaColors.ink, offset: Offset(0, 5)),
           ],
         ),
         child: Text(
@@ -206,9 +203,9 @@ class _StepBubble extends StatelessWidget {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(10),
               color: LigaColors.achievementYellow,
-              border: Border.all(color: Colors.white, width: 3),
+              border: Border.all(color: LigaColors.ink, width: 3),
             ),
             child: Text(
               '$number',

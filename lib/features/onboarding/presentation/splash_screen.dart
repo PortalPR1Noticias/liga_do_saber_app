@@ -69,20 +69,10 @@ class _SplashMark extends StatelessWidget {
         const SizedBox(height: 18),
         PopIn(
           delay: const Duration(milliseconds: 280),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: LigaColors.achievementYellow,
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: const Text(
-              'Aprender vira missão',
-              style: TextStyle(
-                color: LigaColors.ink,
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-              ),
-            ),
+          child: const LigaPill(
+            icon: Icons.rocket_launch_rounded,
+            label: 'Aprender vira missão',
+            color: LigaColors.sunsetOrange,
           ),
         ),
       ],

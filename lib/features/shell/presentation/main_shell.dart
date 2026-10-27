@@ -37,19 +37,13 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       body: LigaBackground(child: SafeArea(child: _pages[_currentIndex])),
       bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: LigaColors.ink.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border(top: BorderSide(color: LigaColors.ink, width: 3.5)),
         ),
         child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           child: NavigationBar(
             selectedIndex: _currentIndex,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -314,9 +308,9 @@ class _PortalNode extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(10),
                         color: color,
-                        border: Border.all(color: Colors.white, width: 3),
+                        border: Border.all(color: LigaColors.ink, width: 3),
                       ),
                       child: Icon(
                         portal.locked ? Icons.lock_rounded : portal.icon,
@@ -347,8 +341,11 @@ class _PortalNode extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: color, width: 2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: LigaColors.ink, width: 2.5),
+                boxShadow: const [
+                  BoxShadow(color: LigaColors.ink, offset: Offset(0, 3)),
+                ],
               ),
               child: Column(
                 children: [
@@ -575,26 +572,28 @@ class _Badge extends StatelessWidget {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                center: const Alignment(-0.3, -0.4),
-                colors: [Color.lerp(tint, Colors.white, 0.4)!, tint],
+              borderRadius: BorderRadius.circular(18),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0, 0.5, 0.5, 1],
+                colors: [
+                  Color.lerp(tint, Colors.white, 0.3)!,
+                  Color.lerp(tint, Colors.white, 0.15)!,
+                  tint,
+                  tint,
+                ],
               ),
-              border: Border.all(
-                color: earned ? LigaColors.achievementYellow : Colors.white,
-                width: 4,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: LigaColors.shade(tint),
-                  offset: const Offset(0, 4),
-                ),
+              border: Border.all(color: LigaColors.ink, width: 3),
+              boxShadow: const [
+                BoxShadow(color: LigaColors.ink, offset: Offset(0, 4)),
               ],
             ),
             child: Icon(
               earned ? icon : Icons.lock_rounded,
               color: Colors.white,
-              size: 32,
+              size: 34,
+              shadows: ligaOutline(1.6),
             ),
           ),
           const SizedBox(height: 6),

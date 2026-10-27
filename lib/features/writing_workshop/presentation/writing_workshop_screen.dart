@@ -110,22 +110,21 @@ class _StepTile extends StatelessWidget {
               height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12),
                 color: color,
-                boxShadow: [
-                  BoxShadow(
-                    color: LigaColors.shade(color),
-                    offset: const Offset(0, 4),
-                  ),
+                border: Border.all(color: LigaColors.ink, width: 3),
+                boxShadow: const [
+                  BoxShadow(color: LigaColors.ink, offset: Offset(0, 4)),
                 ],
               ),
               child: Text(
                 number,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: LigaTheme.displayFont,
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: 24,
+                  shadows: ligaOutline(1.6),
                 ),
               ),
             ),

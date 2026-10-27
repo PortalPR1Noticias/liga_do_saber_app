@@ -79,18 +79,16 @@ class _ChooseAvatarScreenState extends State<ChooseAvatarScreen> {
                         color: selected
                             ? Color.lerp(avatar.color, Colors.white, 0.82)
                             : Colors.white,
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: selected
-                              ? avatar.color
-                              : const Color(0xFFE3E9F7),
-                          width: selected ? 4 : 2.5,
+                          color: LigaColors.ink,
+                          width: selected ? 4 : 3,
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: selected
                                 ? LigaColors.shade(avatar.color)
-                                : LigaColors.ink.withValues(alpha: 0.07),
+                                : LigaColors.ink,
                             offset: const Offset(0, 6),
                           ),
                         ],

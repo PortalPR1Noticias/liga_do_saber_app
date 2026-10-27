@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Paleta da Liga, puxada da logo: azul, laranja e verde-água vivos sobre
-/// um céu claro, com contorno azul-marinho.
+/// Paleta da Liga, puxada da logo: azul, laranja e verde-água vivos com
+/// contorno grosso azul-marinho, no estilo dos jogos de Roblox.
 class LigaColors {
   static const primaryBlue = Color(0xFF1E6FE8);
   static const progressGreen = Color(0xFF22C55E);
@@ -15,10 +15,10 @@ class LigaColors {
   static const ink = Color(0xFF0E2152);
 
   /// Texto secundário.
-  static const inkSoft = Color(0xFF5B6790);
+  static const inkSoft = Color(0xFF34406A);
 
-  static const skyTop = Color(0xFFD9F1FF);
-  static const skyBottom = Color(0xFFF1E6FF);
+  static const skyTop = Color(0xFF6CC4FF);
+  static const skyBottom = Color(0xFFC4ECFF);
   static const cardWhite = Colors.white;
   static const disabled = Color(0xFFC9D2E3);
 
@@ -29,6 +29,19 @@ class LigaColors {
         .withLightness((hsl.lightness - amount).clamp(0.0, 1.0))
         .toColor();
   }
+}
+
+/// Contorno de texto (oito sombras sem desfoque), como nos títulos de jogo.
+List<Shadow> ligaOutline([double width = 2, Color color = LigaColors.ink]) {
+  return [
+    for (final (dx, dy) in const [
+      (-1.0, -1.0), (0.0, -1.0), (1.0, -1.0), (-1.0, 0.0), //
+      (1.0, 0.0), (-1.0, 1.0), (0.0, 1.0), (1.0, 1.0),
+    ])
+      Shadow(color: color, offset: Offset(dx * width, dy * width)),
+    // Sombra dura embaixo, dando volume.
+    Shadow(color: color, offset: Offset(0, width * 2)),
+  ];
 }
 
 /// Liga/desliga as animações contínuas (mascotes flutuando, fundo).
@@ -67,60 +80,65 @@ class LigaTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: LigaColors.skyTop,
       fontFamily: bodyFont,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: LigaColors.ink,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
+        titleTextStyle: const TextStyle(
           fontFamily: displayFont,
-          fontSize: 22,
+          fontSize: 24,
+          letterSpacing: 0.8,
           fontWeight: FontWeight.w800,
-          color: LigaColors.ink,
-        ),
+          color: Colors.white,
+        ).copyWith(shadows: _outline2),
       ),
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         headlineLarge: TextStyle(
           fontFamily: displayFont,
           fontSize: 36,
           height: 1.05,
+          letterSpacing: 1,
           fontWeight: FontWeight.w800,
-          color: LigaColors.ink,
+          color: Colors.white,
+          shadows: _outline3,
         ),
         headlineMedium: TextStyle(
           fontFamily: displayFont,
           fontSize: 28,
           height: 1.1,
+          letterSpacing: 0.8,
           fontWeight: FontWeight.w800,
-          color: LigaColors.ink,
+          color: Colors.white,
+          shadows: _outline2,
         ),
-        titleLarge: TextStyle(
+        titleLarge: const TextStyle(
           fontFamily: displayFont,
           fontSize: 22,
           height: 1.15,
           fontWeight: FontWeight.w800,
           color: LigaColors.ink,
         ),
-        titleMedium: TextStyle(
+        titleMedium: const TextStyle(
           fontSize: 17,
           height: 1.2,
           fontWeight: FontWeight.w900,
           color: LigaColors.ink,
         ),
-        bodyLarge: TextStyle(
+        bodyLarge: const TextStyle(
           fontSize: 17,
           height: 1.35,
           fontWeight: FontWeight.w700,
           color: LigaColors.ink,
         ),
-        bodyMedium: TextStyle(
+        bodyMedium: const TextStyle(
           fontSize: 15,
           height: 1.35,
           fontWeight: FontWeight.w600,
           color: LigaColors.inkSoft,
         ),
-        labelLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        labelLarge: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -141,15 +159,15 @@ class LigaTheme {
           horizontal: 16,
           vertical: 18,
         ),
-        border: _inputBorder(const Color(0xFFDCE4F5)),
-        enabledBorder: _inputBorder(const Color(0xFFDCE4F5)),
+        border: _inputBorder(LigaColors.ink, 2.5),
+        enabledBorder: _inputBorder(LigaColors.ink, 2.5),
         focusedBorder: _inputBorder(LigaColors.primaryBlue, 3),
         errorBorder: _inputBorder(LigaColors.actionCoral),
         focusedErrorBorder: _inputBorder(LigaColors.actionCoral, 3),
       ),
       chipTheme: ChipThemeData(
         shape: chipShape,
-        side: const BorderSide(color: Color(0xFFDCE4F5), width: 2),
+        side: const BorderSide(color: LigaColors.ink, width: 2.5),
         backgroundColor: Colors.white,
         selectedColor: LigaColors.achievementYellow,
         checkmarkColor: LigaColors.ink,
@@ -176,7 +194,7 @@ class LigaTheme {
                 : LigaColors.ink,
           ),
           side: const WidgetStatePropertyAll(
-            BorderSide(color: LigaColors.primaryBlue, width: 2),
+            BorderSide(color: LigaColors.ink, width: 2.5),
           ),
           padding: const WidgetStatePropertyAll(
             EdgeInsets.symmetric(vertical: 14),
@@ -196,9 +214,10 @@ class LigaTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: LigaColors.achievementYellow.withValues(alpha: 0.45),
+        indicatorColor: LigaColors.achievementYellow,
         indicatorShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: LigaColors.ink, width: 2.5),
         ),
         height: 74,
         iconTheme: WidgetStateProperty.resolveWith(
@@ -225,9 +244,12 @@ class LigaTheme {
     );
   }
 
+  static final _outline2 = ligaOutline(2);
+  static final _outline3 = ligaOutline(2.6);
+
   static OutlineInputBorder _inputBorder(Color color, [double width = 2]) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(14),
       borderSide: BorderSide(color: color, width: width),
     );
   }

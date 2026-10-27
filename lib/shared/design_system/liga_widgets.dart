@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import 'liga_mascots.dart';
 
-/// Céu claro com nuvens, bolhas e estrelinhas que flutuam devagar.
+/// Céu azul com pinos de Lego/Roblox, blocos e estrelinhas que flutuam.
 class LigaBackground extends StatefulWidget {
   const LigaBackground({super.key, required this.child});
 
@@ -45,7 +45,7 @@ class _LigaBackgroundState extends State<LigaBackground>
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [LigaColors.skyTop, Color(0xFFEAF6FF), LigaColors.skyBottom],
+          colors: [LigaColors.skyTop, Color(0xFF9BD8FF), LigaColors.skyBottom],
         ),
       ),
       child: Stack(
@@ -63,88 +63,86 @@ class _LigaBackgroundState extends State<LigaBackground>
   }
 }
 
+/// Fundo de "baseplate": pinos (studs) bem leves, blocos coloridos
+/// flutuando e estrelinhas.
 class _SkyPainter extends CustomPainter {
   _SkyPainter(this.animation) : super(repaint: animation);
 
   final Animation<double> animation;
 
-  static const _bubbles = [
-    (0.08, 0.16, 38.0, LigaColors.achievementYellow),
-    (0.92, 0.10, 54.0, LigaColors.actionCoral),
-    (0.88, 0.52, 30.0, LigaColors.cyanGlow),
-    (0.05, 0.62, 46.0, LigaColors.adventurePurple),
-    (0.70, 0.90, 60.0, LigaColors.progressGreen),
-    (0.18, 0.94, 26.0, LigaColors.sunsetOrange),
+  static const _blocks = [
+    (0.07, 0.14, 30.0, 0.3, LigaColors.achievementYellow),
+    (0.93, 0.09, 40.0, -0.25, LigaColors.actionCoral),
+    (0.90, 0.50, 24.0, 0.5, LigaColors.cyanGlow),
+    (0.04, 0.60, 34.0, -0.4, LigaColors.adventurePurple),
+    (0.74, 0.92, 44.0, 0.2, LigaColors.progressGreen),
+    (0.16, 0.95, 22.0, 0.6, LigaColors.sunsetOrange),
   ];
 
   static const _stars = [
-    (0.22, 0.07, 7.0),
+    (0.24, 0.06, 7.0),
     (0.78, 0.30, 6.0),
-    (0.12, 0.40, 5.0),
-    (0.95, 0.75, 7.0),
-    (0.40, 0.82, 5.0),
-    (0.60, 0.04, 5.0),
+    (0.13, 0.38, 5.0),
+    (0.96, 0.74, 7.0),
+    (0.42, 0.84, 5.0),
+    (0.60, 0.03, 5.0),
   ];
 
   @override
   void paint(Canvas canvas, Size size) {
     final phase = animation.value * 2 * math.pi;
 
-    _paintCloud(canvas, Offset(size.width * 0.25, size.height * 0.24), 1);
-    _paintCloud(canvas, Offset(size.width * 0.80, size.height * 0.68), 0.8);
+    // Pinos de Lego/Roblox em grade.
+    const gap = 34.0;
+    final stud = Paint()..color = Colors.white.withValues(alpha: 0.10);
+    final studShadow = Paint()..color = LigaColors.ink.withValues(alpha: 0.05);
+    for (var y = gap / 2; y < size.height; y += gap) {
+      for (var x = gap / 2; x < size.width; x += gap) {
+        canvas.drawCircle(Offset(x, y + 1.5), 7, studShadow);
+        canvas.drawCircle(Offset(x, y), 7, stud);
+      }
+    }
 
-    for (var i = 0; i < _bubbles.length; i++) {
-      final (x, y, r, color) = _bubbles[i];
+    final outline = Paint()
+      ..color = LigaColors.ink.withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    for (var i = 0; i < _blocks.length; i++) {
+      final (x, y, side, angle, color) = _blocks[i];
       final drift = math.sin(phase + i) * 6;
-      canvas.drawCircle(
-        Offset(size.width * x, size.height * y + drift),
-        r,
-        Paint()..color = color.withValues(alpha: 0.16),
+      canvas.save();
+      canvas.translate(size.width * x, size.height * y + drift);
+      canvas.rotate(angle + math.sin(phase + i) * 0.08);
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromCenter(center: Offset.zero, width: side, height: side),
+        Radius.circular(side * 0.18),
       );
+      canvas.drawRRect(rect, Paint()..color = color.withValues(alpha: 0.55));
+      canvas.drawRRect(rect, outline);
+      // Pino no topo do bloco.
+      canvas.drawCircle(
+        Offset.zero,
+        side * 0.22,
+        Paint()..color = Colors.white.withValues(alpha: 0.35),
+      );
+      canvas.restore();
     }
 
     for (var i = 0; i < _stars.length; i++) {
       final (x, y, r) = _stars[i];
-      final twinkle = 0.45 + 0.35 * (1 + math.sin(phase * 2 + i * 1.7)) / 2;
+      final twinkle = 0.55 + 0.4 * (1 + math.sin(phase * 2 + i * 1.7)) / 2;
       canvas.drawPath(
         ligaStarPath(Offset(size.width * x, size.height * y), r),
-        Paint()
-          ..color = LigaColors.achievementYellow.withValues(alpha: twinkle),
+        Paint()..color = Colors.white.withValues(alpha: twinkle),
       );
     }
-  }
-
-  void _paintCloud(Canvas canvas, Offset center, double scale) {
-    final paint = Paint()..color = Colors.white.withValues(alpha: 0.7);
-    canvas.drawCircle(center, 22 * scale, paint);
-    canvas.drawCircle(
-      center + Offset(-24 * scale, 8 * scale),
-      15 * scale,
-      paint,
-    );
-    canvas.drawCircle(
-      center + Offset(24 * scale, 8 * scale),
-      17 * scale,
-      paint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: center + Offset(0, 14 * scale),
-          width: 76 * scale,
-          height: 18 * scale,
-        ),
-        Radius.circular(9 * scale),
-      ),
-      paint,
-    );
   }
 
   @override
   bool shouldRepaint(_SkyPainter oldDelegate) => false;
 }
 
-/// Cartão branco, bem arredondado, com "sombra de brinquedo" embaixo.
+/// Cartão branco em bloco, com contorno grosso e sombra dura embaixo.
 class LigaPanel extends StatelessWidget {
   const LigaPanel({
     super.key,
@@ -156,30 +154,25 @@ class LigaPanel extends StatelessWidget {
 
   final Widget child;
   final EdgeInsetsGeometry padding;
+
+  /// Cor da sombra dura embaixo do cartão (o contorno é sempre azul-marinho).
   final Color? borderColor;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final edge = borderColor ?? const Color(0xFFE3E9F7);
+    final accent = borderColor?.withValues(alpha: 1);
     return Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: edge, width: 2.5),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: LigaColors.ink, width: 3),
         boxShadow: [
           BoxShadow(
-            color: (borderColor ?? LigaColors.ink).withValues(
-              alpha: borderColor == null ? 0.07 : 0.28,
-            ),
+            color: accent == null ? LigaColors.ink : LigaColors.shade(accent),
             offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: LigaColors.ink.withValues(alpha: 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -225,7 +218,8 @@ class _LigaPressableState extends State<LigaPressable> {
   }
 }
 
-/// Botão grande e "fofinho", com borda inferior que afunda ao apertar.
+/// Botão grande em bloco, com contorno grosso, brilho no topo e borda
+/// inferior que afunda ao apertar (estilo botão de jogo Roblox).
 class LigaActionButton extends StatefulWidget {
   const LigaActionButton({
     super.key,
@@ -246,6 +240,7 @@ class LigaActionButton extends StatefulWidget {
 
 class _LigaActionButtonState extends State<LigaActionButton> {
   static const _depth = 6.0;
+  static final _outline = ligaOutline(1.8);
   bool _pressed = false;
 
   bool get _enabled => widget.onPressed != null;
@@ -280,7 +275,8 @@ class _LigaActionButtonState extends State<LigaActionButton> {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: edge,
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: LigaColors.ink, width: 3),
                   ),
                 ),
               ),
@@ -292,11 +288,18 @@ class _LigaActionButtonState extends State<LigaActionButton> {
                 bottom: _depth - sink,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: LigaColors.ink, width: 3),
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color.lerp(face, Colors.white, 0.18)!, face],
+                      stops: const [0, 0.5, 0.5, 1],
+                      colors: [
+                        Color.lerp(face, Colors.white, 0.3)!,
+                        Color.lerp(face, Colors.white, 0.15)!,
+                        face,
+                        face,
+                      ],
                     ),
                   ),
                   child: Padding(
@@ -304,18 +307,25 @@ class _LigaActionButtonState extends State<LigaActionButton> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(widget.icon, color: Colors.white, size: 26),
+                        Icon(
+                          widget.icon,
+                          color: Colors.white,
+                          size: 26,
+                          shadows: _outline,
+                        ),
                         const SizedBox(width: 10),
                         Flexible(
                           child: Text(
                             widget.label,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
+                              fontFamily: LigaTheme.displayFont,
                               color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.2,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                              shadows: _outline,
                             ),
                           ),
                         ),
@@ -351,17 +361,29 @@ class LigaIconBubble extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(size * 0.32),
+        borderRadius: BorderRadius.circular(size * 0.22),
+        border: Border.all(color: LigaColors.ink, width: 2.5),
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color.lerp(color, Colors.white, 0.25)!, color],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: const [0, 0.5, 0.5, 1],
+          colors: [
+            Color.lerp(color, Colors.white, 0.3)!,
+            Color.lerp(color, Colors.white, 0.15)!,
+            color,
+            color,
+          ],
         ),
-        boxShadow: [
-          BoxShadow(color: LigaColors.shade(color), offset: const Offset(0, 4)),
+        boxShadow: const [
+          BoxShadow(color: LigaColors.ink, offset: Offset(0, 3)),
         ],
       ),
-      child: Icon(icon, color: Colors.white, size: size * 0.55),
+      child: Icon(
+        icon,
+        color: Colors.white,
+        size: size * 0.55,
+        shadows: ligaOutline(1.4),
+      ),
     );
   }
 }
@@ -383,10 +405,11 @@ class LigaProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final clamped = value.clamp(0.0, 1.0);
     return Container(
-      height: height,
+      height: height + 6,
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(99),
+        color: LigaColors.ink,
+        borderRadius: BorderRadius.circular(10),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -394,18 +417,18 @@ class LigaProgressBar extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(99),
+            borderRadius: BorderRadius.circular(7),
           ),
           padding: EdgeInsets.fromLTRB(
-            height * 0.5,
-            height * 0.2,
-            height * 0.5,
+            height * 0.3,
+            height * 0.15,
+            height * 0.3,
             height * 0.55,
           ),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(99),
+              color: Colors.white.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
         ),
@@ -428,26 +451,30 @@ class LigaPill extends StatelessWidget {
   final String label;
   final Color color;
 
-  /// Fundo cheio, para usar sobre cartões coloridos.
+  /// Mantido por compatibilidade: a etiqueta agora é sempre cheia.
   final bool solid;
 
   @override
   Widget build(BuildContext context) {
+    // Fundo branco pede texto escuro; nas outras cores o texto é branco
+    // com contorno, como os contadores de moedas dos jogos.
+    final onWhite = color == Colors.white;
+    final textColor = onWhite ? LigaColors.ink : Colors.white;
+    final shadows = onWhite ? null : ligaOutline(1.5);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: solid ? color : color.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
+        color: color,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: LigaColors.ink, width: 2.5),
+        boxShadow: const [
+          BoxShadow(color: LigaColors.ink, offset: Offset(0, 3)),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: solid ? LigaColors.ink : LigaColors.shade(color, 0.08),
-            size: 18,
-          ),
+          Icon(icon, color: textColor, size: 18, shadows: shadows),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
@@ -455,9 +482,13 @@ class LigaPill extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: solid ? LigaColors.ink : LigaColors.shade(color, 0.22),
-                fontWeight: FontWeight.w900,
-                fontSize: 14,
+                fontFamily: LigaTheme.displayFont,
+                color: textColor,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                height: 1.25,
+                letterSpacing: onWhite ? 0 : 0.5,
+                shadows: shadows,
               ),
             ),
           ),
@@ -520,7 +551,11 @@ class MissionCard extends StatelessWidget {
                 ),
                 if (onTap != null) ...[
                   const SizedBox(width: 8),
-                  Icon(Icons.play_circle_fill_rounded, color: color, size: 34),
+                  LigaIconBubble(
+                    icon: Icons.play_arrow_rounded,
+                    color: LigaColors.progressGreen,
+                    size: 38,
+                  ),
                 ],
               ],
             ),
@@ -534,8 +569,11 @@ class MissionCard extends StatelessWidget {
                 Text(
                   '${(progress * 100).round()}%',
                   style: TextStyle(
-                    color: LigaColors.shade(color, 0.12),
-                    fontWeight: FontWeight.w900,
+                    fontFamily: LigaTheme.displayFont,
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    shadows: ligaOutline(1.5),
                   ),
                 ),
               ],
@@ -561,11 +599,24 @@ class SectionTitle extends StatelessWidget {
       child: Row(
         children: [
           if (icon != null) ...[
-            Icon(icon, color: color ?? LigaColors.sunsetOrange, size: 26),
+            Icon(
+              icon,
+              color: color ?? LigaColors.achievementYellow,
+              size: 28,
+              shadows: ligaOutline(1.8),
+            ),
             const SizedBox(width: 8),
           ],
           Expanded(
-            child: Text(text, style: Theme.of(context).textTheme.titleLarge),
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.white,
+                fontSize: 24,
+                letterSpacing: 0.8,
+                shadows: ligaOutline(2),
+              ),
+            ),
           ),
         ],
       ),
@@ -582,7 +633,7 @@ class LigaSpeechBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final edge = color ?? const Color(0xFFE3E9F7);
+    const edge = LigaColors.ink;
     return CustomPaint(
       painter: _BubbleTailPainter(edge),
       child: Container(
@@ -590,8 +641,14 @@ class LigaSpeechBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: edge, width: 2.5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: edge, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: color?.withValues(alpha: 1) ?? edge,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Text(
           text,
@@ -616,9 +673,9 @@ class _BubbleTailPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final y = size.height / 2;
     final tail = Path()
-      ..moveTo(12, y - 9)
+      ..moveTo(13, y - 10)
       ..lineTo(0, y + 2)
-      ..lineTo(12, y + 7)
+      ..lineTo(13, y + 8)
       ..close();
     canvas.drawPath(tail, Paint()..color = edge);
   }
@@ -676,22 +733,17 @@ class LigaFeatureHeader extends StatelessWidget {
           LigaPill(
             icon: Icons.person_pin_circle_rounded,
             label: 'com ${character.displayName}',
-            color: Colors.white,
-            solid: true,
+            color: color,
           ),
           const SizedBox(height: 8),
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineMedium?.copyWith(color: Colors.white),
-          ),
+          Text(title, style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 2),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.white,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
+              shadows: ligaOutline(1),
             ),
           ),
         ],
@@ -721,14 +773,14 @@ class LigaSceneCard extends StatelessWidget {
     final deep = LigaColors.shade(color, 0.22);
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: [
-          BoxShadow(color: LigaColors.shade(color), offset: const Offset(0, 6)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: LigaColors.ink, width: 3.5),
+        boxShadow: const [
+          BoxShadow(color: LigaColors.ink, offset: Offset(0, 6)),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(27),
+        borderRadius: BorderRadius.circular(16.5),
         child: Stack(
           children: [
             Positioned.fill(

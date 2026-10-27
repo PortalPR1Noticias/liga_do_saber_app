@@ -34,7 +34,7 @@ enum LigaCharacter {
   String get scene => 'assets/backgrounds/${id}_cena.jpg';
 }
 
-/// Retrato redondo do personagem que flutua de leve.
+/// Retrato do personagem que flutua de leve.
 class LigaMascot extends StatefulWidget {
   const LigaMascot({
     super.key,
@@ -96,7 +96,7 @@ class _LigaMascotState extends State<LigaMascot>
   }
 }
 
-/// Retrato redondo, com anel na cor do personagem.
+/// Retrato em quadrado arredondado, com moldura na cor do personagem.
 class LigaPortrait extends StatelessWidget {
   const LigaPortrait({
     super.key,
@@ -130,22 +130,25 @@ class LigaPortrait extends StatelessWidget {
         child: image,
       );
     }
+    // Quadrado arredondado, como a foto de avatar dos jogos de Roblox:
+    // contorno azul-marinho, moldura na cor do personagem e sombra dura.
+    final radius = size * 0.24;
     return Container(
       width: size,
       height: size,
       padding: EdgeInsets.all(size * 0.05),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(color: ring, width: size * 0.05),
+        color: ring,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: LigaColors.ink, width: size * 0.04),
         boxShadow: [
-          BoxShadow(
-            color: LigaColors.shade(ring),
-            offset: Offset(0, size * 0.06),
-          ),
+          BoxShadow(color: LigaColors.ink, offset: Offset(0, size * 0.06)),
         ],
       ),
-      child: ClipOval(child: image),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius * 0.6),
+        child: image,
+      ),
     );
   }
 }

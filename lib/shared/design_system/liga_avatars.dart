@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme.dart';
 import 'liga_mascots.dart';
 
 /// Herói que a criança escolhe para representá-la na Liga.
@@ -66,9 +67,9 @@ class LigaAvatarBadge extends StatelessWidget {
               width: seal,
               height: seal,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(seal * 0.3),
                 color: avatar.color,
-                border: Border.all(color: Colors.white, width: seal * 0.1),
+                border: Border.all(color: LigaColors.ink, width: seal * 0.1),
               ),
               child: Icon(avatar.icon, color: Colors.white, size: seal * 0.6),
             ),

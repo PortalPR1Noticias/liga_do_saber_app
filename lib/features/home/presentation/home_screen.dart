@@ -186,9 +186,12 @@ class _StreakFlame extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF1E6),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: LigaColors.sunsetOrange, width: 2),
+        color: const Color(0xFFFFE3C7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: LigaColors.ink, width: 2.5),
+        boxShadow: const [
+          BoxShadow(color: LigaColors.ink, offset: Offset(0, 3)),
+        ],
       ),
       child: Column(
         children: [
