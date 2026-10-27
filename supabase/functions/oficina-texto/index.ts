@@ -6,7 +6,8 @@
 // acao "reescrita": recebe a versão melhorada, compara com a primeira e dá
 //   XP pela evolução (10 a 34 XP), uma vez por texto.
 //
-// O texto da criança vai para a OpenAI (`store: false`) e fica guardado em
+// O texto da criança vai para a OpenAI (`store: false`), por isso precisa da
+// autorização do responsável (a mesma da Foto + IA), e fica guardado em
 // `producoes_textuais` para o responsável acompanhar.
 //
 // Deploy: veja supabase/functions/README.md.
@@ -30,6 +31,8 @@ const XP_REESCRITA_BASE = 10;
 const XP_POR_PONTO_DE_EVOLUCAO = 8;
 const TAMANHO_MAXIMO = 3000;
 const MINIMO_DE_PALAVRAS = 15;
+const SEM_AUTORIZACAO =
+  "Peça para um adulto liberar a Oficina de Texto na Área dos responsáveis.";
 
 const CRITERIOS = ["clareza", "organizacao", "pontuacao", "criatividade"];
 
@@ -118,7 +121,9 @@ function contarPalavras(texto: string): number {
 }
 
 async function feedback(ctx: Contexto): Promise<Response> {
-  const perfil = await carregarPerfil(ctx);
+  const perfil = await carregarPerfil(ctx, {
+    exigirAutorizacaoIA: SEM_AUTORIZACAO,
+  });
   const texto = lerTexto(ctx.corpo.texto);
   const tema = String(ctx.corpo.tema ?? "").trim().slice(0, 120) || "tema livre";
   const plano = (ctx.corpo.planejamento ?? {}) as Record<string, unknown>;
@@ -197,7 +202,9 @@ ${texto}
 }
 
 async function reescrita(ctx: Contexto): Promise<Response> {
-  const perfil = await carregarPerfil(ctx);
+  const perfil = await carregarPerfil(ctx, {
+    exigirAutorizacaoIA: SEM_AUTORIZACAO,
+  });
   const texto = lerTexto(ctx.corpo.texto);
   const producaoId = ctx.corpo.producao_id;
   if (typeof producaoId !== "string") {

@@ -256,6 +256,7 @@ void main() {
       'responsavel@ligadosaber.app',
     );
     await tester.enterText(find.byType(TextFormField).at(2), '123456');
+    await scrollAndTap(tester, find.byKey(const Key('parentalConsent')));
     await scrollAndTap(tester, find.text('Continuar'));
     await tester.pumpAndSettle();
 

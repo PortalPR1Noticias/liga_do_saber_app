@@ -53,6 +53,7 @@ abstract class AppRepository extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
+    required String acceptedTermsVersion,
   });
 
   Future<AuthOutcome> signIn({required String email, required String password});
@@ -102,4 +103,13 @@ abstract class AppRepository extends ChangeNotifier {
 
   /// Todas as medalhas, marcando as que a criança já conquistou.
   Future<List<Achievement>> loadAchievements();
+
+  /// Liga ou desliga a autorização do responsável para a Foto + IA.
+  Future<void> setAiConsent(bool allowed);
+
+  /// Cópia de todos os dados da conta, em JSON (LGPD art. 18).
+  Future<Map<String, dynamic>> exportMyData();
+
+  /// Apaga a conta do responsável e todos os dados das crianças.
+  Future<void> deleteAccount();
 }

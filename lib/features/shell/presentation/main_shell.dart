@@ -10,6 +10,7 @@ import '../../../shared/services/app_repository.dart';
 import '../../onboarding/presentation/onboarding_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
+import '../../parent_area/presentation/parent_area_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
@@ -739,7 +740,7 @@ class _ProfileScreen extends StatelessWidget {
           label: 'Área dos responsáveis',
           icon: Icons.lock_rounded,
           color: LigaColors.adventurePurple,
-          onPressed: () => showComingSoon(context),
+          onPressed: () => ParentAreaScreen.open(context),
         ),
         LigaActionButton(
           label: 'Sair da conta',

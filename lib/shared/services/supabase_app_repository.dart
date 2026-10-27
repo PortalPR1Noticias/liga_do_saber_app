@@ -14,7 +14,8 @@ import '../models/writing_feedback.dart';
 import 'app_repository.dart';
 
 /// Repositório real: Supabase Auth (e-mail e senha do responsável) e as
-/// tabelas das migrations em supabase/migrations.
+/// tabelas das migrations em supabase/migrations. O consentimento, a cópia
+/// dos dados e a exclusão da conta (LGPD) vêm da migration 0004.
 /// Os módulos com IA chamam as Edge Functions (supabase/functions):
 /// `explicar-foto`, `detetive-leitura`, `desafio-matematica` e
 /// `oficina-texto`. Todo XP é dado no servidor; o app só lê o progresso.
@@ -59,12 +60,15 @@ class SupabaseAppRepository extends AppRepository {
     required String name,
     required String email,
     required String password,
+    required String acceptedTermsVersion,
   }) {
     return _guard(() async {
+      // O aceite vai nos metadados porque, com confirmação de e-mail, a linha
+      // em `responsaveis` só é criada no primeiro login.
       final response = await _client.auth.signUp(
         email: email.trim(),
         password: password,
-        data: {'nome': name.trim()},
+        data: {'nome': name.trim(), 'termos_versao': acceptedTermsVersion},
       );
       // Com "Confirm email" ligado no Supabase, não vem sessão: o cadastro do
       // responsável é concluído no primeiro login, depois da confirmação.
@@ -157,6 +161,8 @@ class SupabaseAppRepository extends AppRepository {
       },
       notReady: 'A Foto + IA ainda não foi publicada no Supabase.',
       noProfile: 'Cadastre o perfil da criança antes de enviar fotos.',
+      noConsent:
+          'Peça para um adulto liberar a Foto + IA na Área dos responsáveis.',
     );
     final explanation = PhotoExplanation.fromJson(data);
     _applyProgress(explanation.progress);
@@ -234,7 +240,7 @@ class SupabaseAppRepository extends AppRepository {
         'tema': theme,
         'planejamento': plan.toJson(),
         'texto': text,
-      }),
+      }, noConsent: _writingNoConsent),
     );
     _applyProgress(feedback.progress);
     return feedback;
@@ -250,7 +256,7 @@ class SupabaseAppRepository extends AppRepository {
         'acao': 'reescrita',
         'producao_id': productionId,
         'texto': text,
-      }),
+      }, noConsent: _writingNoConsent),
     );
     _applyProgress(feedback.progress);
     return feedback;
@@ -320,6 +326,10 @@ class SupabaseAppRepository extends AppRepository {
     });
   }
 
+  static const _writingNoConsent =
+      'Peça para um adulto liberar a Oficina de Texto na Área dos '
+      'responsáveis.';
+
   /// Chama uma Edge Function da Liga com o perfil da criança e devolve o
   /// JSON. Erros viram [AppRepositoryException] com a mensagem do servidor.
   Future<Map<String, dynamic>> _invoke(
@@ -327,8 +337,15 @@ class SupabaseAppRepository extends AppRepository {
     Map<String, dynamic> body, {
     String notReady = 'Essa parte da Liga ainda não foi publicada.',
     String noProfile = 'Cadastre o perfil da criança primeiro.',
+
+    /// Quando não é nulo, o módulo manda dados da criança (foto ou texto) para
+    /// a OpenAI e precisa da autorização do responsável (LGPD art. 14).
+    String? noConsent,
   }) async {
     if (_childProfileId == null) throw AppRepositoryException(noProfile);
+    if (noConsent != null && !responsible.aiConsent) {
+      throw AppRepositoryException(noConsent);
+    }
     try {
       final response = await _client.functions.invoke(
         function,
@@ -410,15 +427,21 @@ class SupabaseAppRepository extends AppRepository {
           'auth_user_id': user.id,
           'nome': (user.userMetadata?['nome'] as String?) ?? 'Responsável',
           'email': user.email ?? '',
+          'termos_versao': user.userMetadata?['termos_versao'] as String?,
         })
         .select()
         .single();
     _responsibleId = row['id'] as String;
+    _setResponsible(row);
+    return _responsibleId!;
+  }
+
+  void _setResponsible(Map<String, dynamic> row) {
     _responsible = ResponsibleAccount(
       name: row['nome'] as String,
       email: row['email'] as String,
+      aiConsent: row['autoriza_ia'] as bool? ?? false,
     );
-    return _responsibleId!;
   }
 
   void _setChildProfile(Map<String, dynamic> row) {
@@ -454,6 +477,45 @@ class SupabaseAppRepository extends AppRepository {
     notifyListeners();
   }
 
+  @override
+  Future<void> setAiConsent(bool allowed) {
+    return _guard(() async {
+      final responsibleId = _responsibleId ?? await _ensureResponsible();
+      final row = await _client
+          .from('responsaveis')
+          .update({'autoriza_ia': allowed})
+          .eq('id', responsibleId)
+          .select()
+          .single();
+      _setResponsible(row);
+    });
+  }
+
+  @override
+  Future<Map<String, dynamic>> exportMyData() {
+    return _guard(() async {
+      final data = await _client.rpc('exportar_meus_dados');
+      return Map<String, dynamic>.from(data as Map);
+    });
+  }
+
+  @override
+  Future<void> deleteAccount() {
+    return _guard(() async {
+      await _client.rpc('excluir_minha_conta');
+      // O usuário já não existe no servidor: só limpa a sessão do aparelho.
+      try {
+        await _client.auth.signOut(scope: SignOutScope.local);
+      } on Exception {
+        // A sessão local some de qualquer jeito.
+      }
+      _responsibleId = null;
+      _childProfileId = null;
+      _responsible = null;
+      _childProfile = null;
+    });
+  }
+
   /// Converte erros do Supabase em mensagens em português.
   Future<T> _guard<T>(Future<T> Function() action) async {
     try {
@@ -463,10 +525,12 @@ class SupabaseAppRepository extends AppRepository {
     } on AuthException catch (error) {
       throw AppRepositoryException(_authMessage(error));
     } on PostgrestException catch (error) {
-      if (error.code == '42P01' || error.code == 'PGRST205') {
+      // Tabela, coluna ou função que ainda não existe no banco.
+      const missing = {'42P01', '42703', 'PGRST202', 'PGRST204', 'PGRST205'};
+      if (missing.contains(error.code)) {
         throw const AppRepositoryException(
-          'O banco ainda não tem as tabelas da Liga. '
-          'Rode as migrations do Supabase (pasta supabase/migrations).',
+          'O banco está desatualizado. '
+          'Rode as migrations de supabase/migrations no Supabase.',
         );
       }
       throw AppRepositoryException(
