@@ -1,6 +1,6 @@
 // Liga do Saber - código comum das Edge Functions dos módulos
 // (oficina-texto, detetive-leitura, desafio-matematica, expedicao-teo,
-// atelie-zuri).
+// arquivo-mila, atelie-zuri, minijogo).
 //
 // Cada função confere o login, acha o perfil da criança, aplica um limite
 // diário, chama a OpenAI com saída estruturada e dá XP pela função SQL
@@ -230,6 +230,8 @@ export const VOZES = {
     "Teo, O Explorador: aventureiro e curioso; transforma o conteúdo em investigação, observa pistas e comemora cada descoberta.",
   zuri:
     "Zuri, O Criador: enérgico, inventivo e divertido; adora transformar ideias em projetos, organiza tudo em mapas mentais e celebra a criatividade.",
+  mila:
+    "Mila, A Investigadora: analítica, atenta e confiante; lê documentos e imagens como pistas, pergunta quem, quando e por quê, e ensina a desconfiar do que não tem prova.",
 };
 
 export const REGRAS_DE_SEGURANCA = `Regras de segurança:

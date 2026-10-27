@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/atelier.dart';
+import '../models/archive_case.dart';
 import '../models/child_profile.dart';
 import '../models/expedition.dart';
 import '../models/league_progress.dart';
 import '../models/math_challenge.dart';
+import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
 import '../models/reading_case.dart';
 import '../models/writing_feedback.dart';
@@ -114,6 +116,23 @@ abstract class AppRepository extends ChangeNotifier {
   /// O tema vai para a OpenAI, então precisa da autorização do responsável.
   Future<ProjectPlan> planProject(String theme);
 
+  /// Arquivo da Mila: a Mila cria uma partida de um minijogo de História
+  /// (caça-palavras, linha do tempo ou enigma do documento).
+  Future<ArchiveCase> newArchiveCase(ArchiveMode mode);
+
+  /// Responde uma partida: `found` (chaves das palavras achadas) no
+  /// caça-palavras; `order` (posições das fichas, da mais antiga à mais
+  /// recente) na linha do tempo; `choice` no enigma do documento.
+  Future<ArchiveAnswerResult> answerArchiveCase(
+    String caseId, {
+    int? choice,
+    List<int>? order,
+    List<String>? found,
+  });
+
+  /// Mostra a explicação (depois disso o caso não vale mais XP).
+  Future<ArchiveSolution> revealArchiveCase(String caseId);
+
   /// Oficina de Texto: feedback da Luma sobre a primeira versão.
   Future<WritingFeedback> requestWritingFeedback({
     required String theme,
@@ -126,6 +145,31 @@ abstract class AppRepository extends ChangeNotifier {
     required String productionId,
     required String text,
   });
+
+  /// Jogos da Liga: caça-palavras com palavras do tema escolhido.
+  Future<WordSearchGame> newWordSearch(MinigameSubject subject);
+
+  /// Confere a palavra marcada do [start] ao [end] na grade.
+  Future<WordSearchCheck> checkWordSearch(
+    String gameId,
+    GridCell start,
+    GridCell end,
+  );
+
+  /// Jogos da Liga: quebra-cabeça de colocar as peças na ordem certa.
+  Future<OrderPuzzle> newOrderPuzzle(MinigameSubject subject);
+
+  /// Confere a ordem (índices das peças como vieram em [OrderPuzzle.pieces]).
+  Future<OrderPuzzleCheck> checkOrderPuzzle(String gameId, List<int> order);
+
+  /// Jogos da Liga: Desafio Relâmpago, 60 segundos de contas.
+  Future<LightningRound> newLightningRound(LightningTopic topic);
+
+  /// Fecha a rodada com as respostas dadas (na ordem das contas).
+  Future<LightningResult> finishLightningRound(
+    String roundId,
+    List<int> answers,
+  );
 
   /// Missões do dia, com as que já foram concluídas hoje.
   Future<List<DailyMission>> loadDailyMissions();
