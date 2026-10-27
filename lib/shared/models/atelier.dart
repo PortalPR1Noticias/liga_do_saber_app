@@ -1,6 +1,6 @@
 import 'progress_update.dart';
 
-/// Minijogos do Ateliê do Zuri (as chaves que a Edge Function entende).
+/// Minijogos da Oficina do Zuri (as chaves que a Edge Function entende).
 enum AtelierGameType {
   cacaPalavras('caca_palavras', 'Caça-palavras'),
   mapaMental('mapa_mental', 'Monte o mapa mental'),
@@ -158,6 +158,7 @@ class AtelierCheckResult {
     required this.solution,
     required this.xp,
     this.progress,
+    this.notice = '',
   });
 
   factory AtelierCheckResult.fromJson(Map<String, dynamic> json) {
@@ -167,6 +168,7 @@ class AtelierCheckResult {
       solution: AtelierSolution.fromJson(json),
       xp: json['xp'] as int? ?? 0,
       progress: ProgressUpdate.fromJson(json['progresso']),
+      notice: json['aviso'] as String? ?? '',
     );
   }
 
@@ -179,6 +181,9 @@ class AtelierCheckResult {
   final AtelierSolution solution;
   final int xp;
   final ProgressUpdate? progress;
+
+  /// Aviso quando o jogo não deu XP porque o limite do dia acabou.
+  final String notice;
 }
 
 class MindMapBranch {
@@ -205,6 +210,7 @@ class ProjectPlan {
     required this.creativeChallenge,
     required this.xp,
     this.progress,
+    this.notice = '',
   });
 
   factory ProjectPlan.fromJson(Map<String, dynamic> json) {
@@ -219,6 +225,7 @@ class ProjectPlan {
       creativeChallenge: json['desafio_criativo'] as String? ?? '',
       xp: json['xp'] as int? ?? 0,
       progress: ProgressUpdate.fromJson(json['progresso']),
+      notice: json['aviso'] as String? ?? '',
     );
   }
 
@@ -229,4 +236,7 @@ class ProjectPlan {
   final String creativeChallenge;
   final int xp;
   final ProgressUpdate? progress;
+
+  /// Aviso quando o projeto não deu XP porque o limite do dia acabou.
+  final String notice;
 }

@@ -1,6 +1,6 @@
-// Liga do Saber - Edge Function "atelie-zuri" (Zuri, Ateliê do Zuri).
+// Liga do Saber - Edge Function "atelie-zuri" (Zuri, Oficina do Zuri).
 //
-// O Ateliê é feito de minijogos para o contraturno escolar. A IA cria o
+// A Oficina é feita de minijogos para o contraturno escolar. A IA cria o
 // conteúdo do ano escolar da criança e o servidor monta o jogo:
 // - "caca_palavras": caça-palavras com palavras de um tema da escola. A
 //   grade é montada aqui, não pela IA.
@@ -12,11 +12,15 @@
 //   e não vai ao app (no caça-palavras as palavras são públicas, como no
 //   papel, mas as posições não).
 // acao "conferir": confere a jogada. Resolver de primeira vale 20 XP;
-//   depois de errar, 10 XP; depois de ver a solução, não vale XP.
+//   depois de errar, 10 XP; depois de ver a solução, não vale XP. Para
+//   evitar uso compulsivo, só os primeiros jogos do dia dão XP
+//   (`JOGOS_ZURI_COM_XP_POR_DIA`, padrão 15); depois a criança ainda joga,
+//   mas sem XP.
 // acao "revelar": mostra a solução e a explicação do Zuri.
 // acao "planejar_projeto": a criança escreve o tema do projeto dela e o
 //   Zuri devolve um mapa mental, os passos do projeto e um desafio criativo
-//   (15 XP por projeto).
+//   (15 XP por projeto, nos `PROJETOS_COM_XP_POR_DIA` primeiros do dia,
+//   padrão 3).
 //
 // Os jogos só mandam à OpenAI o ano escolar e o tipo de jogo, como a Trilha
 // do Teo. Já o "planejar_projeto" manda o texto da criança e por isso exige
@@ -35,12 +39,19 @@ import {
   servir,
   VOZES,
   type Contexto,
+  type Perfil,
 } from "../_shared/liga.ts";
 
 const TIPO_JOGO = "atelie";
 const TIPO_PROJETO = "projeto";
 const LIMITE_JOGOS = Number(Deno.env.get("LIMITE_JOGOS_ZURI_POR_DIA") ?? "40");
 const LIMITE_PROJETOS = Number(Deno.env.get("LIMITE_PROJETOS_POR_DIA") ?? "10");
+const JOGOS_COM_XP_POR_DIA = Number(
+  Deno.env.get("JOGOS_ZURI_COM_XP_POR_DIA") ?? "15",
+);
+const PROJETOS_COM_XP_POR_DIA = Number(
+  Deno.env.get("PROJETOS_COM_XP_POR_DIA") ?? "3",
+);
 const XP_DE_PRIMEIRA = 20;
 const XP_DEPOIS_DE_ERRAR = 10;
 const XP_DO_PROJETO = 15;
@@ -132,7 +143,7 @@ Nada de tesoura afiada, fogo, cola quente ou eletricidade.`,
 };
 
 function instrucoesDoJogo(anoEscolar: number, jogo: Jogo): string {
-  return `Você é ${VOZES.zuri} Você cria minijogos do "Ateliê do Zuri" para uma criança do ${anoEscolar}º ano do ensino fundamental no Brasil, no contraturno escolar. Use um assunto da BNCC desse ano (de qualquer matéria) e treine organizar ideias e planejar projetos.
+  return `Você é ${VOZES.zuri} Você cria minijogos do "Oficina do Zuri" para uma criança do ${anoEscolar}º ano do ensino fundamental no Brasil, no contraturno escolar. Use um assunto da BNCC desse ano (de qualquer matéria) e treine organizar ideias e planejar projetos.
 
 ${PEDIDOS[jogo]}
 
@@ -381,6 +392,35 @@ async function carregarJogo(ctx: Contexto) {
   };
 }
 
+/// Dá XP só enquanto a criança não passou do limite diário daquela origem
+/// (eventos de XP das últimas 24 horas). Passou: joga sem XP, com um aviso.
+async function darXpComLimite(
+  ctx: Contexto,
+  perfil: Perfil,
+  xp: number,
+  origem: string,
+  limite: number,
+  referencia: string,
+) {
+  if (xp <= 0) return { xp: 0, progresso: null, aviso: "" };
+  const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count } = await ctx.servico
+    .from("eventos_xp")
+    .select("id", { count: "exact", head: true })
+    .eq("perfil_crianca_id", perfil.id)
+    .eq("origem", origem)
+    .gte("created_at", desde);
+  if ((count ?? 0) >= limite) {
+    return {
+      xp: 0,
+      progresso: null,
+      aviso: "Hoje você já ganhou o XP da Oficina. Amanhã tem mais!",
+    };
+  }
+  const progresso = await concederXp(ctx, perfil, xp, origem, referencia);
+  return { xp: progresso ? xp : 0, progresso, aviso: "" };
+}
+
 async function salvarEstado(
   ctx: Contexto,
   id: string,
@@ -399,7 +439,7 @@ async function salvarEstado(
 async function novoJogo(ctx: Contexto): Promise<Response> {
   const perfil = await carregarPerfil(ctx);
   const jogo = String(ctx.corpo.jogo) as Jogo;
-  if (!(jogo in ESQUEMAS)) throw new ErroDaLiga(400, "Escolha um jogo do Ateliê.");
+  if (!(jogo in ESQUEMAS)) throw new ErroDaLiga(400, "Escolha um jogo da Oficina.");
   await conferirLimiteDiario(
     ctx,
     perfil,
@@ -469,7 +509,14 @@ async function conferir(ctx: Contexto): Promise<Response> {
     resolvido ? xp : undefined,
   );
 
-  const progresso = await concederXp(ctx, perfil, xp, TIPO_JOGO, id);
+  const premio = await darXpComLimite(
+    ctx,
+    perfil,
+    xp,
+    TIPO_JOGO,
+    JOGOS_COM_XP_POR_DIA,
+    id,
+  );
 
   return resposta(200, {
     resolvido,
@@ -477,8 +524,7 @@ async function conferir(ctx: Contexto): Promise<Response> {
     ...(resolvido
       ? { explicacao: estado.explicacao, ...solucaoParaOApp(jogo, solucao) }
       : { explicacao: [] }),
-    xp: progresso ? xp : 0,
-    progresso,
+    ...premio,
   });
 }
 
@@ -568,7 +614,7 @@ async function planejarProjeto(ctx: Contexto): Promise<Response> {
   if (!projeto.adequado) {
     throw new ErroDaLiga(
       422,
-      "Esse tema não dá para o Ateliê. Escolha outro ou peça ajuda a um adulto.",
+      "Esse tema não dá para a Oficina. Escolha outro ou peça ajuda a um adulto.",
     );
   }
 
@@ -586,7 +632,14 @@ async function planejarProjeto(ctx: Contexto): Promise<Response> {
     .single();
   if (error) throw error;
 
-  const progresso = await concederXp(ctx, perfil, XP_DO_PROJETO, TIPO_PROJETO, linha.id);
+  const premio = await darXpComLimite(
+    ctx,
+    perfil,
+    XP_DO_PROJETO,
+    TIPO_PROJETO,
+    PROJETOS_COM_XP_POR_DIA,
+    linha.id,
+  );
 
   return resposta(200, {
     projeto_id: linha.id,
@@ -595,12 +648,11 @@ async function planejarProjeto(ctx: Contexto): Promise<Response> {
     ramos: projeto.ramos,
     passos: projeto.passos,
     desafio_criativo: projeto.desafio_criativo,
-    xp: progresso ? XP_DO_PROJETO : 0,
-    progresso,
+    ...premio,
   });
 }
 
-servir("o Ateliê do Zuri", (ctx) => {
+servir("a Oficina do Zuri", (ctx) => {
   switch (ctx.corpo.acao) {
     case "novo_jogo":
       return novoJogo(ctx);

@@ -9,7 +9,7 @@ import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
 import 'atelier_games.dart';
 
-/// Ateliê do Zuri: minijogos de organizar ideias para o contraturno
+/// Oficina do Zuri: minijogos de organizar ideias para o contraturno
 /// (caça-palavras, monte o mapa mental e quebra-cabeça do projeto) criados
 /// pela IA. Resolver de primeira vale 20 XP; depois de errar, 10; depois de
 /// ver a solução, nada. Em "Meu projeto", a criança escreve o tema do
@@ -35,6 +35,9 @@ class _ZuriAtelierScreenState extends State<ZuriAtelierScreen> {
   final _theme = TextEditingController();
   ProjectPlan? _plan;
   ProgressUpdate? _progress;
+
+  /// Aviso de que o XP do dia acabou (a criança continua jogando).
+  String _notice = '';
   bool _loading = false;
   String? _error;
 
@@ -63,6 +66,7 @@ class _ZuriAtelierScreenState extends State<ZuriAtelierScreen> {
       _projectMode = projectMode;
       _error = null;
       _progress = null;
+      _notice = '';
     });
   }
 
@@ -75,6 +79,7 @@ class _ZuriAtelierScreenState extends State<ZuriAtelierScreen> {
       _missed = false;
       _solution = null;
       _progress = null;
+      _notice = '';
     });
   });
 
@@ -89,6 +94,7 @@ class _ZuriAtelierScreenState extends State<ZuriAtelierScreen> {
         if (result!.solved) {
           _solution = result!.solution;
           _progress = result!.progress;
+          _notice = result!.notice;
         }
       });
     });
@@ -113,6 +119,7 @@ class _ZuriAtelierScreenState extends State<ZuriAtelierScreen> {
       setState(() {
         _plan = plan;
         _progress = plan.progress;
+        _notice = plan.notice;
       });
     });
   }
@@ -120,7 +127,7 @@ class _ZuriAtelierScreenState extends State<ZuriAtelierScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ateliê do Zuri')),
+      appBar: AppBar(title: const Text('Oficina do Zuri')),
       body: LigaBackground(
         child: SafeArea(
           top: false,
@@ -129,7 +136,7 @@ class _ZuriAtelierScreenState extends State<ZuriAtelierScreen> {
             children: [
               const PopIn(
                 child: LigaFeatureHeader(
-                  title: 'Ateliê do Zuri',
+                  title: 'Oficina do Zuri',
                   subtitle: 'Jogos de ideias, mapas mentais e projetos.',
                   color: _color,
                   character: LigaCharacter.zuri,
@@ -170,6 +177,32 @@ class _ZuriAtelierScreenState extends State<ZuriAtelierScreen> {
               if (_progress != null) ...[
                 const SizedBox(height: 14),
                 PopIn(child: LigaRewardCard(progress: _progress!)),
+              ],
+              if (_notice.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                PopIn(
+                  child: LigaPanel(
+                    borderColor: LigaColors.achievementYellow,
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.bedtime_rounded,
+                          color: LigaColors.sunsetOrange,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _notice,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: LigaColors.ink,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
               const SizedBox(height: 18),
               if (_projectMode) ...[

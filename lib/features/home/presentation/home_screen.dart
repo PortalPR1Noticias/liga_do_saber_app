@@ -139,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
         PopIn(
           delay: const Duration(milliseconds: 480),
           child: MissionCard(
-            title: 'Ateliê do Zuri',
+            title: 'Oficina do Zuri',
             subtitle: 'Caça-palavras, mapas mentais e projetos.',
             icon: Icons.lightbulb_rounded,
             color: LigaColors.sunsetOrange,

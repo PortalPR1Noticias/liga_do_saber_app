@@ -177,7 +177,7 @@ class _MapScreen extends StatelessWidget {
                   Navigator.of(context).pushNamed(TeoTrailScreen.routeName),
             ),
             _Portal(
-              'Ateliê do Zuri',
+              'Oficina do Zuri',
               'Projetos e ideias',
               Icons.lightbulb_rounded,
               LigaColors.sunsetOrange,

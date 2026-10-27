@@ -98,7 +98,7 @@ abstract class AppRepository extends ChangeNotifier {
   /// Mostra a descoberta (depois disso a expedição não vale mais XP).
   Future<ExpeditionDiscovery> revealExpedition(String expeditionId);
 
-  /// Ateliê do Zuri: o Zuri cria um minijogo (caça-palavras, mapa mental ou
+  /// Oficina do Zuri: o Zuri cria um minijogo (caça-palavras, mapa mental ou
   /// quebra-cabeça do projeto).
   Future<AtelierGame> newAtelierGame(AtelierGameType type);
 
@@ -110,7 +110,7 @@ abstract class AppRepository extends ChangeNotifier {
   /// Mostra a solução (depois disso o jogo não vale mais XP).
   Future<AtelierSolution> revealAtelierGame(String gameId);
 
-  /// Ateliê do Zuri: mapa mental e etapas do projeto que a criança escreveu.
+  /// Oficina do Zuri: mapa mental e etapas do projeto que a criança escreveu.
   /// O tema vai para a OpenAI, então precisa da autorização do responsável.
   Future<ProjectPlan> planProject(String theme);
 

@@ -24,6 +24,14 @@ class MockAppRepository extends AppRepository {
   int _expeditionAttempts = 0;
   bool _expeditionRevealed = false;
   int _atelierAttempts = 0;
+  int _atelierXpGames = 0;
+  int _projectXpCount = 0;
+
+  /// Mesmos limites diários de XP da Edge Function `atelie-zuri`.
+  static const atelierGamesWithXp = 15;
+  static const projectsWithXp = 3;
+  static const _atelierNotice =
+      'Hoje você já ganhou o XP da Oficina. Amanhã tem mais!';
   bool _atelierRevealed = false;
   AtelierGameType _atelierType = AtelierGameType.mapaMental;
 
@@ -180,8 +188,8 @@ class MockAppRepository extends AppRepository {
     ),
     DailyMission(
       code: 'atelie_zuri',
-      title: 'Jogar no Ateliê do Zuri',
-      description: 'Vença um minijogo no Ateliê do Zuri.',
+      title: 'Jogar na Oficina do Zuri',
+      description: 'Vença um minijogo na Oficina do Zuri.',
       type: 'atelie',
       xp: 20,
       done: false,
@@ -515,16 +523,23 @@ class MockAppRepository extends AppRepository {
       ],
     };
     final solved = correct.every((ok) => ok);
-    final xp = !solved || _atelierRevealed
+    var xp = !solved || _atelierRevealed
         ? 0
         : (_atelierAttempts == 0 ? 20 : 10);
     _atelierAttempts++;
+    var notice = '';
+    if (xp > 0 && _atelierXpGames >= atelierGamesWithXp) {
+      xp = 0;
+      notice = _atelierNotice;
+    }
+    if (xp > 0) _atelierXpGames++;
     return AtelierCheckResult(
       solved: solved,
       correct: correct,
       solution: solved ? solution : const AtelierSolution(explanation: []),
       xp: xp,
       progress: xp > 0 ? _grantXp(xp, 'atelie') : null,
+      notice: notice,
     );
   }
 
@@ -536,7 +551,9 @@ class MockAppRepository extends AppRepository {
 
   @override
   Future<ProjectPlan> planProject(String theme) async {
-    final progress = _grantXp(15, 'projeto');
+    final withXp = _projectXpCount < projectsWithXp;
+    if (withXp) _projectXpCount++;
+    final progress = withXp ? _grantXp(15, 'projeto') : null;
     return ProjectPlan(
       title: 'Missão: $theme',
       centralIdea: theme,
@@ -558,8 +575,9 @@ class MockAppRepository extends AppRepository {
         'Revise com alguém da família.',
       ],
       creativeChallenge: 'Comece a apresentação com uma pergunta surpresa!',
-      xp: 15,
+      xp: withXp ? 15 : 0,
       progress: progress,
+      notice: withXp ? '' : _atelierNotice,
     );
   }
 
@@ -674,7 +692,7 @@ class MockAppRepository extends AppRepository {
       (
         'inventor',
         'Inventor da Liga',
-        'Venceu 10 jogos no Ateliê do Zuri.',
+        'Venceu 10 jogos na Oficina do Zuri.',
         'lightbulb',
       ),
       (

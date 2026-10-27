@@ -16,6 +16,7 @@ import 'package:liga_do_saber_app/features/writing_workshop/presentation/writing
 import 'package:liga_do_saber_app/features/zuri_atelier/presentation/atelier_games.dart';
 import 'package:liga_do_saber_app/features/zuri_atelier/presentation/zuri_atelier_screen.dart';
 import 'package:liga_do_saber_app/shared/design_system/liga_widgets.dart';
+import 'package:liga_do_saber_app/shared/models/atelier.dart';
 import 'package:liga_do_saber_app/shared/models/photo_explanation.dart';
 import 'package:liga_do_saber_app/shared/services/app_repository.dart';
 import 'package:liga_do_saber_app/shared/services/mock_app_repository.dart';
@@ -324,6 +325,27 @@ void main() {
     await tester.pump();
     await scrollTo(tester, find.text('+40 XP'));
     expect(find.text('+40 XP'), findsOneWidget);
+  });
+
+  testWidgets('zuri games stop giving XP after the daily limit', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    final repository = AppRepository.instance;
+    for (var i = 0; i < MockAppRepository.atelierGamesWithXp; i++) {
+      await repository.newAtelierGame(AtelierGameType.ordemProjeto);
+      final result = await repository.checkAtelierGame('atelie-1', [1, 2, 0]);
+      expect(result.xp, 20);
+    }
+    await startAtelierGame(tester, 'Quebra-cabeça do projeto');
+    await scrollAndTap(tester, find.text('Escolher o tema'));
+    await scrollAndTap(tester, find.text('Montar a maquete'));
+    await scrollAndTap(tester, find.text('Apresentar na feira'));
+    await scrollAndTap(tester, find.text('Conferir ordem'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('já ganhou o XP da Oficina'));
+    expect(find.text('+20 XP'), findsNothing);
   });
 
   testWidgets('zuri builds a mind map for the child project', (tester) async {
