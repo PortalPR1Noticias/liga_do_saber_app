@@ -1,6 +1,12 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Necessário para falar com o Supabase no build de release. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- App para crianças (política Famílias do Google Play): nenhuma
+         biblioteca pode ler o ID de publicidade. -->
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
     <application
         android:label="liga_do_saber_app"
         android:name="${applicationName}"

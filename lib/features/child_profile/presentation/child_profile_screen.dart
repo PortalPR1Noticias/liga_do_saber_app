@@ -111,7 +111,8 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                         fontSize: 16,
                       ),
                       decoration: const InputDecoration(
-                        labelText: 'Nome ou apelido',
+                        labelText: 'Apelido',
+                        helperText: 'Use um apelido, não o nome completo.',
                         prefixIcon: Icon(
                           Icons.badge_rounded,
                           color: LigaColors.actionCoral,

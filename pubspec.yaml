@@ -64,6 +64,7 @@ flutter:
     - assets/icons/
     - assets/mascots/
     - assets/backgrounds/
+    - assets/legal/
 
   # Fontes arredondadas e amigáveis (licença OFL, em assets/fonts).
   fonts:

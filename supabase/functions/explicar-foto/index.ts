@@ -159,11 +159,20 @@ Deno.serve(async (req) => {
 
   const { data: perfil } = await servico
     .from("perfis_criancas")
-    .select("id, ano_escolar, responsaveis!inner(auth_user_id)")
+    .select("id, ano_escolar, responsaveis!inner(auth_user_id, autoriza_ia)")
     .eq("id", perfilId)
     .eq("responsaveis.auth_user_id", usuario.user.id)
     .maybeSingle();
   if (!perfil) return erro(403, "Perfil da criança não encontrado.");
+  // LGPD art. 14: a foto só vai para a OpenAI com a autorização do
+  // responsável (migration 0004, Área dos responsáveis no app).
+  const responsavel = perfil.responsaveis as unknown as { autoriza_ia?: boolean };
+  if (!responsavel?.autoriza_ia) {
+    return erro(
+      403,
+      "Peça para um adulto liberar a Foto + IA na Área dos responsáveis.",
+    );
+  }
 
   const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count } = await servico

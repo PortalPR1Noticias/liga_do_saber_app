@@ -9,7 +9,8 @@ import '../models/responsible_account.dart';
 import 'app_repository.dart';
 
 /// Repositório real: Supabase Auth (e-mail e senha do responsável) e as
-/// tabelas `responsaveis` e `perfis_criancas` das migrations 0001 e 0002.
+/// tabelas `responsaveis` e `perfis_criancas` das migrations. O consentimento,
+/// a cópia dos dados e a exclusão da conta (LGPD) vêm da migration 0004.
 /// A Foto + IA chama a Edge Function `explicar-foto` (supabase/functions).
 class SupabaseAppRepository implements AppRepository {
   SupabaseAppRepository(this._client);
@@ -52,12 +53,15 @@ class SupabaseAppRepository implements AppRepository {
     required String name,
     required String email,
     required String password,
+    required String acceptedTermsVersion,
   }) {
     return _guard(() async {
+      // O aceite vai nos metadados porque, com confirmação de e-mail, a linha
+      // em `responsaveis` só é criada no primeiro login.
       final response = await _client.auth.signUp(
         email: email.trim(),
         password: password,
-        data: {'nome': name.trim()},
+        data: {'nome': name.trim(), 'termos_versao': acceptedTermsVersion},
       );
       // Com "Confirm email" ligado no Supabase, não vem sessão: o cadastro do
       // responsável é concluído no primeiro login, depois da confirmação.
@@ -146,6 +150,11 @@ class SupabaseAppRepository implements AppRepository {
         'Cadastre o perfil da criança antes de enviar fotos.',
       );
     }
+    if (!responsible.aiConsent) {
+      throw const AppRepositoryException(
+        'Peça para um adulto liberar a Foto + IA na Área dos responsáveis.',
+      );
+    }
     try {
       final response = await _client.functions.invoke(
         'explicar-foto',
@@ -225,15 +234,21 @@ class SupabaseAppRepository implements AppRepository {
           'auth_user_id': user.id,
           'nome': (user.userMetadata?['nome'] as String?) ?? 'Responsável',
           'email': user.email ?? '',
+          'termos_versao': user.userMetadata?['termos_versao'] as String?,
         })
         .select()
         .single();
     _responsibleId = row['id'] as String;
+    _setResponsible(row);
+    return _responsibleId!;
+  }
+
+  void _setResponsible(Map<String, dynamic> row) {
     _responsible = ResponsibleAccount(
       name: row['nome'] as String,
       email: row['email'] as String,
+      aiConsent: row['autoriza_ia'] as bool? ?? false,
     );
-    return _responsibleId!;
   }
 
   void _setChildProfile(Map<String, dynamic> row) {
@@ -249,6 +264,45 @@ class SupabaseAppRepository implements AppRepository {
     );
   }
 
+  @override
+  Future<void> setAiConsent(bool allowed) {
+    return _guard(() async {
+      final responsibleId = _responsibleId ?? await _ensureResponsible();
+      final row = await _client
+          .from('responsaveis')
+          .update({'autoriza_ia': allowed})
+          .eq('id', responsibleId)
+          .select()
+          .single();
+      _setResponsible(row);
+    });
+  }
+
+  @override
+  Future<Map<String, dynamic>> exportMyData() {
+    return _guard(() async {
+      final data = await _client.rpc('exportar_meus_dados');
+      return Map<String, dynamic>.from(data as Map);
+    });
+  }
+
+  @override
+  Future<void> deleteAccount() {
+    return _guard(() async {
+      await _client.rpc('excluir_minha_conta');
+      // O usuário já não existe no servidor: só limpa a sessão do aparelho.
+      try {
+        await _client.auth.signOut(scope: SignOutScope.local);
+      } on Exception {
+        // A sessão local some de qualquer jeito.
+      }
+      _responsibleId = null;
+      _childProfileId = null;
+      _responsible = null;
+      _childProfile = null;
+    });
+  }
+
   /// Converte erros do Supabase em mensagens em português.
   Future<T> _guard<T>(Future<T> Function() action) async {
     try {
@@ -258,10 +312,12 @@ class SupabaseAppRepository implements AppRepository {
     } on AuthException catch (error) {
       throw AppRepositoryException(_authMessage(error));
     } on PostgrestException catch (error) {
-      if (error.code == '42P01' || error.code == 'PGRST205') {
+      // Tabela, coluna ou função que ainda não existe no banco.
+      const missing = {'42P01', '42703', 'PGRST202', 'PGRST204', 'PGRST205'};
+      if (missing.contains(error.code)) {
         throw const AppRepositoryException(
-          'O banco ainda não tem as tabelas da Liga. '
-          'Rode as migrations 0001 e 0002 no Supabase.',
+          'O banco está desatualizado. '
+          'Rode as migrations de supabase/migrations no Supabase.',
         );
       }
       throw AppRepositoryException(
