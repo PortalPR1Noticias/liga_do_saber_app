@@ -5,6 +5,9 @@ import 'package:liga_do_saber_app/features/auth/presentation/auth_screen.dart';
 import 'package:liga_do_saber_app/features/math_arena/presentation/math_arena_screen.dart';
 import 'package:liga_do_saber_app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:liga_do_saber_app/features/photo_solver/presentation/photo_solver_flow_screen.dart';
+import 'package:liga_do_saber_app/shared/design_system/liga_widgets.dart';
+import 'package:liga_do_saber_app/shared/services/app_repository.dart';
+import 'package:liga_do_saber_app/shared/services/mock_app_repository.dart';
 
 void usePhoneScreen(WidgetTester tester) {
   tester.view.physicalSize = const Size(1080, 2400);
@@ -13,6 +16,10 @@ void usePhoneScreen(WidgetTester tester) {
 }
 
 void main() {
+  // Os testes nunca falam com o Supabase: cada um começa com um repositório
+  // em memória limpo.
+  setUp(() => AppRepository.instance = MockAppRepository());
+
   testWidgets('Liga do Saber starts at the splash screen', (tester) async {
     await tester.pumpWidget(const LigaDoSaberApp());
 
@@ -84,6 +91,12 @@ void main() {
 
     await tester.tap(find.text('Criar conta do responsável'));
     await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'Giovany');
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      'responsavel@ligadosaber.app',
+    );
+    await tester.enterText(find.byType(TextFormField).at(2), '123456');
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
 
@@ -98,4 +111,34 @@ void main() {
     expect(find.text('Bia'), findsOneWidget);
     expect(find.byIcon(Icons.auto_awesome), findsWidgets);
   });
+
+  testWidgets('auth error from the server is shown to the user', (
+    tester,
+  ) async {
+    AppRepository.instance = _FailingRepository();
+    await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
+
+    await tester.tap(find.widgetWithText(SegmentedButton<bool>, 'Entrar'));
+    await tester.pump();
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'responsavel@ligadosaber.app',
+    );
+    await tester.enterText(find.byType(TextFormField).at(1), 'senha-errada');
+    await tester.tap(find.widgetWithText(LigaActionButton, 'Entrar'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('E-mail ou senha incorretos.'), findsOneWidget);
+  });
+}
+
+class _FailingRepository extends MockAppRepository {
+  @override
+  Future<AuthOutcome> signIn({
+    required String email,
+    required String password,
+  }) async {
+    throw const AppRepositoryException('E-mail ou senha incorretos.');
+  }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_widgets.dart';
-import '../../../shared/services/mock_app_repository.dart';
+import '../../../shared/services/app_repository.dart';
 import 'choose_avatar_screen.dart';
 
 class ChildProfileScreen extends StatefulWidget {
@@ -35,11 +35,19 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
   }
 
   Future<void> _continue() async {
-    await MockAppRepository.instance.saveChildProfile(
-      nickname: _nicknameController.text,
-      schoolYear: _selectedYear,
-      focusAreas: _focusAreas.toList(),
-    );
+    try {
+      await AppRepository.instance.saveChildProfile(
+        nickname: _nicknameController.text,
+        schoolYear: _selectedYear,
+        focusAreas: _focusAreas.toList(),
+      );
+    } on AppRepositoryException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+      return;
+    }
     if (!mounted) return;
     Navigator.of(context).pushNamed(ChooseAvatarScreen.routeName);
   }

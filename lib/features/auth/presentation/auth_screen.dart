@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_widgets.dart';
-import '../../../shared/services/mock_app_repository.dart';
+import '../../../shared/services/app_repository.dart';
 import '../../child_profile/presentation/child_profile_screen.dart';
 import '../../shell/presentation/main_shell.dart';
 
@@ -19,11 +19,9 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isCreateAccount = true;
   bool _isSaving = false;
-  final _nameController = TextEditingController(text: 'Giovani');
-  final _emailController = TextEditingController(
-    text: 'responsavel@ligadosaber.app',
-  );
-  final _passwordController = TextEditingController(text: '123456');
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   @override
   void dispose() {
@@ -37,23 +35,50 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
-    if (_isCreateAccount) {
-      await MockAppRepository.instance.saveResponsible(
-        name: _nameController.text,
-        email: _emailController.text,
-      );
+    final AuthOutcome outcome;
+    try {
+      final repository = AppRepository.instance;
+      outcome = _isCreateAccount
+          ? await repository.signUp(
+              name: _nameController.text,
+              email: _emailController.text,
+              password: _passwordController.text,
+            )
+          : await repository.signIn(
+              email: _emailController.text,
+              password: _passwordController.text,
+            );
+    } on AppRepositoryException catch (error) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      _showMessage(error.message);
+      return;
     }
     if (!mounted) return;
     setState(() => _isSaving = false);
 
-    if (_isCreateAccount) {
-      Navigator.of(context).pushNamed(ChildProfileScreen.routeName);
-    } else {
-      // Quem já tem conta pula o cadastro do perfil e vai direto para a Liga.
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil(MainShell.routeName, (route) => false);
+    switch (outcome) {
+      case AuthOutcome.readyWithProfile:
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil(MainShell.routeName, (route) => false);
+      case AuthOutcome.needsChildProfile:
+        Navigator.of(context).pushNamed(ChildProfileScreen.routeName);
+      case AuthOutcome.needsEmailConfirmation:
+        setState(() => _isCreateAccount = false);
+        _showMessage(
+          'Conta criada! Enviamos um link de confirmação para o seu e-mail. '
+          'Depois de confirmar, entre com a mesma senha.',
+        );
+      case AuthOutcome.signedOut:
+        break;
     }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   static String? _validateName(String? value) {
@@ -148,7 +173,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Agora salvamos em uma sessão simulada. Na integração real, este passo usa Supabase Auth.',
+                              'Seus dados ficam protegidos na sua conta. Só você acessa os perfis das crianças.',
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ),

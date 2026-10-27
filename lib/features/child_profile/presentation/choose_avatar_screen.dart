@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_widgets.dart';
-import '../../../shared/services/mock_app_repository.dart';
+import '../../../shared/services/app_repository.dart';
 import '../../shell/presentation/main_shell.dart';
 
 class ChooseAvatarScreen extends StatefulWidget {
@@ -21,7 +21,15 @@ class _ChooseAvatarScreenState extends State<ChooseAvatarScreen> {
   static const _avatars = LigaAvatar.all;
 
   Future<void> _enterLeague() async {
-    await MockAppRepository.instance.saveAvatar(_avatars[_selectedIndex].id);
+    try {
+      await AppRepository.instance.saveAvatar(_avatars[_selectedIndex].id);
+    } on AppRepositoryException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+      return;
+    }
     if (!mounted) return;
     Navigator.of(
       context,

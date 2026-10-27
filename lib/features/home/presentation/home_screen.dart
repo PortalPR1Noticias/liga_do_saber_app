@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_widgets.dart';
-import '../../../shared/services/mock_app_repository.dart';
+import '../../../shared/services/app_repository.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
@@ -14,7 +14,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final profile = MockAppRepository.instance.childProfile;
+    final profile = AppRepository.instance.childProfile;
 
     return ListView(
       padding: const EdgeInsets.all(20),
