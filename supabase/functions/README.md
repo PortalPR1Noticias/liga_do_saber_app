@@ -44,18 +44,27 @@ medalhas) que todas as funções usam, inclusive a `explicar-foto`.
 | `desafio-matematica` | Arena Matemática (Nico) | Cria um desafio do ano escolar e corrige: 20 XP de primeira, 10 depois de errar, 0 depois de ver o passo a passo. |
 | `oficina-texto` | Oficina de Texto (Luma) | Feedback da versão 1 (15 XP) e avaliação da reescrita (10 a 34 XP, pela evolução). |
 | `expedicao-teo` | Trilha do Teo (Ciências e Geografia) | Cria uma investigação do ano escolar (cena, pistas e pergunta) e corrige: 20 XP de primeira, 10 depois de errar, 0 depois de revelar a descoberta. |
+| `atelie-zuri` | Ateliê do Zuri (projetos e mapas mentais) | Minijogos do ano escolar: caça-palavras (grade montada no servidor), monte o mapa mental e quebra-cabeça das etapas de um projeto. 20 XP de primeira, 10 depois de errar, 0 depois de ver a solução. Em "Meu projeto", o tema escrito pela criança vira mapa mental e etapas (15 XP). |
 
 Todas usam o código comum de `_shared/liga.ts`, o mesmo secret
 `OPENAI_API_KEY` e o mesmo `OPENAI_MODEL`. As respostas certas ficam
 guardadas em `correcoes_ia` e nunca vão para o app, e todo XP é dado no
 servidor. Limites diários opcionais (secrets): `LIMITE_CASOS_POR_DIA`
 (padrão 15), `LIMITE_DESAFIOS_POR_DIA` (40), `LIMITE_TEXTOS_POR_DIA` (20) e
-`LIMITE_EXPEDICOES_POR_DIA` (40).
+`LIMITE_EXPEDICOES_POR_DIA` (40), `LIMITE_JOGOS_ZURI_POR_DIA` (40) e
+`LIMITE_PROJETOS_POR_DIA` (10).
 
 A `expedicao-teo` precisa também da migration
 `supabase/migrations/0005_trilha_do_teo.sql` (missão do dia e medalha
 Explorador da Liga). Ela só manda à OpenAI o ano escolar e a matéria, nada
 escrito pela criança, então não depende da autorização de IA do responsável.
+
+A `atelie-zuri` precisa da migration `supabase/migrations/0007_atelie_do_zuri.sql`
+(missão do dia "Jogar no Ateliê do Zuri" e medalhas Inventor da Liga e
+Arquiteto de Ideias). Os minijogos só mandam à OpenAI o ano escolar e o tipo
+de jogo. Já o "Meu projeto" manda o tema escrito pela criança, então exige a
+autorização de IA do responsável (como a Oficina de Texto); o tema fica em
+`correcoes_ia` e entra na cópia e na exclusão dos dados.
 
 O texto que a criança escreve na Oficina vai para a OpenAI (`store: false`)
 e fica guardado em `producoes_textuais` para o responsável acompanhar.
@@ -69,6 +78,7 @@ npx supabase functions deploy detetive-leitura --no-verify-jwt
 npx supabase functions deploy desafio-matematica --no-verify-jwt
 npx supabase functions deploy oficina-texto --no-verify-jwt
 npx supabase functions deploy expedicao-teo --no-verify-jwt
+npx supabase functions deploy atelie-zuri --no-verify-jwt
 npx supabase functions deploy explicar-foto --no-verify-jwt
 ```
 

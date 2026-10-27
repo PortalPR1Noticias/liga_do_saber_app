@@ -11,6 +11,7 @@ import '../features/reading_detective/presentation/reading_detective_screen.dart
 import '../features/shell/presentation/main_shell.dart';
 import '../features/teo_trail/presentation/teo_trail_screen.dart';
 import '../features/writing_workshop/presentation/writing_workshop_screen.dart';
+import '../features/zuri_atelier/presentation/zuri_atelier_screen.dart';
 import 'theme.dart';
 
 class LigaDoSaberApp extends StatelessWidget {
@@ -35,6 +36,7 @@ class LigaDoSaberApp extends StatelessWidget {
         ReadingDetectiveScreen.routeName: (_) => const ReadingDetectiveScreen(),
         MathArenaScreen.routeName: (_) => const MathArenaScreen(),
         TeoTrailScreen.routeName: (_) => const TeoTrailScreen(),
+        ZuriAtelierScreen.routeName: (_) => const ZuriAtelierScreen(),
       },
     );
   }

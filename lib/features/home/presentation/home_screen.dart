@@ -10,6 +10,7 @@ import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../teo_trail/presentation/teo_trail_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
+import '../../zuri_atelier/presentation/zuri_atelier_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -132,6 +133,19 @@ class _HomeScreenState extends State<HomeScreen> {
             progress: _progressOf('expedicao'),
             onTap: () =>
                 Navigator.of(context).pushNamed(TeoTrailScreen.routeName),
+          ),
+        ),
+        const SizedBox(height: 14),
+        PopIn(
+          delay: const Duration(milliseconds: 480),
+          child: MissionCard(
+            title: 'Ateliê do Zuri',
+            subtitle: 'Caça-palavras, mapas mentais e projetos.',
+            icon: Icons.lightbulb_rounded,
+            color: LigaColors.sunsetOrange,
+            progress: _progressOf('atelie'),
+            onTap: () =>
+                Navigator.of(context).pushNamed(ZuriAtelierScreen.routeName),
           ),
         ),
       ],

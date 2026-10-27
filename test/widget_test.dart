@@ -13,6 +13,8 @@ import 'package:liga_do_saber_app/features/reading_detective/presentation/readin
 import 'package:liga_do_saber_app/features/shell/presentation/main_shell.dart';
 import 'package:liga_do_saber_app/features/teo_trail/presentation/teo_trail_screen.dart';
 import 'package:liga_do_saber_app/features/writing_workshop/presentation/writing_workshop_screen.dart';
+import 'package:liga_do_saber_app/features/zuri_atelier/presentation/atelier_games.dart';
+import 'package:liga_do_saber_app/features/zuri_atelier/presentation/zuri_atelier_screen.dart';
 import 'package:liga_do_saber_app/shared/design_system/liga_widgets.dart';
 import 'package:liga_do_saber_app/shared/models/photo_explanation.dart';
 import 'package:liga_do_saber_app/shared/services/app_repository.dart';
@@ -219,6 +221,131 @@ void main() {
     expect(find.text('+20 XP'), findsNothing);
   });
 
+  Future<void> startAtelierGame(WidgetTester tester, String game) async {
+    await tester.pumpWidget(const MaterialApp(home: ZuriAtelierScreen()));
+    await scrollAndTap(tester, find.text(game));
+    await scrollAndTap(tester, find.text('Começar jogo'));
+    await tester.pump();
+    await tester.pump();
+  }
+
+  testWidgets('zuri word search gives XP when every word is found', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await startAtelierGame(tester, 'Caça-palavras');
+    expect(find.text('Caça na horta'), findsOneWidget);
+
+    Future<void> mark((int, int) start, (int, int) end) async {
+      await scrollAndTap(
+        tester,
+        find.byKey(WordSearchGame.cellKey(start.$1, start.$2)),
+      );
+      await scrollAndTap(
+        tester,
+        find.byKey(WordSearchGame.cellKey(end.$1, end.$2)),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    await mark((0, 0), (0, 3));
+    expect(
+      find.text('Essa não é uma das palavras. Tente outra linha!'),
+      findsOneWidget,
+    );
+    await mark((0, 0), (0, 4));
+    expect(find.text('Achou Horta!'), findsOneWidget);
+    // De trás para frente também vale.
+    await mark((2, 7), (0, 7));
+    await mark((1, 1), (4, 4));
+
+    await scrollTo(tester, find.text('Ideia genial! Você é um criador!'));
+    // Resolveu de primeira: 20 XP + 20 de bônus da missão do dia.
+    await scrollTo(tester, find.text('+40 XP'));
+    expect(find.text('+40 XP'), findsOneWidget);
+  });
+
+  testWidgets('zuri mind map sends wrong ideas back and gives half XP', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await startAtelierGame(tester, 'Monte o mapa mental');
+    expect(find.text('A horta da escola'), findsOneWidget);
+
+    Future<void> place(String idea, String branch) async {
+      await scrollAndTap(tester, find.text(idea));
+      await scrollAndTap(tester, find.text(branch));
+    }
+
+    await place('Sementes', 'Plantar');
+    await place('Regar', 'Plantar');
+    await place('Adubo', 'Plantar');
+    await place('Tirar o mato', 'Cuidar');
+    await scrollAndTap(tester, find.text('Conferir mapa'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('As peças vermelhas voltaram'));
+
+    await place('Regar', 'Cuidar');
+    await scrollAndTap(tester, find.text('Conferir mapa'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.text('Ideia genial! Você é um criador!'));
+    // Depois de errar: 10 XP + 20 de bônus da missão do dia.
+    await scrollTo(tester, find.text('+30 XP'));
+    expect(find.text('+30 XP'), findsOneWidget);
+  });
+
+  testWidgets('zuri project puzzle reveals the order without XP', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await startAtelierGame(tester, 'Quebra-cabeça do projeto');
+    expect(find.text('Feira de Ciências'), findsOneWidget);
+
+    await scrollAndTap(tester, find.text('Ver a solução do Zuri'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('Primeiro o tema'));
+    expect(find.text('Conferir ordem'), findsNothing);
+    expect(find.text('+20 XP'), findsNothing);
+  });
+
+  testWidgets('zuri project puzzle solved in order gives XP', (tester) async {
+    usePhoneScreen(tester);
+    await startAtelierGame(tester, 'Quebra-cabeça do projeto');
+
+    await scrollAndTap(tester, find.text('Escolher o tema'));
+    await scrollAndTap(tester, find.text('Montar a maquete'));
+    await scrollAndTap(tester, find.text('Apresentar na feira'));
+    await scrollAndTap(tester, find.text('Conferir ordem'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.text('+40 XP'));
+    expect(find.text('+40 XP'), findsOneWidget);
+  });
+
+  testWidgets('zuri builds a mind map for the child project', (tester) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: ZuriAtelierScreen()));
+
+    await scrollAndTap(tester, find.text('Meu projeto'));
+    await scrollTo(tester, find.widgetWithText(TextField, 'Tema do projeto'));
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Tema do projeto'),
+      'Reciclagem',
+    );
+    await scrollAndTap(tester, find.text('Montar meu mapa mental'));
+    await tester.pump();
+    await tester.pump();
+    // 15 XP do projeto (não é a missão do dia).
+    await scrollTo(tester, find.text('+15 XP'));
+    expect(find.text('+15 XP'), findsOneWidget);
+    await scrollTo(tester, find.text('Missão: Reciclagem'));
+    await scrollTo(tester, find.text('Por que importa?'));
+  });
+
   testWidgets('reading detective checks the answers and shows clues', (
     tester,
   ) async {
@@ -279,7 +406,7 @@ void main() {
 
     await tester.tap(find.text('Missões'));
     await tester.pumpAndSettle();
-    expect(find.text('Hoje: 1 de 5 missões'), findsOneWidget);
+    expect(find.text('Hoje: 1 de 6 missões'), findsOneWidget);
     expect(find.text('Feita!'), findsOneWidget);
   });
 

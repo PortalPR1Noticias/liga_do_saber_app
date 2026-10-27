@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/atelier.dart';
 import '../models/child_profile.dart';
 import '../models/expedition.dart';
 import '../models/league_progress.dart';
@@ -96,6 +97,22 @@ abstract class AppRepository extends ChangeNotifier {
 
   /// Mostra a descoberta (depois disso a expedição não vale mais XP).
   Future<ExpeditionDiscovery> revealExpedition(String expeditionId);
+
+  /// Ateliê do Zuri: o Zuri cria um minijogo (caça-palavras, mapa mental ou
+  /// quebra-cabeça do projeto).
+  Future<AtelierGame> newAtelierGame(AtelierGameType type);
+
+  /// Confere a jogada: no caça-palavras, uma lista de
+  /// `{palavra, inicio, fim}`; no mapa mental, o ramo de cada peça; no
+  /// quebra-cabeça, as peças na ordem montada.
+  Future<AtelierCheckResult> checkAtelierGame(String gameId, List<Object> move);
+
+  /// Mostra a solução (depois disso o jogo não vale mais XP).
+  Future<AtelierSolution> revealAtelierGame(String gameId);
+
+  /// Ateliê do Zuri: mapa mental e etapas do projeto que a criança escreveu.
+  /// O tema vai para a OpenAI, então precisa da autorização do responsável.
+  Future<ProjectPlan> planProject(String theme);
 
   /// Oficina de Texto: feedback da Luma sobre a primeira versão.
   Future<WritingFeedback> requestWritingFeedback({

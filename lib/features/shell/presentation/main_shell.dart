@@ -15,6 +15,7 @@ import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../teo_trail/presentation/teo_trail_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
+import '../../zuri_atelier/presentation/zuri_atelier_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -181,8 +182,8 @@ class _MapScreen extends StatelessWidget {
               Icons.lightbulb_rounded,
               LigaColors.sunsetOrange,
               LigaCharacter.zuri,
-              locked: true,
-              onTap: () => showComingSoon(context),
+              onTap: () =>
+                  Navigator.of(context).pushNamed(ZuriAtelierScreen.routeName),
             ),
           ],
         ),
@@ -458,6 +459,7 @@ class _MissionsScreenState
       'texto' || 'texto_reescrita' => WritingWorkshopScreen.routeName,
       'matematica' => MathArenaScreen.routeName,
       'expedicao' => TeoTrailScreen.routeName,
+      'atelie' || 'projeto' => ZuriAtelierScreen.routeName,
       'foto' => PhotoSolverFlowScreen.routeName,
       _ => null,
     };
