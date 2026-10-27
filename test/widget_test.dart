@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liga_do_saber_app/app/liga_do_saber_app.dart';
@@ -7,8 +10,14 @@ import 'package:liga_do_saber_app/features/math_arena/presentation/math_arena_sc
 import 'package:liga_do_saber_app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:liga_do_saber_app/features/photo_solver/presentation/photo_solver_flow_screen.dart';
 import 'package:liga_do_saber_app/shared/design_system/liga_widgets.dart';
+import 'package:liga_do_saber_app/shared/models/photo_explanation.dart';
 import 'package:liga_do_saber_app/shared/services/app_repository.dart';
 import 'package:liga_do_saber_app/shared/services/mock_app_repository.dart';
+
+/// Foto falsa: um PNG de 1 pixel.
+final _tinyPng = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC',
+);
 
 void usePhoneScreen(WidgetTester tester) {
   tester.view.physicalSize = const Size(1080, 2400);
@@ -79,14 +88,41 @@ void main() {
     );
   });
 
-  testWidgets('photo solver shows result only after analysis', (tester) async {
+  testWidgets('photo solver explains the photo step by step', (tester) async {
     usePhoneScreen(tester);
-    await tester.pumpWidget(const MaterialApp(home: PhotoSolverFlowScreen()));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PhotoSolverFlowScreen(pickPhoto: (_) async => _tinyPng),
+      ),
+    );
 
-    expect(find.text('Resultado simulado'), findsNothing);
-    await scrollAndTap(tester, find.text('Simular análise da IA'));
+    expect(find.text('Entenda a missão'), findsNothing);
+    await scrollAndTap(tester, find.text('Tirar foto'));
     await tester.pump();
-    expect(find.text('Resultado simulado'), findsOneWidget);
+    await tester.pump();
+
+    expect(find.text('Dividindo figurinhas'), findsOneWidget);
+    await scrollTo(tester, find.text('Entenda a missão'));
+    expect(find.text('Cada amigo fica com 8 figurinhas.'), findsNothing);
+    await scrollAndTap(tester, find.text('Mostrar resposta'));
+    await tester.pump();
+    expect(find.text('Cada amigo fica com 8 figurinhas.'), findsOneWidget);
+  });
+
+  testWidgets('photo solver shows the error from the server', (tester) async {
+    usePhoneScreen(tester);
+    AppRepository.instance = _FailingPhotoRepository();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PhotoSolverFlowScreen(pickPhoto: (_) async => _tinyPng),
+      ),
+    );
+
+    await scrollAndTap(tester, find.text('Escolher da galeria'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.text('Você já mandou muitas fotos hoje.'));
+    expect(find.text('Você já mandou muitas fotos hoje.'), findsOneWidget);
   });
 
   testWidgets('math arena reveals step by step', (tester) async {
@@ -166,5 +202,12 @@ class _FailingRepository extends MockAppRepository {
     required String password,
   }) async {
     throw const AppRepositoryException('E-mail ou senha incorretos.');
+  }
+}
+
+class _FailingPhotoRepository extends MockAppRepository {
+  @override
+  Future<PhotoExplanation> explainPhoto(Uint8List imageBytes) async {
+    throw const AppRepositoryException('Você já mandou muitas fotos hoje.');
   }
 }

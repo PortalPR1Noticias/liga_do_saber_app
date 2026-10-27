@@ -47,6 +47,10 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>A Liga do Saber usa a câmera para fotografar a lição e explicar passo a passo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>A Liga do Saber abre a galeria para você escolher a foto da lição.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

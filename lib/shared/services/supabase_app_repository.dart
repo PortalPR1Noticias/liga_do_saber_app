@@ -1,11 +1,16 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/child_profile.dart';
+import '../models/photo_explanation.dart';
 import '../models/responsible_account.dart';
 import 'app_repository.dart';
 
 /// Repositório real: Supabase Auth (e-mail e senha do responsável) e as
 /// tabelas `responsaveis` e `perfis_criancas` das migrations 0001 e 0002.
+/// A Foto + IA chama a Edge Function `explicar-foto` (supabase/functions).
 class SupabaseAppRepository implements AppRepository {
   SupabaseAppRepository(this._client);
 
@@ -132,6 +137,58 @@ class SupabaseAppRepository implements AppRepository {
           .single();
       _setChildProfile(row);
     });
+  }
+
+  @override
+  Future<PhotoExplanation> explainPhoto(Uint8List imageBytes) async {
+    if (_childProfileId == null) {
+      throw const AppRepositoryException(
+        'Cadastre o perfil da criança antes de enviar fotos.',
+      );
+    }
+    try {
+      final response = await _client.functions.invoke(
+        'explicar-foto',
+        body: {
+          'perfil_id': _childProfileId,
+          'imagem_base64': base64Encode(imageBytes),
+          'tipo': _imageType(imageBytes),
+        },
+      );
+      return PhotoExplanation.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } on FunctionException catch (error) {
+      final details = error.details;
+      if (details is Map && details['erro'] is String) {
+        throw AppRepositoryException(details['erro'] as String);
+      }
+      if (error.status == 404) {
+        throw const AppRepositoryException(
+          'A Foto + IA ainda não foi publicada no Supabase.',
+        );
+      }
+      throw const AppRepositoryException(
+        'Não consegui analisar a foto agora. Tente de novo.',
+      );
+    } on Exception {
+      throw const AppRepositoryException(
+        'Sem conexão com o servidor. Verifique a internet e tente de novo.',
+      );
+    }
+  }
+
+  /// Descobre o formato pela assinatura do arquivo (o image_picker devolve
+  /// JPEG na maioria dos aparelhos, mas a galeria pode ter PNG ou WEBP).
+  static String _imageType(Uint8List bytes) {
+    if (bytes.length > 3 && bytes[0] == 0x89 && bytes[1] == 0x50) {
+      return 'image/png';
+    }
+    if (bytes.length > 11 &&
+        ascii.decode(bytes.sublist(8, 12), allowInvalid: true) == 'WEBP') {
+      return 'image/webp';
+    }
+    return 'image/jpeg';
   }
 
   /// Carrega (ou cria) o responsável e o primeiro perfil de criança dele.
