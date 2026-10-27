@@ -1,0 +1,6 @@
+# Copie para android/key.properties (que NÃO vai para o git) e preencha.
+# storeFile é relativo à pasta android/app, ou um caminho absoluto.
+storePassword=SENHA_DO_KEYSTORE
+keyPassword=SENHA_DA_CHAVE
+keyAlias=upload
+storeFile=C:/projetos/chaves/liga-do-saber-upload.jks

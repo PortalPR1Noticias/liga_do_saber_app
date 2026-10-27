@@ -8,9 +8,12 @@
         android:name="com.google.android.gms.permission.AD_ID"
         tools:node="remove" />
     <application
-        android:label="liga_do_saber_app"
+        android:label="Liga do Saber"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

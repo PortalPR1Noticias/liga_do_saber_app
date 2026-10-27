@@ -49,3 +49,4 @@ backup_*.tar.gz
 *.tgz
 *.diff
 _para_git/
+site/_publico/
