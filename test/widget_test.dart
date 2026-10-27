@@ -43,7 +43,7 @@ void main() {
   testWidgets('Liga do Saber starts at the splash screen', (tester) async {
     await tester.pumpWidget(const LigaDoSaberApp());
 
-    expect(find.text('LIGA DO SABER'), findsOneWidget);
+    expect(find.byKey(LigaLogo.imageKey), findsOneWidget);
     expect(find.text('Aprender vira missão'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 950));
@@ -114,7 +114,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 950));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Criar conta do responsável'));
+    await scrollAndTap(tester, find.text('Criar conta do responsável'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(0), 'Giovany');
     await tester.enterText(
@@ -134,7 +134,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Bia'), findsOneWidget);
-    expect(find.byIcon(Icons.auto_awesome), findsWidgets);
+    expect(find.byKey(const ValueKey('avatar-criadora')), findsOneWidget);
   });
 
   testWidgets('auth error from the server is shown to the user', (

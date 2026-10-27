@@ -32,7 +32,7 @@ class _PhotoSolverFlowScreenState extends State<PhotoSolverFlowScreen> {
                   subtitle:
                       'Tire uma foto da lição e a gente explica juntinho.',
                   color: LigaColors.progressGreen,
-                  character: LigaCharacter.luma,
+                  character: LigaCharacter.zuri,
                 ),
               ),
               const SizedBox(height: 20),
@@ -85,12 +85,12 @@ class _PhotoSolverFlowScreenState extends State<PhotoSolverFlowScreen> {
                 const SizedBox(height: 18),
                 PopIn(
                   child: LigaPanel(
-                    borderColor: LigaColors.actionCoral.withValues(alpha: 0.5),
+                    borderColor: LigaColors.sunsetOrange.withValues(alpha: 0.5),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const LigaMascot(
-                          character: LigaCharacter.luma,
+                          character: LigaCharacter.zuri,
                           size: 64,
                         ),
                         const SizedBox(width: 12),

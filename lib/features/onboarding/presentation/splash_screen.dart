@@ -60,19 +60,13 @@ class _SplashMark extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const PopIn(child: LigaMascotTrio(size: 92)),
+        const PopIn(child: LigaLogo(height: 220)),
         const SizedBox(height: 18),
-        PopIn(
-          delay: const Duration(milliseconds: 150),
-          child: Text(
-            'LIGA DO SABER',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              color: LigaColors.primaryBlue,
-              letterSpacing: 1.5,
-            ),
-          ),
+        const PopIn(
+          delay: Duration(milliseconds: 150),
+          child: LigaCrew(size: 58),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 18),
         PopIn(
           delay: const Duration(milliseconds: 280),
           child: Container(

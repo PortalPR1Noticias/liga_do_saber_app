@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
-/// Paleta da Liga: cores vivas sobre um céu claro, pensadas para crianças.
+/// Paleta da Liga, puxada da logo: azul, laranja e verde-água vivos sobre
+/// um céu claro, com contorno azul-marinho.
 class LigaColors {
-  static const primaryBlue = Color(0xFF3B82F6);
+  static const primaryBlue = Color(0xFF1E6FE8);
   static const progressGreen = Color(0xFF22C55E);
   static const achievementYellow = Color(0xFFFFC233);
   static const actionCoral = Color(0xFFFF6B8B);
   static const adventurePurple = Color(0xFF9B5DE5);
-  static const sunsetOrange = Color(0xFFFF8A3D);
-  static const cyanGlow = Color(0xFF22C3EE);
+  static const sunsetOrange = Color(0xFFFF8A1F);
+  static const cyanGlow = Color(0xFF14CFA6);
 
   /// Texto principal (azul-marinho, mais suave que preto).
-  static const ink = Color(0xFF1E2A5A);
+  static const ink = Color(0xFF0E2152);
 
   /// Texto secundário.
   static const inkSoft = Color(0xFF5B6790);

@@ -121,6 +121,7 @@ class _MapScreen extends StatelessWidget {
               'Leitura',
               Icons.menu_book_rounded,
               LigaColors.adventurePurple,
+              LigaCharacter.mila,
               stars: 3,
               onTap: () => Navigator.of(
                 context,
@@ -131,6 +132,7 @@ class _MapScreen extends StatelessWidget {
               'Escrita',
               Icons.edit_rounded,
               LigaColors.actionCoral,
+              LigaCharacter.luma,
               stars: 2,
               onTap: () => Navigator.of(
                 context,
@@ -141,6 +143,7 @@ class _MapScreen extends StatelessWidget {
               'Matemática',
               Icons.calculate_rounded,
               LigaColors.primaryBlue,
+              LigaCharacter.nico,
               stars: 1,
               onTap: () =>
                   Navigator.of(context).pushNamed(MathArenaScreen.routeName),
@@ -150,6 +153,7 @@ class _MapScreen extends StatelessWidget {
               'História',
               Icons.manage_search_rounded,
               LigaColors.sunsetOrange,
+              LigaCharacter.mila,
               locked: true,
               onTap: () => showComingSoon(context),
             ),
@@ -165,7 +169,8 @@ class _Portal {
     this.title,
     this.subject,
     this.icon,
-    this.color, {
+    this.color,
+    this.character, {
     this.stars = 0,
     this.locked = false,
     required this.onTap,
@@ -175,6 +180,7 @@ class _Portal {
   final String subject;
   final IconData icon;
   final Color color;
+  final LigaCharacter character;
   final int stars;
   final bool locked;
   final VoidCallback onTap;
@@ -291,27 +297,35 @@ class _PortalNode extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 92,
-              height: 92,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  center: const Alignment(-0.3, -0.4),
-                  colors: [Color.lerp(color, Colors.white, 0.35)!, color],
-                ),
-                border: Border.all(color: Colors.white, width: 5),
-                boxShadow: [
-                  BoxShadow(
-                    color: LigaColors.shade(color),
-                    offset: const Offset(0, 7),
+            SizedBox.square(
+              dimension: 96,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  LigaPortrait(
+                    character: portal.character,
+                    size: 96,
+                    locked: portal.locked,
+                  ),
+                  Positioned(
+                    right: -4,
+                    bottom: -2,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color,
+                        border: Border.all(color: Colors.white, width: 3),
+                      ),
+                      child: Icon(
+                        portal.locked ? Icons.lock_rounded : portal.icon,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
                   ),
                 ],
-              ),
-              child: Icon(
-                portal.locked ? Icons.lock_rounded : portal.icon,
-                color: Colors.white,
-                size: 42,
               ),
             ),
             const SizedBox(height: 8),

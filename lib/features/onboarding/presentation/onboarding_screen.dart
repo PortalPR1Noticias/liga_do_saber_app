@@ -27,8 +27,11 @@ class OnboardingScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Spacer(),
+                      const PopIn(child: Center(child: LigaLogo(height: 120))),
+                      const SizedBox(height: 14),
                       const PopIn(
-                        child: Center(child: LigaMascotTrio(size: 84)),
+                        delay: Duration(milliseconds: 60),
+                        child: Center(child: LigaCrew(size: 60)),
                       ),
                       const SizedBox(height: 16),
                       PopIn(
@@ -43,7 +46,7 @@ class OnboardingScreen extends StatelessWidget {
                       PopIn(
                         delay: const Duration(milliseconds: 180),
                         child: Text(
-                          'Luma, Nico e Mila te esperam para missões de leitura, texto e matemática. Cada desafio vale XP e medalhas!',
+                          'Luma, Nico, Mila e a turma te esperam para missões de leitura, texto e matemática. Cada desafio vale XP e medalhas!',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),

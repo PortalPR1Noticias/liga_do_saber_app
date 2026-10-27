@@ -221,53 +221,47 @@ class _DailyMission extends StatelessWidget {
   Widget build(BuildContext context) {
     return LigaPressable(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(18, 16, 10, 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFB37CFF), LigaColors.adventurePurple],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: LigaColors.shade(LigaColors.adventurePurple),
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
+      child: LigaSceneCard(
+        character: LigaCharacter.mila,
+        color: LigaColors.adventurePurple,
+        height: 220,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const LigaPill(
-                    icon: Icons.bolt_rounded,
-                    label: 'Missão do dia · +50 XP',
-                    color: LigaColors.achievementYellow,
-                    solid: true,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'O Mistério da Biblioteca Viva',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleLarge?.copyWith(color: Colors.white),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Investigue pistas no texto e desbloqueie o próximo caso.',
+            const LigaPill(
+              icon: Icons.bolt_rounded,
+              label: 'Missão do dia · +50 XP',
+              color: LigaColors.achievementYellow,
+              solid: true,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'O Mistério da Biblioteca Viva',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(color: Colors.white),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Investigue pistas no texto com a Mila e desbloqueie o próximo caso.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.play_circle_fill_rounded,
+                  color: Colors.white,
+                  size: 40,
+                ),
+              ],
             ),
-            const LigaMascot(character: LigaCharacter.mila, size: 96),
           ],
         ),
       ),

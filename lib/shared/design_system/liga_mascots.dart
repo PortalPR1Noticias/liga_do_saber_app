@@ -4,24 +4,37 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 
-/// Personagens da Liga, desenhados em código enquanto não temos as artes finais.
+/// Personagens oficiais da Liga (artes em assets/mascots e assets/backgrounds).
 enum LigaCharacter {
-  /// Luma: assistente da Oficina de Texto, com uma estrela na antena.
-  luma(LigaColors.actionCoral, 'Luma'),
+  /// Luma: assistente da Oficina de Texto.
+  luma('luma', 'Luma', LigaColors.actionCoral),
 
-  /// Nico: o craque da Arena Matemática, de óculos redondos.
-  nico(LigaColors.primaryBlue, 'Nico'),
+  /// Nico: o craque da Arena Matemática.
+  nico('nico', 'Nico', LigaColors.primaryBlue),
 
-  /// Mila: a detetive da Biblioteca Viva, de chapéu e lupa.
-  mila(LigaColors.adventurePurple, 'Mila');
+  /// Mila: a detetive da leitura e dona do Arquivo da Mila.
+  mila('mila', 'Mila', LigaColors.adventurePurple),
 
-  const LigaCharacter(this.color, this.displayName);
+  /// Zuri: o criativo dos projetos e ideias.
+  zuri('zuri', 'Zuri', LigaColors.sunsetOrange),
 
-  final Color color;
+  /// Explorador das trilhas e da natureza.
+  explorador('explorador', 'Explorador', LigaColors.progressGreen);
+
+  const LigaCharacter(this.id, this.displayName, this.color);
+
+  final String id;
   final String displayName;
+  final Color color;
+
+  /// Rosto e tronco, recortado em quadrado.
+  String get portrait => 'assets/mascots/${id}_retrato.jpg';
+
+  /// Cena completa, em formato paisagem.
+  String get scene => 'assets/backgrounds/${id}_cena.jpg';
 }
 
-/// Mascote que flutua de leve, para dar vida às telas.
+/// Retrato redondo do personagem que flutua de leve.
 class LigaMascot extends StatefulWidget {
   const LigaMascot({
     super.key,
@@ -33,7 +46,7 @@ class LigaMascot extends StatefulWidget {
   final LigaCharacter character;
   final double size;
 
-  /// Defasagem da flutuação, para vários mascotes não subirem juntos.
+  /// Defasagem da flutuação, para vários personagens não subirem juntos.
   final Duration delay;
 
   @override
@@ -69,243 +82,116 @@ class _LigaMascotState extends State<LigaMascot>
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: widget.character.displayName,
-      image: true,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final t = Curves.easeInOut.transform(_controller.value);
-          return Transform.translate(
-            offset: Offset(0, -widget.size * 0.05 * t),
-            child: child,
-          );
-        },
-        child: SizedBox.square(
-          dimension: widget.size,
-          child: CustomPaint(painter: _MascotPainter(widget.character)),
-        ),
-      ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = Curves.easeInOut.transform(_controller.value);
+        return Transform.translate(
+          offset: Offset(0, -widget.size * 0.05 * t),
+          child: child,
+        );
+      },
+      child: LigaPortrait(character: widget.character, size: widget.size),
     );
   }
 }
 
-class _MascotPainter extends CustomPainter {
-  _MascotPainter(this.character);
+/// Retrato redondo, com anel na cor do personagem.
+class LigaPortrait extends StatelessWidget {
+  const LigaPortrait({
+    super.key,
+    required this.character,
+    this.size = 96,
+    this.locked = false,
+  });
 
   final LigaCharacter character;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Desenha numa grade de 100 x 100 e escala para o tamanho pedido.
-    canvas.save();
-    canvas.scale(size.width / 100, size.height / 100);
-
-    final color = character.color;
-    final dark = LigaColors.shade(color, 0.16);
-    final light = Color.lerp(color, Colors.white, 0.55)!;
-
-    // Sombra no chão.
-    canvas.drawOval(
-      const Rect.fromLTWH(24, 90, 52, 7),
-      Paint()..color = LigaColors.ink.withValues(alpha: 0.12),
-    );
-
-    if (character == LigaCharacter.luma) _paintLumaAntenna(canvas);
-    if (character == LigaCharacter.mila) _paintMilaGlass(canvas);
-
-    // Pezinhos.
-    final feet = Paint()..color = dark;
-    canvas.drawOval(const Rect.fromLTWH(30, 82, 16, 10), feet);
-    canvas.drawOval(const Rect.fromLTWH(54, 82, 16, 10), feet);
-
-    // Corpo.
-    const body = Rect.fromLTWH(16, 22, 68, 66);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(body, const Radius.circular(34)),
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color.lerp(color, Colors.white, 0.15)!, dark],
-        ).createShader(body),
-    );
-
-    // Barriga.
-    canvas.drawOval(
-      const Rect.fromLTWH(32, 58, 36, 26),
-      Paint()..color = light.withValues(alpha: 0.75),
-    );
-    if (character == LigaCharacter.nico) _paintPlus(canvas, dark);
-
-    // Bracinhos.
-    final arm = Paint()..color = dark;
-    canvas.drawOval(const Rect.fromLTWH(9, 54, 13, 18), arm);
-    canvas.drawOval(const Rect.fromLTWH(78, 54, 13, 18), arm);
-
-    // Olhos.
-    for (final x in [38.0, 62.0]) {
-      canvas.drawCircle(Offset(x, 46), 10, Paint()..color = Colors.white);
-      canvas.drawCircle(
-        Offset(x + 1.5, 47.5),
-        5.6,
-        Paint()..color = LigaColors.ink,
-      );
-      canvas.drawCircle(
-        Offset(x + 3.5, 45),
-        2.1,
-        Paint()..color = Colors.white,
-      );
-    }
-    if (character == LigaCharacter.nico) _paintGlasses(canvas);
-
-    // Bochechas.
-    final cheek = Paint()
-      ..color = const Color(0xFFFF8FB1).withValues(alpha: 0.75);
-    canvas.drawOval(const Rect.fromLTWH(22, 56, 11, 7), cheek);
-    canvas.drawOval(const Rect.fromLTWH(67, 56, 11, 7), cheek);
-
-    // Sorriso.
-    final smile = Path()
-      ..moveTo(42, 60)
-      ..quadraticBezierTo(50, 69, 58, 60)
-      ..close();
-    canvas.drawPath(smile, Paint()..color = LigaColors.ink);
-    canvas.drawOval(
-      const Rect.fromLTWH(46.5, 62.5, 7, 3.5),
-      Paint()..color = const Color(0xFFFF6B8B),
-    );
-
-    if (character == LigaCharacter.mila) _paintMilaHat(canvas);
-
-    canvas.restore();
-  }
-
-  void _paintLumaAntenna(Canvas canvas) {
-    canvas.drawLine(
-      const Offset(50, 24),
-      const Offset(50, 10),
-      Paint()
-        ..color = LigaColors.shade(character.color, 0.16)
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round,
-    );
-    canvas.drawPath(
-      _starPath(const Offset(50, 9), 9, 4),
-      Paint()..color = LigaColors.achievementYellow,
-    );
-  }
-
-  void _paintPlus(Canvas canvas, Color color) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(const Offset(50, 66), const Offset(50, 77), paint);
-    canvas.drawLine(const Offset(44.5, 71.5), const Offset(55.5, 71.5), paint);
-  }
-
-  void _paintGlasses(Canvas canvas) {
-    final frame = Paint()
-      ..color = LigaColors.ink
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.6;
-    canvas.drawCircle(const Offset(38, 46), 12.5, frame);
-    canvas.drawCircle(const Offset(62, 46), 12.5, frame);
-    canvas.drawLine(const Offset(48, 44), const Offset(52, 44), frame);
-  }
-
-  void _paintMilaHat(Canvas canvas) {
-    const hat = Color(0xFFB7793E);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(18, 25, 64, 9),
-        const Radius.circular(5),
-      ),
-      Paint()..color = LigaColors.shade(hat, 0.1),
-    );
-    final crown = Path()
-      ..moveTo(28, 28)
-      ..quadraticBezierTo(30, 8, 50, 8)
-      ..quadraticBezierTo(70, 8, 72, 28)
-      ..close();
-    canvas.drawPath(crown, Paint()..color = hat);
-    canvas.drawRect(
-      const Rect.fromLTWH(29, 21, 42, 5),
-      Paint()..color = LigaColors.achievementYellow,
-    );
-  }
-
-  void _paintMilaGlass(Canvas canvas) {
-    canvas.drawLine(
-      const Offset(90, 80),
-      const Offset(98, 92),
-      Paint()
-        ..color = const Color(0xFF8A5A2B)
-        ..strokeWidth = 5
-        ..strokeCap = StrokeCap.round,
-    );
-    canvas.drawCircle(
-      const Offset(86, 72),
-      10,
-      Paint()..color = const Color(0xFFBDEBFF),
-    );
-    canvas.drawCircle(
-      const Offset(86, 72),
-      10,
-      Paint()
-        ..color = LigaColors.achievementYellow
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.4,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_MascotPainter oldDelegate) =>
-      oldDelegate.character != character;
-}
-
-/// Luma, Nico e Mila juntos, com o Nico um pouco à frente.
-class LigaMascotTrio extends StatelessWidget {
-  const LigaMascotTrio({super.key, this.size = 92});
-
   final double size;
+
+  /// Mostra o retrato em cinza, para conteúdos ainda trancados.
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
+    final ring = locked ? LigaColors.disabled : character.color;
+    Widget image = Image.asset(
+      character.portrait,
+      fit: BoxFit.cover,
+      semanticLabel: character.displayName,
+    );
+    if (locked) {
+      image = ColorFiltered(
+        colorFilter: const ColorFilter.matrix([
+          0.33, 0.33, 0.33, 0, 20, //
+          0.33, 0.33, 0.33, 0, 20, //
+          0.33, 0.33, 0.33, 0, 20, //
+          0, 0, 0, 1, 0, //
+        ]),
+        child: image,
+      );
+    }
+    return Container(
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(size * 0.05),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(color: ring, width: size * 0.05),
+        boxShadow: [
+          BoxShadow(
+            color: LigaColors.shade(ring),
+            offset: Offset(0, size * 0.06),
+          ),
+        ],
+      ),
+      child: ClipOval(child: image),
+    );
+  }
+}
+
+/// A turma toda lado a lado, com os retratos um pouco sobrepostos.
+class LigaCrew extends StatelessWidget {
+  const LigaCrew({super.key, this.size = 72});
+
+  final double size;
+
+  static const _order = [
+    LigaCharacter.luma,
+    LigaCharacter.zuri,
+    LigaCharacter.nico,
+    LigaCharacter.mila,
+    LigaCharacter.explorador,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final step = size * 0.72;
     return SizedBox(
-      width: size * 2.6,
-      height: size * 1.15,
+      width: step * (_order.length - 1) + size,
+      height: size * 1.12,
       child: Stack(
-        alignment: Alignment.bottomCenter,
         children: [
-          Positioned(
-            left: 0,
-            bottom: size * 0.1,
-            child: LigaMascot(character: LigaCharacter.luma, size: size * 0.9),
-          ),
-          Positioned(
-            right: 0,
-            bottom: size * 0.1,
-            child: LigaMascot(
-              character: LigaCharacter.mila,
-              size: size * 0.9,
-              delay: const Duration(milliseconds: 500),
+          for (var i = 0; i < _order.length; i++)
+            Positioned(
+              left: step * i,
+              // O do meio fica mais alto, formando um arco.
+              top: (i - 2).abs() * size * 0.06,
+              child: LigaMascot(
+                character: _order[i],
+                size: size,
+                delay: Duration(milliseconds: 300 * i),
+              ),
             ),
-          ),
-          LigaMascot(
-            character: LigaCharacter.nico,
-            size: size * 1.1,
-            delay: const Duration(milliseconds: 900),
-          ),
         ],
       ),
     );
   }
 }
 
-/// Caminho de uma estrela de cinco pontas.
-Path _starPath(Offset center, double radius, double innerRadius) {
+/// Caminho de uma estrela de cinco pontas, para enfeites e recompensas.
+Path ligaStarPath(Offset center, double radius) {
+  final innerRadius = radius * 0.45;
   final path = Path();
   for (var i = 0; i < 10; i++) {
     final r = i.isEven ? radius : innerRadius;
@@ -319,7 +205,3 @@ Path _starPath(Offset center, double radius, double innerRadius) {
   }
   return path..close();
 }
-
-/// Estrela desenhada, para enfeites e recompensas.
-Path ligaStarPath(Offset center, double radius) =>
-    _starPath(center, radius, radius * 0.45);

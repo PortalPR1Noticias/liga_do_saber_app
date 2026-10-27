@@ -628,7 +628,27 @@ class _BubbleTailPainter extends CustomPainter {
       oldDelegate.edge != edge;
 }
 
-/// Cabeçalho colorido das áreas de estudo, com o mascote da área.
+/// Logo oficial da Liga do Saber.
+class LigaLogo extends StatelessWidget {
+  const LigaLogo({super.key, this.height = 140});
+
+  static const imageKey = ValueKey('liga-logo');
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/brand/logo.png',
+      key: imageKey,
+      height: height,
+      fit: BoxFit.contain,
+      semanticLabel: 'Liga do Saber',
+    );
+  }
+}
+
+/// Cabeçalho das áreas de estudo: a cena do personagem com o título por cima.
 class LigaFeatureHeader extends StatelessWidget {
   const LigaFeatureHeader({
     super.key,
@@ -645,52 +665,105 @@ class LigaFeatureHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
+    return LigaSceneCard(
+      character: character,
+      color: color,
+      height: 210,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LigaPill(
+            icon: Icons.person_pin_circle_rounded,
+            label: 'com ${character.displayName}',
+            color: Colors.white,
+            solid: true,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Cartão com a cena ilustrada de um personagem ao fundo e um degradê na
+/// cor da área embaixo, para o texto ficar legível.
+class LigaSceneCard extends StatelessWidget {
+  const LigaSceneCard({
+    super.key,
+    required this.character,
+    required this.color,
+    required this.child,
+    this.height = 200,
+  });
+
+  final LigaCharacter character;
+  final Color color;
+  final Widget child;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final deep = LigaColors.shade(color, 0.22);
+    return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color.lerp(color, Colors.white, 0.2)!, color],
-        ),
+        border: Border.all(color: Colors.white, width: 3),
         boxShadow: [
           BoxShadow(color: LigaColors.shade(color), offset: const Offset(0, 6)),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.headlineMedium?.copyWith(color: Colors.white),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    fontWeight: FontWeight.w700,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(27),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                character.scene,
+                fit: BoxFit.cover,
+                alignment: const Alignment(0, -0.4),
+              ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.2, 1],
+                    colors: [
+                      deep.withValues(alpha: 0),
+                      deep.withValues(alpha: 0.95),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.28),
+            // Cresce se o texto precisar (fonte grande do sistema), mas
+            // nunca fica menor que [height], para a cena aparecer.
+            Container(
+              width: double.infinity,
+              constraints: BoxConstraints(minHeight: height),
+              alignment: Alignment.bottomLeft,
+              padding: const EdgeInsets.fromLTRB(16, 72, 16, 16),
+              child: child,
             ),
-            padding: const EdgeInsets.all(6),
-            child: LigaMascot(character: character, size: 92),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
