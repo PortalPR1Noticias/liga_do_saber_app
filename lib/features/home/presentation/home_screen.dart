@@ -6,6 +6,7 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
+import '../../minigames/presentation/minigames_hub_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../teo_trail/presentation/teo_trail_screen.dart';
@@ -77,6 +78,19 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.of(
               context,
             ).pushNamed(PhotoSolverFlowScreen.routeName),
+          ),
+        ),
+        const SizedBox(height: 14),
+        PopIn(
+          delay: const Duration(milliseconds: 190),
+          child: MissionCard(
+            title: 'Jogos da Liga',
+            subtitle: 'Caça-palavras, quebra-cabeça e Desafio Relâmpago.',
+            icon: Icons.sports_esports_rounded,
+            color: LigaColors.adventurePurple,
+            progress: _progressOf('minijogo'),
+            onTap: () =>
+                Navigator.of(context).pushNamed(MinigamesHubScreen.routeName),
           ),
         ),
         const SizedBox(height: 24),

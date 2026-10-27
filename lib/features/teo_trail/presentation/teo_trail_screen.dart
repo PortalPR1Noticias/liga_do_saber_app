@@ -5,8 +5,10 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/expedition.dart';
+import '../../../shared/models/minigame.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
+import '../../minigames/presentation/minigame_style.dart';
 
 /// Trilha do Teo: o Teo (IA) cria investigações de Ciências e Geografia do
 /// ano escolar da criança. Acertar de primeira vale 20 XP; depois de errar,
@@ -304,6 +306,9 @@ class _TeoTrailScreenState extends State<TeoTrailScreen> {
                     : 'Nova expedição',
                 icon: Icons.explore_rounded,
                 onPressed: _loading ? null : _newExpedition,
+              ),
+              MinigameShortcuts(
+                subject: MinigameSubject.values.byName(_subject.name),
               ),
             ],
           ),
