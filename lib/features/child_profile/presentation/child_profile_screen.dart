@@ -21,10 +21,13 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
   final Set<String> _focusAreas = {'Leitura', 'Texto'};
 
   static const _areaColors = {
-    'Leitura': LigaColors.adventurePurple,
+    'Leitura': LigaColors.actionCoral,
     'Texto': LigaColors.actionCoral,
     'Matemática': LigaColors.primaryBlue,
     'Ciências': LigaColors.progressGreen,
+    'Geografia': LigaColors.progressGreen,
+    'História': LigaColors.adventurePurple,
+    'Projetos': LigaColors.sunsetOrange,
   };
 
   bool get _canContinue =>

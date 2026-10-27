@@ -65,7 +65,7 @@ class _ChooseAvatarScreenState extends State<ChooseAvatarScreen> {
                   mainAxisSpacing: 14,
                   crossAxisSpacing: 14,
                   // Altura fixa: a proporção 0.9 cortava o card em telas estreitas.
-                  mainAxisExtent: 190,
+                  mainAxisExtent: 210,
                 ),
                 itemBuilder: (context, index) {
                   final avatar = _avatars[index];
@@ -111,8 +111,13 @@ class _ChooseAvatarScreenState extends State<ChooseAvatarScreen> {
                             ),
                             const SizedBox(height: 14),
                             Text(
+                              avatar.character.displayName,
+                              style: Theme.of(context).textTheme.titleLarge,
+                              textAlign: TextAlign.center,
+                            ),
+                            Text(
                               avatar.name,
-                              style: Theme.of(context).textTheme.titleMedium,
+                              style: Theme.of(context).textTheme.bodyMedium,
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),

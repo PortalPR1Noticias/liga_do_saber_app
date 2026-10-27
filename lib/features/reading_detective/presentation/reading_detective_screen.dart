@@ -23,24 +23,22 @@ class ReadingDetectiveScreen extends StatelessWidget {
                 child: LigaFeatureHeader(
                   title: 'Detetive da Leitura',
                   subtitle: 'Cada pergunta precisa de uma pista no texto.',
-                  color: LigaColors.adventurePurple,
-                  character: LigaCharacter.mila,
+                  color: LigaColors.actionCoral,
+                  character: LigaCharacter.luma,
                 ),
               ),
               const SizedBox(height: 20),
               PopIn(
                 delay: const Duration(milliseconds: 120),
                 child: LigaPanel(
-                  borderColor: LigaColors.adventurePurple.withValues(
-                    alpha: 0.5,
-                  ),
+                  borderColor: LigaColors.actionCoral.withValues(alpha: 0.5),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const LigaPill(
                         icon: Icons.folder_open_rounded,
                         label: 'Caso nº 1',
-                        color: LigaColors.adventurePurple,
+                        color: LigaColors.actionCoral,
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -49,7 +47,7 @@ class ReadingDetectiveScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Mila encontrou uma mensagem incompleta na biblioteca. Para descobrir quem deixou o bilhete, você precisa identificar a ideia principal e inferir o motivo da visita.',
+                        'Luma encontrou uma mensagem incompleta na biblioteca. Para descobrir quem deixou o bilhete, você precisa identificar a ideia principal e inferir o motivo da visita.',
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
                     ],
@@ -63,7 +61,7 @@ class ReadingDetectiveScreen extends StatelessWidget {
                   title: 'Pergunta 1',
                   subtitle: 'Qual é a pista mais importante do texto?',
                   icon: Icons.search_rounded,
-                  color: LigaColors.adventurePurple,
+                  color: LigaColors.actionCoral,
                   progress: 0.33,
                   onTap: () => showComingSoon(context),
                 ),

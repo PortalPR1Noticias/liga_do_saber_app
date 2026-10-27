@@ -6,25 +6,58 @@ import '../../app/theme.dart';
 
 /// Personagens oficiais da Liga (artes em assets/mascots e assets/backgrounds).
 enum LigaCharacter {
-  /// Luma: assistente da Oficina de Texto.
-  luma('luma', 'Luma', LigaColors.actionCoral),
+  nico(
+    'nico',
+    'Nico',
+    'O Estrategista',
+    'Matemática e raciocínio lógico',
+    LigaColors.primaryBlue,
+  ),
+  luma(
+    'luma',
+    'Luma',
+    'A Guardiã das Palavras',
+    'Português, interpretação e produção textual',
+    LigaColors.actionCoral,
+  ),
+  teo(
+    'teo',
+    'Teo',
+    'O Explorador',
+    'Ciências e Geografia',
+    LigaColors.progressGreen,
+  ),
+  mila(
+    'mila',
+    'Mila',
+    'A Investigadora',
+    'História, interpretação de imagens e contexto',
+    LigaColors.adventurePurple,
+  ),
+  zuri(
+    'zuri',
+    'Zuri',
+    'O Criador',
+    'Criatividade, projetos e mapas mentais',
+    LigaColors.sunsetOrange,
+  );
 
-  /// Nico: o craque da Arena Matemática.
-  nico('nico', 'Nico', LigaColors.primaryBlue),
-
-  /// Mila: a detetive da leitura e dona do Arquivo da Mila.
-  mila('mila', 'Mila', LigaColors.adventurePurple),
-
-  /// Zuri: o criativo dos projetos e ideias.
-  zuri('zuri', 'Zuri', LigaColors.sunsetOrange),
-
-  /// Explorador das trilhas e da natureza.
-  explorador('explorador', 'Explorador', LigaColors.progressGreen);
-
-  const LigaCharacter(this.id, this.displayName, this.color);
+  const LigaCharacter(
+    this.id,
+    this.displayName,
+    this.title,
+    this.area,
+    this.color,
+  );
 
   final String id;
   final String displayName;
+
+  /// Título do personagem, como "O Estrategista".
+  final String title;
+
+  /// Matérias que o personagem guia no app.
+  final String area;
   final Color color;
 
   /// Rosto e tronco, recortado em quadrado.
@@ -164,7 +197,7 @@ class LigaCrew extends StatelessWidget {
     LigaCharacter.zuri,
     LigaCharacter.nico,
     LigaCharacter.mila,
-    LigaCharacter.explorador,
+    LigaCharacter.teo,
   ];
 
   @override

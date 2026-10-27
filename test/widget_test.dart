@@ -129,7 +129,7 @@ void main() {
     await scrollAndTap(tester, find.text('Escolher avatar'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Criadora'));
+    await scrollAndTap(tester, find.text('Criador'));
     await scrollAndTap(tester, find.text('Entrar para a Liga'));
     await tester.pumpAndSettle();
 
