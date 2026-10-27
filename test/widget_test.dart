@@ -12,6 +12,7 @@ import 'package:liga_do_saber_app/features/math_arena/presentation/math_arena_sc
 import 'package:liga_do_saber_app/features/mila_archive/presentation/mila_archive_screen.dart';
 import 'package:liga_do_saber_app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:liga_do_saber_app/features/photo_solver/presentation/photo_solver_flow_screen.dart';
+import 'package:liga_do_saber_app/features/practice_exam/presentation/revanche_screen.dart';
 import 'package:liga_do_saber_app/features/reading_detective/presentation/reading_detective_screen.dart';
 import 'package:liga_do_saber_app/features/shell/presentation/main_shell.dart';
 import 'package:liga_do_saber_app/features/teo_trail/presentation/teo_trail_screen.dart';
@@ -584,6 +585,21 @@ void main() {
     await tester.tap(find.text('JOGAR'));
     await tester.pumpAndSettle();
     expect(find.byType(ReadingDetectiveScreen), findsOneWidget);
+  });
+
+  testWidgets('base opens the revanche of the exams', (tester) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        routes: {RevancheScreen.routeName: (_) => const RevancheScreen()},
+        home: const MainShell(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Revanche'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RevancheScreen), findsOneWidget);
   });
 
   testWidgets('world map opens phases won with right answers', (tester) async {

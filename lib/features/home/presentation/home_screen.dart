@@ -9,6 +9,7 @@ import '../../../shared/models/league_progress.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../minigames/presentation/minigames_hub_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
+import '../../practice_exam/presentation/revanche_screen.dart';
 import '../../world/world_islands.dart';
 
 /// A Base do jogador: o herói escolhido em destaque, o HUD com nível e
@@ -103,6 +104,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               icon: Icons.emoji_events_rounded,
                               color: LigaColors.adventurePurple,
                               onTap: () => widget.onOpenTab?.call(3),
+                            ),
+                            const SizedBox(height: 14),
+                            _SideTile(
+                              label: 'Revanche',
+                              icon: Icons.replay_rounded,
+                              color: LigaColors.progressGreen,
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(RevancheScreen.routeName),
                             ),
                           ],
                         ),
