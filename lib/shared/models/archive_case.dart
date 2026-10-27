@@ -156,6 +156,7 @@ class ArchiveAnswerResult {
     required this.solution,
     required this.xp,
     this.inPlace,
+    this.notice = '',
     this.progress,
   });
 
@@ -166,6 +167,7 @@ class ArchiveAnswerResult {
       inPlace: json['no_lugar'] as int?,
       solution: ArchiveSolution.fromJson(json),
       xp: json['xp'] as int? ?? 0,
+      notice: json['aviso'] as String? ?? '',
       progress: ProgressUpdate.fromJson(json['progresso']),
     );
   }
@@ -181,5 +183,8 @@ class ArchiveAnswerResult {
   /// Explicação (vazia quando errou).
   final ArchiveSolution solution;
   final int xp;
+
+  /// Aviso quando a vitória não deu XP porque o limite do dia acabou.
+  final String notice;
   final ProgressUpdate? progress;
 }

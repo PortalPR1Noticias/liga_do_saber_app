@@ -14,6 +14,10 @@
 //   caça-palavras, achar todas vale 20); depois de revelar, não vale XP.
 // acao "revelar": mostra a solução e a explicação da Mila.
 //
+// Para o tempo de tela não virar uso compulsivo, só as primeiras partidas
+// do dia dão XP (`ARQUIVO_COM_XP_POR_DIA`, padrão 15); depois disso dá para
+// jogar por diversão.
+//
 // Só o ano escolar e o modo vão para a OpenAI (nada escrito pela criança),
 // então, como a Trilha do Teo, não depende de `responsaveis.autoriza_ia`.
 //
@@ -30,12 +34,14 @@ import {
   servir,
   VOZES,
   type Contexto,
+  type Perfil,
 } from "../_shared/liga.ts";
 
 const TIPO = "arquivo";
 const LIMITE_DIARIO = Number(Deno.env.get("LIMITE_ARQUIVO_POR_DIA") ?? "40");
 const XP_DE_PRIMEIRA = 20;
 const XP_DEPOIS_DE_ERRAR = 10;
+const COM_XP_POR_DIA = Number(Deno.env.get("ARQUIVO_COM_XP_POR_DIA") ?? "15");
 const EVENTOS_NA_LINHA = 4;
 
 const MODOS = ["caca_palavras", "linha_do_tempo", "documento"];
@@ -297,6 +303,19 @@ function montarGrade(
   };
 }
 
+/// Se a criança ainda ganha XP hoje: conta as partidas que deram XP nas
+/// últimas 24 horas.
+async function podeGanharXp(ctx: Contexto, perfil: Perfil): Promise<boolean> {
+  const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count } = await ctx.servico
+    .from("eventos_xp")
+    .select("id", { count: "exact", head: true })
+    .eq("perfil_crianca_id", perfil.id)
+    .eq("origem", TIPO)
+    .gte("created_at", desde);
+  return (count ?? 0) < COM_XP_POR_DIA;
+}
+
 async function carregarCaso(ctx: Contexto) {
   const perfil = await carregarPerfil(ctx);
   const casoId = ctx.corpo.caso_id;
@@ -510,10 +529,16 @@ async function responder(ctx: Contexto): Promise<Response> {
     acertou ? xp : undefined,
   );
 
+  let aviso = "";
+  if (xp > 0 && !(await podeGanharXp(ctx, perfil))) {
+    xp = 0;
+    aviso = "Hoje você já ganhou o XP do Arquivo. Amanhã tem mais!";
+  }
   const progresso = await concederXp(ctx, perfil, xp, TIPO, id);
 
   return resposta(200, {
     acertou,
+    aviso,
     dica: acertou ? "" : dica,
     no_lugar: noLugar,
     ...(acertou ? solucao(caso) : { explicacao: [], curiosidade: "" }),

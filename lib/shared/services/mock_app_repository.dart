@@ -25,6 +25,7 @@ class MockAppRepository extends AppRepository {
   bool _expeditionRevealed = false;
   int _archiveAttempts = 0;
   bool _archiveRevealed = false;
+  int _archiveWinsWithXp = 0;
   ArchiveMode _archiveMode = ArchiveMode.documento;
 
   @override
@@ -560,6 +561,9 @@ class MockAppRepository extends AppRepository {
               ? 20
               : 10);
     _archiveAttempts++;
+    // Mesmo limite da Edge Function: 15 partidas com XP por dia.
+    final limitReached = xp > 0 && _archiveWinsWithXp >= 15;
+    if (xp > 0 && !limitReached) _archiveWinsWithXp++;
     return ArchiveAnswerResult(
       hit: hit,
       tip: hit
@@ -572,9 +576,12 @@ class MockAppRepository extends AppRepository {
                 'Procure um objeto que quase ninguém usa hoje.',
             },
       inPlace: inPlace,
+      notice: limitReached
+          ? 'Hoje você já ganhou o XP do Arquivo. Amanhã tem mais!'
+          : '',
       solution: hit ? solution : const ArchiveSolution(steps: [], funFact: ''),
-      xp: xp,
-      progress: xp > 0 ? _grantXp(xp, 'arquivo') : null,
+      xp: limitReached ? 0 : xp,
+      progress: xp > 0 && !limitReached ? _grantXp(xp, 'arquivo') : null,
     );
   }
 

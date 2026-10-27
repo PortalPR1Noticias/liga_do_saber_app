@@ -62,6 +62,9 @@ A `arquivo-mila` precisa da migration
 `supabase/migrations/0006_arquivo_da_mila.sql` (missão do dia e medalha
 Historiador da Liga). Ela também só manda à OpenAI o ano escolar e o jogo
 escolhido, então não depende da autorização de IA.
+Para o tempo de tela não virar uso compulsivo, só as primeiras 15 partidas
+do dia dão XP (secret opcional `ARQUIVO_COM_XP_POR_DIA`); depois dá para
+continuar jogando sem XP.
 
 O texto que a criança escreve na Oficina vai para a OpenAI (`store: false`)
 e fica guardado em `producoes_textuais` para o responsável acompanhar.

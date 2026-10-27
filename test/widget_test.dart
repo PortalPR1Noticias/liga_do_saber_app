@@ -315,6 +315,31 @@ void main() {
     expect(find.byType(LigaRewardCard), findsNothing);
   });
 
+  testWidgets('mila games stop giving XP after 15 wins in a day', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: MilaArchiveScreen()));
+    await scrollAndTap(tester, find.text('Enigma do documento'));
+
+    for (var game = 1; game <= 16; game++) {
+      await scrollAndTap(
+        tester,
+        find.text(game == 1 ? 'Começar jogo' : 'Nova partida'),
+      );
+      await tester.pump();
+      await tester.pump();
+      await scrollAndTap(
+        tester,
+        find.text('Há tinteiros para molhar a caneta'),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+    await scrollTo(tester, find.textContaining('já ganhou o XP do Arquivo'));
+    expect(find.byType(LigaRewardCard), findsNothing);
+  });
+
   testWidgets('reading detective checks the answers and shows clues', (
     tester,
   ) async {

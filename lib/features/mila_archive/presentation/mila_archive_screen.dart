@@ -96,6 +96,7 @@ class _MilaArchiveScreenState extends State<MilaArchiveScreen> {
               ArchiveMode.linhaDoTempo => 'Fichas em ordem! Caso resolvido!',
               ArchiveMode.documento => 'Enigma resolvido! Que investigação!',
             };
+            if (result.notice.isNotEmpty) _feedback += ' ${result.notice}';
           } else {
             if (choice != null) _wrong.add(choice);
             _picked.clear();
