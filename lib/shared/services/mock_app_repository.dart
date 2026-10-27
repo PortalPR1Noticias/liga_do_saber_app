@@ -8,6 +8,7 @@ import '../models/league_progress.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
+import '../models/practice_exam.dart';
 import '../models/progress_update.dart';
 import '../models/reading_case.dart';
 import '../models/responsible_account.dart';
@@ -146,6 +147,168 @@ class MockAppRepository extends AppRepository {
       xp: 20,
       progress: _grantXp(20, 'foto'),
     );
+  }
+
+  final _practiceExams = <PracticeExamSummary>[];
+
+  /// Estado das questões de cada prova: tentativas, acertou e explicada.
+  final _practiceState = <String, Map<String, PracticeQuestion>>{};
+
+  /// Questões da prova de exemplo, com o índice da opção certa.
+  static const _practiceQuestions = [
+    (
+      PracticeQuestion(
+        id: 'q1',
+        topic: 'Frações equivalentes',
+        statement: 'Qual fração é igual a 1/2?',
+        options: ['1/3', '2/4', '3/5', '2/3'],
+        fromExam: true,
+        missedInExam: true,
+      ),
+      1,
+    ),
+    (
+      PracticeQuestion(
+        id: 'q2',
+        topic: 'Comparar frações',
+        statement: 'Qual é maior: 3/4 ou 1/4?',
+        options: ['3/4', '1/4', 'São iguais'],
+        fromExam: true,
+      ),
+      0,
+    ),
+    (
+      PracticeQuestion(
+        id: 'q3',
+        topic: 'Frações equivalentes',
+        statement: 'Qual fração é igual a 2/6?',
+        options: ['2/3', '1/2', '1/3', '3/6'],
+      ),
+      2,
+    ),
+  ];
+
+  @override
+  Future<PracticeExamSummary> uploadPracticeExam({
+    required List<Uint8List> photos,
+    required PracticeExamKind kind,
+    String note = '',
+  }) async {
+    if (!responsible.aiConsent) {
+      throw const AppRepositoryException(
+        'Ligue a autorização de IA acima para enviar provas e tarefas.',
+      );
+    }
+    final id = 'prova-${_practiceExams.length + 1}';
+    final exam = PracticeExamSummary(
+      id: id,
+      kind: kind,
+      title: '${kind.label} de frações',
+      subject: 'matematica',
+      characterId: 'nico',
+      topics: const ['Frações equivalentes', 'Comparar frações'],
+      parentNote:
+          'Caíram frações equivalentes e comparação. A criança errou a '
+          'questão de frações equivalentes: vale reforçar.',
+      totalQuestions: _practiceQuestions.length,
+      solvedQuestions: 0,
+      stars: 0,
+      won: false,
+      createdAt: DateTime.now(),
+    );
+    _practiceExams.insert(0, exam);
+    _practiceState[id] = {for (final (q, _) in _practiceQuestions) q.id: q};
+    return exam;
+  }
+
+  @override
+  Future<List<PracticeExamSummary>> loadPracticeExams() async {
+    return List.unmodifiable(_practiceExams);
+  }
+
+  @override
+  Future<PracticeExamRound> openPracticeExam(String examId) async {
+    final state = _practiceState[examId];
+    if (state == null) {
+      throw const AppRepositoryException('Essa prova não existe mais.');
+    }
+    return PracticeExamRound(
+      examId: examId,
+      questions: state.values.toList(),
+      won: _practiceExams.firstWhere((e) => e.id == examId).won,
+    );
+  }
+
+  @override
+  Future<PracticeAnswerResult> answerPracticeQuestion(
+    String examId,
+    String questionId,
+    int choice,
+  ) async {
+    final state = _practiceState[examId]!;
+    final q = state[questionId]!;
+    final correct = _practiceQuestions
+        .firstWhere((entry) => entry.$1.id == questionId)
+        .$2;
+    final hit = choice == correct;
+    final xp = !hit || q.solved || q.explained ? 0 : (q.attempts == 0 ? 10 : 5);
+    final explainNow = !q.solved && !hit && !q.explained && q.attempts >= 1;
+    state[questionId] = PracticeQuestion(
+      id: q.id,
+      topic: q.topic,
+      statement: q.statement,
+      options: q.options,
+      fromExam: q.fromExam,
+      missedInExam: q.missedInExam,
+      solved: q.solved || hit,
+      attempts: q.attempts + 1,
+      explained: q.explained || explainNow,
+    );
+    final solved = state.values.where((x) => x.solved).length;
+    final index = _practiceExams.indexWhere((e) => e.id == examId);
+    final exam = _practiceExams[index];
+    final wonNow = solved == state.length && !exam.won;
+    var stars = 0;
+    if (wonNow) {
+      final firstTry = state.values.where((x) => x.attempts == 1).length;
+      final rate = firstTry / state.length;
+      stars = rate >= 0.9 ? 3 : (rate >= 0.6 ? 2 : 1);
+    }
+    _practiceExams[index] = PracticeExamSummary(
+      id: exam.id,
+      kind: exam.kind,
+      title: exam.title,
+      subject: exam.subject,
+      characterId: exam.characterId,
+      topics: exam.topics,
+      parentNote: exam.parentNote,
+      totalQuestions: exam.totalQuestions,
+      solvedQuestions: solved,
+      stars: wonNow ? stars : exam.stars,
+      won: exam.won || wonNow,
+      createdAt: exam.createdAt,
+    );
+    final total = xp + (wonNow ? 30 : 0);
+    return PracticeAnswerResult(
+      hit: hit,
+      tip: hit || explainNow ? '' : 'Pense em dividir em partes iguais.',
+      explanation: hit || explainNow
+          ? const ['Olhe as partes de cada fração.', 'A resposta certa é essa!']
+          : const [],
+      correct: hit || explainNow ? correct : null,
+      explained: explainNow,
+      solvedQuestions: solved,
+      won: exam.won || wonNow,
+      stars: stars,
+      xp: total,
+      progress: total > 0 ? _grantXp(total, 'revanche') : null,
+    );
+  }
+
+  @override
+  Future<void> deletePracticeExam(String examId) async {
+    _practiceExams.removeWhere((e) => e.id == examId);
+    _practiceState.remove(examId);
   }
 
   static const _missions = [

@@ -17,6 +17,7 @@ IconData ligaIconFor(String? name) {
     'lightbulb' => Icons.lightbulb_rounded,
     'hub' => Icons.hub_rounded,
     'history_edu' => Icons.history_edu_rounded,
+    'replay' => Icons.replay_rounded,
     _ => Icons.emoji_events_rounded,
   };
 }
@@ -34,6 +35,7 @@ Color ligaColorFor(String? name) {
     'lightbulb' => LigaColors.sunsetOrange,
     'hub' => LigaColors.sunsetOrange,
     'history_edu' => LigaColors.adventurePurple,
+    'replay' => LigaColors.actionCoral,
     _ => LigaColors.achievementYellow,
   };
 }

@@ -24,7 +24,8 @@ Da criança:
 - um apelido (recomendamos não usar o nome completo), o ano escolar, as áreas de foco escolhidas e o avatar;
 - o progresso no app: missões, XP, nível, sequência de dias e conquistas;
 - os textos escritos na Oficina de Texto e as respostas dadas nas atividades;
-- as explicações geradas pela Foto + IA.
+- as explicações geradas pela Foto + IA;
+- as questões de treino criadas a partir das provas e tarefas enviadas pelo responsável (Revanche da prova) e as respostas da criança.
 
 Não coletamos localização, contatos, identificadores de publicidade, nome completo, foto do rosto, CPF ou endereço da criança. O app não tem anúncios, não tem chat entre usuários e não tem ranking público.
 
@@ -37,6 +38,15 @@ A Foto + IA só funciona se o responsável autorizar na Área dos responsáveis.
 - pedimos à IA que ignore nomes, escolas, endereços e outros dados pessoais que apareçam na foto. Mesmo assim, oriente a criança a fotografar só a atividade.
 
 O responsável pode retirar a autorização a qualquer momento na Área dos responsáveis.
+
+## Revanche da prova
+
+Com a mesma autorização, o responsável pode fotografar, na Área dos responsáveis, uma prova ou tarefa que a criança já fez, para ela treinar o conteúdo:
+- as fotos são enviadas para a OpenAI apenas para ler as questões e criar questões de treino parecidas;
+- as fotos não são guardadas pela Liga do Saber;
+- guardamos as questões de treino, um resumo do que caiu na prova e o progresso da criança no treino;
+- pedimos à IA que ignore nomes, escola, turma, professor e outros dados pessoais que apareçam na folha;
+- o responsável pode apagar cada treino em "Área dos responsáveis > Provas para treinar".
 
 ## Para que usamos os dados
 
@@ -63,6 +73,8 @@ Esses fornecedores ficam fora do Brasil (principalmente nos Estados Unidos). A t
 
 - Fotos da Foto + IA: não são guardadas.
 - Explicações da Foto + IA: apagadas automaticamente depois de 12 meses.
+- Fotos de provas e tarefas: não são guardadas.
+- Treinos da Revanche da prova: apagados automaticamente depois de 12 meses.
 - Conta, perfil e progresso: enquanto a conta existir.
 - Contas sem nenhum acesso por 24 meses: excluídas por inteiro, automaticamente.
 - Ao excluir a conta, todos os dados do responsável e das crianças são apagados na hora. Cópias de segurança do provedor podem levar até 30 dias para expirar.

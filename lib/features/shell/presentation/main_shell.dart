@@ -14,6 +14,7 @@ import '../../mila_archive/presentation/mila_archive_screen.dart';
 import '../../minigames/presentation/minigames_hub_screen.dart';
 import '../../parent_area/presentation/parent_area_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
+import '../../practice_exam/presentation/revanche_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../teo_trail/presentation/teo_trail_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
@@ -455,6 +456,7 @@ class _MissionsScreenState
       'arquivo' => MilaArchiveScreen.routeName,
       'minijogo' => MinigamesHubScreen.routeName,
       'foto' => PhotoSolverFlowScreen.routeName,
+      'revanche' || 'revanche_vencida' => RevancheScreen.routeName,
       _ => null,
     };
     if (route != null) Navigator.of(context).pushNamed(route);

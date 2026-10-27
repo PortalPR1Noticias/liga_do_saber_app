@@ -9,6 +9,7 @@ import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../legal/presentation/legal_document_screen.dart';
 import '../../onboarding/presentation/onboarding_screen.dart';
+import '../../practice_exam/presentation/parent_exams_screen.dart';
 
 /// Pergunta de adulto antes da Área dos responsáveis, para a criança não
 /// mexer sozinha em autorizações e na exclusão da conta (pedido da política
@@ -183,15 +184,17 @@ class _ParentAreaScreenState extends State<ParentAreaScreen> {
                         value: responsible.aiConsent,
                         onChanged: _busy ? null : _setAiConsent,
                         title: Text(
-                          'Permitir a Foto + IA e a Oficina de Texto',
+                          'Permitir a Foto + IA, a Oficina de Texto e a '
+                          'Revanche da prova',
                           style: textTheme.titleMedium,
                         ),
                       ),
                       Text(
-                        'A foto da lição e os textos da Oficina são enviados '
-                        'para a OpenAI (EUA) só para gerar a explicação e o '
-                        'feedback. A foto não é guardada, as explicações '
-                        'ficam salvas por até 12 meses e os textos ficam na '
+                        'A foto da lição, as fotos de provas e os textos da '
+                        'Oficina são enviados para a OpenAI (EUA) só para '
+                        'gerar a explicação, o treino e o feedback. As fotos '
+                        'não são guardadas, as explicações e os treinos '
+                        'ficam salvos por até 12 meses e os textos ficam na '
                         'conta para você acompanhar. Você pode desligar '
                         'quando quiser.',
                         style: textTheme.bodyMedium,
@@ -200,6 +203,20 @@ class _ParentAreaScreenState extends State<ParentAreaScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
+                LigaActionButton(
+                  key: const Key('parentExamsButton'),
+                  label: 'Provas para treinar',
+                  icon: Icons.assignment_rounded,
+                  color: LigaColors.sunsetOrange,
+                  onPressed: _busy
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const ParentExamsScreen(),
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 12),
                 LigaActionButton(
                   label: 'Baixar cópia dos dados',
                   icon: Icons.download_rounded,
