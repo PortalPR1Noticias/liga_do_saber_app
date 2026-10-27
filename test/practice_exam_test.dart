@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liga_do_saber_app/app/theme.dart';
+import 'package:liga_do_saber_app/shared/design_system/liga_sound.dart';
+import 'package:liga_do_saber_app/shared/design_system/liga_victory.dart';
 import 'package:liga_do_saber_app/features/practice_exam/presentation/parent_exams_screen.dart';
 import 'package:liga_do_saber_app/features/practice_exam/presentation/revanche_screen.dart';
 import 'package:liga_do_saber_app/shared/design_system/liga_widgets.dart';
@@ -40,6 +42,8 @@ void main() {
   setUp(() {
     AppRepository.instance = MockAppRepository();
     LigaMotion.ambient = false;
+    LigaSound.enabled = false;
+    LigaVictory.enabled = false;
   });
 
   testWidgets('parent needs the AI consent to send an exam', (tester) async {
