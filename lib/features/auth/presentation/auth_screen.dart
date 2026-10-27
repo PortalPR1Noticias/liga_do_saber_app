@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../child_profile/presentation/child_profile_screen.dart';
@@ -111,16 +112,33 @@ class _AuthScreenState extends State<AuthScreen> {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              PopIn(
+                child: Row(
+                  children: [
+                    const LigaMascot(character: LigaCharacter.nico, size: 84),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: LigaSpeechBubble(
+                        text: _isCreateAccount
+                            ? 'Oi! Primeiro, um adulto cria a conta. Depois é a sua vez!'
+                            : 'Que bom te ver de novo! Vamos continuar a missão?',
+                        color: LigaColors.primaryBlue.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
               Text(
                 _isCreateAccount ? 'Crie sua conta' : 'Entre na sua conta',
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 'A conta principal é sempre do responsável. O perfil da criança vem no próximo passo.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 18),
               SegmentedButton<bool>(
                 segments: const [
                   ButtonSegment(value: true, label: Text('Criar')),
@@ -166,7 +184,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Icon(
-                            Icons.verified_user_outlined,
+                            Icons.verified_user_rounded,
                             color: LigaColors.progressGreen,
                             size: 20,
                           ),
@@ -188,7 +206,10 @@ class _AuthScreenState extends State<AuthScreen> {
                 label: _isSaving
                     ? 'Salvando...'
                     : (_isCreateAccount ? 'Continuar' : 'Entrar'),
-                icon: Icons.arrow_forward_rounded,
+                icon: _isCreateAccount
+                    ? Icons.arrow_forward_rounded
+                    : Icons.login_rounded,
+                color: LigaColors.primaryBlue,
                 onPressed: _isSaving ? null : _continue,
               ),
             ],
@@ -223,30 +244,14 @@ class _LigaTextField extends StatelessWidget {
       keyboardType: keyboardType,
       obscureText: obscureText,
       validator: validator,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(
+        color: LigaColors.ink,
+        fontWeight: FontWeight.w800,
+        fontSize: 16,
+      ),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Color(0xFFD8E2FF)),
-        prefixIcon: Icon(icon, color: LigaColors.cyanGlow),
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.08),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: LigaColors.cyanGlow, width: 2),
-        ),
-        errorStyle: const TextStyle(color: LigaColors.actionCoral),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: LigaColors.actionCoral),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: LigaColors.actionCoral, width: 2),
-        ),
+        prefixIcon: Icon(icon, color: LigaColors.primaryBlue),
       ),
     );
   }

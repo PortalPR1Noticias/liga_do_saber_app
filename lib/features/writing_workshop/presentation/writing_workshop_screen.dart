@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 
 class WritingWorkshopScreen extends StatelessWidget {
@@ -14,7 +15,7 @@ class WritingWorkshopScreen extends StatelessWidget {
       title: 'Oficina de Texto',
       subtitle: 'Luma ajuda a planejar, escrever, revisar e reescrever.',
       color: LigaColors.actionCoral,
-      icon: Icons.edit_note,
+      character: LigaCharacter.luma,
       children: const [
         _StepTile('1', 'Planejar ideias', 'Tema, começo, meio e final.'),
         _StepTile('2', 'Escrever versão 1', 'Texto curto com foco em clareza.'),
@@ -38,14 +39,14 @@ class _FeatureScaffold extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.color,
-    required this.icon,
+    required this.character,
     required this.children,
   });
 
   final String title;
   final String subtitle;
   final Color color;
-  final IconData icon;
+  final LigaCharacter character;
   final List<Widget> children;
 
   @override
@@ -56,15 +57,22 @@ class _FeatureScaffold extends StatelessWidget {
         child: SafeArea(
           top: false,
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
             children: [
-              Icon(icon, color: color, size: 48),
-              const SizedBox(height: 12),
-              Text(title, style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 8),
-              Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 22),
-              ...children,
+              PopIn(
+                child: LigaFeatureHeader(
+                  title: title,
+                  subtitle: subtitle,
+                  color: color,
+                  character: character,
+                ),
+              ),
+              const SizedBox(height: 20),
+              for (var i = 0; i < children.length; i++)
+                PopIn(
+                  delay: Duration(milliseconds: 100 + 80 * i),
+                  child: children[i],
+                ),
             ],
           ),
         ),
@@ -80,30 +88,53 @@ class _StepTile extends StatelessWidget {
   final String title;
   final String subtitle;
 
+  static const _colors = [
+    LigaColors.actionCoral,
+    LigaColors.sunsetOrange,
+    LigaColors.adventurePurple,
+    LigaColors.progressGreen,
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final color = _colors[(int.parse(number) - 1) % _colors.length];
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: LigaPanel(
         padding: const EdgeInsets.all(14),
+        borderColor: color.withValues(alpha: 0.45),
         child: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: LigaColors.actionCoral,
+            Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: color,
+                border: Border.all(color: LigaColors.ink, width: 3),
+                boxShadow: const [
+                  BoxShadow(color: LigaColors.ink, offset: Offset(0, 4)),
+                ],
+              ),
               child: Text(
                 number,
-                style: const TextStyle(
+                style: TextStyle(
+                  fontFamily: LigaTheme.displayFont,
                   color: Colors.white,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 24,
+                  shadows: ligaOutline(1.6),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 2),
                   Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),

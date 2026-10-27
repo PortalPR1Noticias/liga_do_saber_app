@@ -1,39 +1,38 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import 'liga_mascots.dart';
 
+/// Herói que a criança escolhe para representá-la na Liga.
 class LigaAvatar {
-  const LigaAvatar(this.id, this.name, this.icon, this.color);
+  const LigaAvatar(this.id, this.name, this.icon, this.character);
 
   final String id;
   final String name;
   final IconData icon;
-  final Color color;
+  final LigaCharacter character;
+
+  Color get color => character.color;
 
   static const all = [
     LigaAvatar(
       'estrategista',
       'Estrategista',
-      Icons.psychology_alt,
-      LigaColors.primaryBlue,
+      Icons.lightbulb_rounded,
+      LigaCharacter.nico,
     ),
     LigaAvatar(
       'investigadora',
       'Investigadora',
-      Icons.travel_explore,
-      LigaColors.progressGreen,
+      Icons.search_rounded,
+      LigaCharacter.mila,
     ),
-    LigaAvatar(
-      'criadora',
-      'Criadora',
-      Icons.auto_awesome,
-      LigaColors.actionCoral,
-    ),
+    LigaAvatar('criadora', 'Criadora', Icons.auto_awesome, LigaCharacter.luma),
     LigaAvatar(
       'explorador',
       'Explorador',
-      Icons.terrain,
-      LigaColors.achievementYellow,
+      Icons.terrain_rounded,
+      LigaCharacter.explorador,
     ),
   ];
 
@@ -42,6 +41,7 @@ class LigaAvatar {
   }
 }
 
+/// Retrato do herói escolhido, com o selo da classe no canto.
 class LigaAvatarBadge extends StatelessWidget {
   const LigaAvatarBadge({super.key, required this.avatarId, this.radius = 34});
 
@@ -51,10 +51,31 @@ class LigaAvatarBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final avatar = LigaAvatar.byId(avatarId);
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: avatar.color.withValues(alpha: 0.22),
-      child: Icon(avatar.icon, color: avatar.color, size: radius * 1.05),
+    final seal = radius * 0.62;
+    return SizedBox(
+      key: ValueKey('avatar-${avatar.id}'),
+      width: radius * 2,
+      height: radius * 2,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          LigaPortrait(character: avatar.character, size: radius * 2),
+          Positioned(
+            right: -seal * 0.15,
+            bottom: -seal * 0.1,
+            child: Container(
+              width: seal,
+              height: seal,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(seal * 0.3),
+                color: avatar.color,
+                border: Border.all(color: LigaColors.ink, width: seal * 0.1),
+              ),
+              child: Icon(avatar.icon, color: Colors.white, size: seal * 0.6),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

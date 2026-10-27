@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 
 class ReadingDetectiveScreen extends StatelessWidget {
@@ -16,37 +17,56 @@ class ReadingDetectiveScreen extends StatelessWidget {
         child: SafeArea(
           top: false,
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
             children: [
-              const Icon(
-                Icons.travel_explore,
-                color: LigaColors.progressGreen,
-                size: 48,
+              const PopIn(
+                child: LigaFeatureHeader(
+                  title: 'Detetive da Leitura',
+                  subtitle: 'Cada pergunta precisa de uma pista no texto.',
+                  color: LigaColors.adventurePurple,
+                  character: LigaCharacter.mila,
+                ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Detetive da Leitura',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Cada pergunta precisa de uma pista no texto.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 22),
-              const LigaPanel(
-                child: Text(
-                  'Caso: O bilhete desaparecido\n\nMila encontrou uma mensagem incompleta na biblioteca. Para descobrir quem deixou o bilhete, você precisa identificar a ideia principal e inferir o motivo da visita.',
-                  style: TextStyle(color: Colors.white, height: 1.35),
+              const SizedBox(height: 20),
+              PopIn(
+                delay: const Duration(milliseconds: 120),
+                child: LigaPanel(
+                  borderColor: LigaColors.adventurePurple.withValues(
+                    alpha: 0.5,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const LigaPill(
+                        icon: Icons.folder_open_rounded,
+                        label: 'Caso nº 1',
+                        color: LigaColors.adventurePurple,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'O bilhete desaparecido',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Mila encontrou uma mensagem incompleta na biblioteca. Para descobrir quem deixou o bilhete, você precisa identificar a ideia principal e inferir o motivo da visita.',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
-              MissionCard(
-                title: 'Pergunta 1',
-                subtitle: 'Qual é a pista mais importante do texto?',
-                icon: Icons.search,
-                color: LigaColors.progressGreen,
-                progress: 0.33,
+              PopIn(
+                delay: const Duration(milliseconds: 200),
+                child: MissionCard(
+                  title: 'Pergunta 1',
+                  subtitle: 'Qual é a pista mais importante do texto?',
+                  icon: Icons.search_rounded,
+                  color: LigaColors.adventurePurple,
+                  progress: 0.33,
+                  onTap: () => showComingSoon(context),
+                ),
               ),
             ],
           ),
