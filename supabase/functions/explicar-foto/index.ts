@@ -256,18 +256,40 @@ Deno.serve(async (req) => {
     xp: explicacao.legivel ? XP_POR_FOTO : 0,
   };
 
-  const { error: erroAoSalvar } = await servico.from("correcoes_ia").insert({
-    perfil_crianca_id: perfil.id,
-    tipo: "foto",
-    entrada_resumo: String(explicacao.enunciado ?? "").slice(0, 500),
-    resposta_json: resultado,
-    xp_sugerido: resultado.xp,
-    modelo_usado: saida.model,
-  });
+  const { data: registro, error: erroAoSalvar } = await servico
+    .from("correcoes_ia")
+    .insert({
+      perfil_crianca_id: perfil.id,
+      tipo: "foto",
+      entrada_resumo: String(explicacao.enunciado ?? "").slice(0, 500),
+      resposta_json: resultado,
+      xp_sugerido: resultado.xp,
+      modelo_usado: saida.model,
+    })
+    .select("id")
+    .single();
   if (erroAoSalvar) {
-    // A criança recebe a explicação mesmo assim; só fica sem histórico.
+    // A criança recebe a explicação mesmo assim; só fica sem histórico e XP.
     console.error("Falha ao gravar correcoes_ia", erroAoSalvar.message);
+    return resposta(200, { ...resultado, xp: 0, progresso: null });
   }
 
-  return resposta(200, resultado);
+  // XP, nível, missão do dia e medalhas (função da migration 0003).
+  let progresso = null;
+  if (resultado.xp > 0) {
+    const { data, error } = await servico.rpc("conceder_xp", {
+      p_perfil: perfil.id,
+      p_xp: resultado.xp,
+      p_origem: "foto",
+      p_referencia: registro.id,
+    });
+    if (error) console.error("Falha ao conceder XP", error.message);
+    progresso = data;
+  }
+
+  return resposta(200, {
+    ...resultado,
+    xp: progresso ? resultado.xp : 0,
+    progresso,
+  });
 });

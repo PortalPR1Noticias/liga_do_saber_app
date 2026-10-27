@@ -9,6 +9,9 @@ import 'package:liga_do_saber_app/features/auth/presentation/auth_screen.dart';
 import 'package:liga_do_saber_app/features/math_arena/presentation/math_arena_screen.dart';
 import 'package:liga_do_saber_app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:liga_do_saber_app/features/photo_solver/presentation/photo_solver_flow_screen.dart';
+import 'package:liga_do_saber_app/features/reading_detective/presentation/reading_detective_screen.dart';
+import 'package:liga_do_saber_app/features/shell/presentation/main_shell.dart';
+import 'package:liga_do_saber_app/features/writing_workshop/presentation/writing_workshop_screen.dart';
 import 'package:liga_do_saber_app/shared/design_system/liga_widgets.dart';
 import 'package:liga_do_saber_app/shared/models/photo_explanation.dart';
 import 'package:liga_do_saber_app/shared/services/app_repository.dart';
@@ -125,11 +128,42 @@ void main() {
     expect(find.text('Você já mandou muitas fotos hoje.'), findsOneWidget);
   });
 
+  testWidgets('math arena gives XP for the right answer', (tester) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: MathArenaScreen()));
+
+    await scrollAndTap(tester, find.text('Começar desafio'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.textContaining('24 figurinhas'), findsOneWidget);
+
+    await scrollAndTap(tester, find.text('12'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('tabuada do 3'));
+
+    await scrollAndTap(tester, find.text('8'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.text('Acertou! Mandou bem!'));
+    // Acertou depois de errar: 10 XP + 20 de bônus da missão do dia.
+    await scrollTo(tester, find.text('+30 XP'));
+    expect(find.text('+30 XP'), findsOneWidget);
+    await scrollTo(
+      tester,
+      find.textContaining('Então cada amigo fica com 8 figurinhas.'),
+    );
+  });
+
   testWidgets('math arena reveals step by step', (tester) async {
     usePhoneScreen(tester);
     await tester.pumpWidget(const MaterialApp(home: MathArenaScreen()));
 
+    await scrollAndTap(tester, find.text('Começar desafio'));
+    await tester.pump();
+    await tester.pump();
     await scrollAndTap(tester, find.text('Ver passo a passo'));
+    await tester.pump();
     await tester.pump();
     await scrollTo(
       tester,
@@ -139,6 +173,70 @@ void main() {
       find.textContaining('Então cada amigo fica com 8 figurinhas.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('reading detective checks the answers and shows clues', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: ReadingDetectiveScreen()));
+
+    await scrollAndTap(tester, find.text('Abrir um caso'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('O bilhete desaparecido'), findsOneWidget);
+
+    await scrollAndTap(tester, find.text('Um bilhete deixado na biblioteca'));
+    await scrollAndTap(tester, find.text('A bibliotecária'));
+    await scrollAndTap(tester, find.text('Um foguete'));
+    await scrollAndTap(tester, find.text('Enviar respostas'));
+    await tester.pump();
+    await tester.pump();
+
+    await scrollTo(tester, find.textContaining('Você acertou 2 de 3'));
+    // 2 acertos (20 XP) + 25 de bônus da missão do dia.
+    await scrollTo(tester, find.text('+45 XP'));
+    expect(find.text('+45 XP'), findsOneWidget);
+    expect(find.text('Medalha nova: Primeiro Passo'), findsOneWidget);
+  });
+
+  testWidgets('writing workshop gives feedback and rewards the rewrite', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: WritingWorkshopScreen()));
+
+    await scrollTo(tester, find.widgetWithText(TextField, 'Seu texto'));
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Seu texto'),
+      'era uma vez um gato que voava',
+    );
+    await scrollAndTap(tester, find.text('Receber feedback da Luma'));
+    await tester.pump();
+    await tester.pump();
+
+    await scrollTo(tester, find.text('Feedback da Luma'));
+    await scrollTo(tester, find.text('Termine cada frase com ponto final.'));
+    await scrollAndTap(tester, find.text('Enviar reescrita'));
+    await tester.pump();
+    await tester.pump();
+
+    await scrollTo(tester, find.text('Melhorou bem'));
+    // 26 XP pela evolução + 35 de bônus da missão do dia.
+    await scrollTo(tester, find.text('+61 XP'));
+    expect(find.text('+61 XP'), findsOneWidget);
+  });
+
+  testWidgets('missions tab shows what is done today', (tester) async {
+    usePhoneScreen(tester);
+    await AppRepository.instance.answerMathChallenge('desafio-1', 1);
+    await tester.pumpWidget(const MaterialApp(home: MainShell()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Missões'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hoje: 1 de 4 missões'), findsOneWidget);
+    expect(find.text('Feita!'), findsOneWidget);
   });
 
   testWidgets('full sign-up flow reaches the home with chosen data', (

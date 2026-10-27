@@ -183,15 +183,17 @@ class _ParentAreaScreenState extends State<ParentAreaScreen> {
                         value: responsible.aiConsent,
                         onChanged: _busy ? null : _setAiConsent,
                         title: Text(
-                          'Permitir a Foto + IA',
+                          'Permitir a Foto + IA e a Oficina de Texto',
                           style: textTheme.titleMedium,
                         ),
                       ),
                       Text(
-                        'A foto da lição é enviada para a OpenAI (EUA) só '
-                        'para gerar a explicação. A foto não é guardada; a '
-                        'explicação fica salva por até 12 meses. Você pode '
-                        'desligar quando quiser.',
+                        'A foto da lição e os textos da Oficina são enviados '
+                        'para a OpenAI (EUA) só para gerar a explicação e o '
+                        'feedback. A foto não é guardada, as explicações '
+                        'ficam salvas por até 12 meses e os textos ficam na '
+                        'conta para você acompanhar. Você pode desligar '
+                        'quando quiser.',
                         style: textTheme.bodyMedium,
                       ),
                     ],

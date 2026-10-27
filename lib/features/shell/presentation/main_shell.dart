@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_mascots.dart';
+import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
-import '../../../shared/models/child_profile.dart';
+import '../../../shared/models/league_progress.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../onboarding/presentation/onboarding_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
 import '../../parent_area/presentation/parent_area_screen.dart';
+import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
 
@@ -36,7 +38,18 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: LigaBackground(child: SafeArea(child: _pages[_currentIndex])),
+      body: LigaBackground(
+        child: SafeArea(
+          // Recria a página quando o XP, o nível ou o avatar mudam.
+          child: ListenableBuilder(
+            listenable: AppRepository.instance,
+            builder: (context, _) => KeyedSubtree(
+              key: ValueKey(AppRepository.instance.childProfile),
+              child: _pages[_currentIndex],
+            ),
+          ),
+        ),
+      ),
       bottomNavigationBar: DecoratedBox(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -399,50 +412,125 @@ class _PortalNode extends StatelessWidget {
   }
 }
 
-class _MissionsScreen extends StatelessWidget {
-  const _MissionsScreen();
+/// Carrega dados da Liga ao abrir a aba. A aba é recriada quando o perfil
+/// muda (veja o ListenableBuilder do MainShell), então recarrega sozinha.
+abstract class _LiveState<W extends StatefulWidget, T> extends State<W> {
+  late final Future<T> _future = load();
+
+  Future<T> load();
+
+  Widget buildWith(BuildContext context, T? data, String? error);
 
   @override
   Widget build(BuildContext context) {
-    return const _ShellPage(
+    return FutureBuilder<T>(
+      future: _future,
+      builder: (context, snapshot) => buildWith(
+        context,
+        snapshot.data,
+        snapshot.error is AppRepositoryException
+            ? (snapshot.error as AppRepositoryException).message
+            : snapshot.hasError
+            ? 'Não consegui carregar agora.'
+            : null,
+      ),
+    );
+  }
+}
+
+class _MissionsScreen extends StatefulWidget {
+  const _MissionsScreen();
+
+  @override
+  State<_MissionsScreen> createState() => _MissionsScreenState();
+}
+
+class _MissionsScreenState
+    extends _LiveState<_MissionsScreen, List<DailyMission>> {
+  @override
+  Future<List<DailyMission>> load() =>
+      AppRepository.instance.loadDailyMissions();
+
+  void _open(DailyMission mission) {
+    final route = switch (mission.type) {
+      'leitura' => ReadingDetectiveScreen.routeName,
+      'texto' || 'texto_reescrita' => WritingWorkshopScreen.routeName,
+      'matematica' => MathArenaScreen.routeName,
+      'foto' => PhotoSolverFlowScreen.routeName,
+      _ => null,
+    };
+    if (route != null) Navigator.of(context).pushNamed(route);
+  }
+
+  @override
+  Widget buildWith(
+    BuildContext context,
+    List<DailyMission>? missions,
+    String? error,
+  ) {
+    final done = missions?.where((m) => m.done).length ?? 0;
+    return _ShellPage(
       title: 'Missões',
       subtitle: 'Desafios rapidinhos que valem XP. Bora?',
       character: LigaCharacter.luma,
       children: [
-        _MissionRow(
-          'Descobrir a ideia principal',
-          '+25 XP',
-          Icons.search_rounded,
-          LigaColors.adventurePurple,
-        ),
-        _MissionRow(
-          'Reescrever um parágrafo',
-          '+35 XP',
-          Icons.edit_rounded,
-          LigaColors.actionCoral,
-        ),
-        _MissionRow(
-          'Resolver desafio de frações',
-          '+20 XP',
-          Icons.functions_rounded,
-          LigaColors.primaryBlue,
-        ),
-        _MissionRow(
-          'Enviar foto da tarefa',
-          '+15 XP',
-          Icons.camera_alt_rounded,
-          LigaColors.progressGreen,
-        ),
+        if (error != null)
+          LigaPanel(child: Text(error))
+        else if (missions == null)
+          const Center(child: CircularProgressIndicator())
+        else ...[
+          LigaPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hoje: $done de ${missions.length} missões',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                LigaProgressBar(
+                  value: missions.isEmpty ? 0 : done / missions.length,
+                  color: LigaColors.progressGreen,
+                ),
+              ],
+            ),
+          ),
+          for (final mission in missions)
+            LigaPressable(
+              onTap: () => _open(mission),
+              child: _MissionRow(
+                mission.title,
+                mission.done ? 'Feita!' : '+${mission.xp} XP',
+                mission.done ? Icons.check_rounded : ligaIconFor(mission.icon),
+                mission.done
+                    ? LigaColors.progressGreen
+                    : ligaColorFor(mission.icon),
+              ),
+            ),
+        ],
       ],
     );
   }
 }
 
-class _ProgressScreen extends StatelessWidget {
+class _ProgressScreen extends StatefulWidget {
   const _ProgressScreen();
 
   @override
-  Widget build(BuildContext context) {
+  State<_ProgressScreen> createState() => _ProgressScreenState();
+}
+
+class _ProgressScreenState
+    extends _LiveState<_ProgressScreen, List<Achievement>> {
+  @override
+  Future<List<Achievement>> load() => AppRepository.instance.loadAchievements();
+
+  @override
+  Widget buildWith(
+    BuildContext context,
+    List<Achievement>? achievements,
+    String? error,
+  ) {
     final profile = AppRepository.instance.childProfile;
 
     return _ShellPage(
@@ -500,8 +588,7 @@ class _ProgressScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${profile.totalXp % ChildProfile.levelXpGoal} / '
-                      '${ChildProfile.levelXpGoal} XP',
+                      '${profile.levelXp} / ${profile.levelXpGoal} XP',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 8),
@@ -517,58 +604,25 @@ class _ProgressScreen extends StatelessWidget {
           ),
         ),
         const SectionTitle('Medalhas', icon: Icons.emoji_events_rounded),
-        const Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          alignment: WrapAlignment.center,
-          children: [
-            _Badge(
-              'Detetive da Leitura',
-              Icons.search_rounded,
-              LigaColors.adventurePurple,
-            ),
-            _Badge(
-              'Escritor Criativo',
-              Icons.edit_rounded,
-              LigaColors.actionCoral,
-            ),
-            _Badge(
-              'Sequência de Fogo',
-              Icons.local_fire_department_rounded,
-              LigaColors.sunsetOrange,
-            ),
-            _Badge(
-              'Mestre das Frações',
-              Icons.functions_rounded,
-              LigaColors.primaryBlue,
-              earned: false,
-            ),
-            _Badge(
-              'Explorador do Mapa',
-              Icons.map_rounded,
-              LigaColors.progressGreen,
-              earned: false,
-            ),
-            _Badge(
-              'Cientista Curioso',
-              Icons.science_rounded,
-              LigaColors.cyanGlow,
-              earned: false,
-            ),
-          ],
-        ),
-        const _MissionRow(
-          'Ponto forte',
-          'Interpretação explícita',
-          Icons.thumb_up_alt_rounded,
-          LigaColors.progressGreen,
-        ),
-        const _MissionRow(
-          'Praticar mais',
-          'Pontuação em textos',
-          Icons.tips_and_updates_rounded,
-          LigaColors.achievementYellow,
-        ),
+        if (error != null)
+          LigaPanel(child: Text(error))
+        else if (achievements == null)
+          const Center(child: CircularProgressIndicator())
+        else
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.center,
+            children: [
+              for (final achievement in achievements)
+                _Badge(
+                  achievement.name,
+                  ligaIconFor(achievement.icon),
+                  ligaColorFor(achievement.icon),
+                  earned: achievement.earned,
+                ),
+            ],
+          ),
       ],
     );
   }

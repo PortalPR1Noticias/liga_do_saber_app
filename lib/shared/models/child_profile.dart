@@ -1,3 +1,5 @@
+import 'progress_update.dart';
+
 class ChildProfile {
   const ChildProfile({
     required this.nickname,
@@ -17,10 +19,24 @@ class ChildProfile {
   final int totalXp;
   final int streakDays;
 
-  /// Meta de XP do nível atual enquanto não existe tabela de níveis real.
-  static const levelXpGoal = 7000;
+  /// XP em que o nível começa: 50 × n × (n − 1). É a mesma conta da
+  /// função SQL `nivel_do_xp` (migration 0003).
+  static int levelStartXp(int level) => 50 * level * (level - 1);
 
-  double get levelProgress => (totalXp % levelXpGoal) / levelXpGoal;
+  /// XP ganho dentro do nível atual.
+  int get levelXp => totalXp - levelStartXp(level);
+
+  /// Quanto XP o nível atual pede até o próximo.
+  int get levelXpGoal => levelStartXp(level + 1) - levelStartXp(level);
+
+  double get levelProgress => (levelXp / levelXpGoal).clamp(0.0, 1.0);
+
+  /// Perfil com o XP, nível e sequência que o servidor acabou de devolver.
+  ChildProfile withProgress(ProgressUpdate progress) => copyWith(
+    totalXp: progress.totalXp,
+    level: progress.level,
+    streakDays: progress.streakDays,
+  );
 
   ChildProfile copyWith({
     String? nickname,
