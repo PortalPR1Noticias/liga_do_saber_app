@@ -46,7 +46,7 @@ class OnboardingScreen extends StatelessWidget {
                       PopIn(
                         delay: const Duration(milliseconds: 180),
                         child: Text(
-                          'Luma, Nico, Mila e a turma te esperam para missões de leitura, texto e matemática. Cada desafio vale XP e medalhas!',
+                          'Nico, Luma, Teo, Mila e Zuri te esperam para missões de matemática, português, ciências, história e projetos. Cada desafio vale XP e medalhas!',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
@@ -55,9 +55,10 @@ class OnboardingScreen extends StatelessWidget {
                       const PopIn(
                         delay: Duration(milliseconds: 260),
                         child: _OnboardingPoint(
-                          icon: Icons.camera_alt_rounded,
-                          color: LigaColors.progressGreen,
-                          text: 'Tire foto da lição e entenda passo a passo.',
+                          icon: Icons.calculate_rounded,
+                          color: LigaColors.primaryBlue,
+                          text:
+                              'Resolva desafios de lógica e contas com o Nico.',
                         ),
                       ),
                       const PopIn(
@@ -65,15 +66,16 @@ class OnboardingScreen extends StatelessWidget {
                         child: _OnboardingPoint(
                           icon: Icons.edit_rounded,
                           color: LigaColors.actionCoral,
-                          text: 'Escreva histórias com a ajuda da Luma.',
+                          text: 'Leia e escreva melhor com a Luma.',
                         ),
                       ),
                       const PopIn(
                         delay: Duration(milliseconds: 420),
                         child: _OnboardingPoint(
-                          icon: Icons.search_rounded,
+                          icon: Icons.travel_explore_rounded,
                           color: LigaColors.adventurePurple,
-                          text: 'Desvende mistérios de leitura com a Mila.',
+                          text:
+                              'Investigue a História com a Mila e explore a natureza com o Teo.',
                         ),
                       ),
                       const Spacer(),

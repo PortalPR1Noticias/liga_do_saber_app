@@ -73,7 +73,7 @@ class HomeScreen extends StatelessWidget {
             title: 'Detetive da Leitura',
             subtitle: 'Encontre pistas, interprete e conclua o caso.',
             icon: Icons.search_rounded,
-            color: LigaColors.adventurePurple,
+            color: LigaColors.actionCoral,
             progress: 0.78,
             onTap: () => Navigator.of(
               context,
@@ -214,7 +214,7 @@ class _StreakFlame extends StatelessWidget {
   }
 }
 
-/// Destaque da missão do dia, com a Mila convidando a criança.
+/// Destaque da missão do dia, com a Luma convidando a criança.
 class _DailyMission extends StatelessWidget {
   const _DailyMission({required this.onTap});
 
@@ -225,8 +225,8 @@ class _DailyMission extends StatelessWidget {
     return LigaPressable(
       onTap: onTap,
       child: LigaSceneCard(
-        character: LigaCharacter.mila,
-        color: LigaColors.adventurePurple,
+        character: LigaCharacter.luma,
+        color: LigaColors.actionCoral,
         height: 220,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -250,7 +250,7 @@ class _DailyMission extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Investigue pistas no texto com a Mila e desbloqueie o próximo caso.',
+                    'Investigue pistas no texto com a Luma e desbloqueie o próximo caso.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,

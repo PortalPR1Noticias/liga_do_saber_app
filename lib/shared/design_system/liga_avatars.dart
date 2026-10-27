@@ -14,6 +14,7 @@ class LigaAvatar {
 
   Color get color => character.color;
 
+  // Os ids ficam salvos no Supabase: não mude os existentes.
   static const all = [
     LigaAvatar(
       'estrategista',
@@ -22,18 +23,24 @@ class LigaAvatar {
       LigaCharacter.nico,
     ),
     LigaAvatar(
+      'guardia',
+      'Guardiã das Palavras',
+      Icons.menu_book_rounded,
+      LigaCharacter.luma,
+    ),
+    LigaAvatar(
+      'explorador',
+      'Explorador',
+      Icons.terrain_rounded,
+      LigaCharacter.teo,
+    ),
+    LigaAvatar(
       'investigadora',
       'Investigadora',
       Icons.search_rounded,
       LigaCharacter.mila,
     ),
-    LigaAvatar('criadora', 'Criadora', Icons.auto_awesome, LigaCharacter.luma),
-    LigaAvatar(
-      'explorador',
-      'Explorador',
-      Icons.terrain_rounded,
-      LigaCharacter.explorador,
-    ),
+    LigaAvatar('criadora', 'Criador', Icons.auto_awesome, LigaCharacter.zuri),
   ];
 
   static LigaAvatar byId(String id) {

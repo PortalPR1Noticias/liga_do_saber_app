@@ -112,10 +112,10 @@ class _MapScreen extends StatelessWidget {
           portals: [
             _Portal(
               'Biblioteca Viva',
-              'Leitura',
+              'Leitura com a Luma',
               Icons.menu_book_rounded,
-              LigaColors.adventurePurple,
-              LigaCharacter.mila,
+              LigaColors.actionCoral,
+              LigaCharacter.luma,
               stars: 3,
               onTap: () => Navigator.of(
                 context,
@@ -123,7 +123,7 @@ class _MapScreen extends StatelessWidget {
             ),
             _Portal(
               'Oficina de Texto',
-              'Escrita',
+              'Redação com a Luma',
               Icons.edit_rounded,
               LigaColors.actionCoral,
               LigaCharacter.luma,
@@ -134,7 +134,7 @@ class _MapScreen extends StatelessWidget {
             ),
             _Portal(
               'Ilha dos Números',
-              'Matemática',
+              'Matemática com o Nico',
               Icons.calculate_rounded,
               LigaColors.primaryBlue,
               LigaCharacter.nico,
@@ -144,10 +144,28 @@ class _MapScreen extends StatelessWidget {
             ),
             _Portal(
               'Arquivo da Mila',
-              'História',
+              'História com a Mila',
               Icons.manage_search_rounded,
-              LigaColors.sunsetOrange,
+              LigaColors.adventurePurple,
               LigaCharacter.mila,
+              locked: true,
+              onTap: () => showComingSoon(context),
+            ),
+            _Portal(
+              'Trilha do Teo',
+              'Ciências e Geografia',
+              Icons.terrain_rounded,
+              LigaColors.progressGreen,
+              LigaCharacter.teo,
+              locked: true,
+              onTap: () => showComingSoon(context),
+            ),
+            _Portal(
+              'Ateliê do Zuri',
+              'Projetos e ideias',
+              Icons.lightbulb_rounded,
+              LigaColors.sunsetOrange,
+              LigaCharacter.zuri,
               locked: true,
               onTap: () => showComingSoon(context),
             ),
@@ -186,7 +204,7 @@ class _PortalTrail extends StatelessWidget {
 
   final List<_Portal> portals;
 
-  static const _rowHeight = 178.0;
+  static const _rowHeight = 186.0;
 
   @override
   Widget build(BuildContext context) {
@@ -227,8 +245,8 @@ class _TrailPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Mesmo cálculo do Align(±0.75) dos portais, que têm 160 de largura.
-    final sideX = (size.width - 160) * 0.125 + 80;
+    // Mesmo cálculo do Align(±0.75) dos portais, que têm 170 de largura.
+    final sideX = (size.width - 170) * 0.125 + 85;
     final points = [
       for (var i = 0; i < count; i++)
         Offset(
@@ -287,7 +305,7 @@ class _PortalNode extends StatelessWidget {
     return LigaPressable(
       onTap: portal.onTap,
       child: SizedBox(
-        width: 160,
+        width: 170,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -362,6 +380,8 @@ class _PortalNode extends StatelessWidget {
                   ),
                   Text(
                     portal.locked ? 'Em breve' : portal.subject,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: LigaColors.inkSoft,
                       fontWeight: FontWeight.w700,
