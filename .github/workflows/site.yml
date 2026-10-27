@@ -1,0 +1,42 @@
+# Publica as páginas públicas (privacidade, termos, exclusão de conta) no
+# GitHub Pages. Endereço: https://portalpr1noticias.github.io/liga_do_saber_app/
+# Para ligar: Settings > Pages > Source: GitHub Actions.
+name: Site público
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "assets/legal/**"
+      - "assets/brand/emblema.png"
+      - "site/**"
+      - ".github/workflows/site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python site/gerar_site.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/_publico
+      - id: deploy
+        uses: actions/deploy-pages@v4

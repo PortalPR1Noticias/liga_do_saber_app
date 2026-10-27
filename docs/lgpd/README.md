@@ -21,8 +21,8 @@ Este guia acompanha a migration `supabase/migrations/0004_lgpd.sql` e os textos 
 
 1. **Preencher os dados da empresa** nos dois arquivos de `assets/legal/`: razão social, CNPJ, endereço, nome e e-mail do encarregado (DPO). Os lugares estão marcados com colchetes, por exemplo `[CNPJ]`.
 2. **Rodar a migration 0004** no SQL Editor do Supabase (depois da 0003). Se aparecer o aviso de pg_cron indisponível, ligue a extensão em Database > Extensions e rode de novo o último bloco do arquivo.
-3. **Publicar a Política de Privacidade numa página pública** (o Google Play exige um link). Pode ser o mesmo texto de `assets/legal/politica_de_privacidade.md` num Google Sites, GitHub Pages ou no site da GPLABS.
-4. **Publicar uma página para pedir exclusão de conta pela web** (o Google Play exige isso além do botão no app). Basta uma página explicando que a exclusão é feita no app, em Perfil > Área dos responsáveis > Excluir conta e dados, ou pelo e-mail do encarregado.
+3. **Publicar a Política de Privacidade numa página pública** (o Google Play exige um link). Já está pronta: o workflow `.github/workflows/site.yml` publica o texto de `assets/legal/politica_de_privacidade.md` no GitHub Pages (passos em `docs/play-store/README.md`).
+4. **Publicar uma página para pedir exclusão de conta pela web** (o Google Play exige isso além do botão no app). Já está pronta em `site/excluir_conta.md`, publicada junto com a política.
 5. **OpenAI**: na conta da OpenAI, aceitar o Data Processing Addendum (DPA) e conferir que os dados da API não são usados para treinar modelos (é o padrão da API).
 6. **Supabase**: aceitar o DPA do Supabase no painel (Settings > Legal). Anotar a região do projeto, porque ela entra na política (transferência internacional).
 
