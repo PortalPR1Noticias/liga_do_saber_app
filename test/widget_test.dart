@@ -7,13 +7,18 @@ import 'package:liga_do_saber_app/app/liga_do_saber_app.dart';
 import 'package:liga_do_saber_app/app/theme.dart';
 import 'package:liga_do_saber_app/features/auth/presentation/auth_screen.dart';
 import 'package:liga_do_saber_app/features/math_arena/presentation/math_arena_screen.dart';
+import 'package:liga_do_saber_app/features/mila_archive/presentation/mila_archive_screen.dart';
 import 'package:liga_do_saber_app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:liga_do_saber_app/features/photo_solver/presentation/photo_solver_flow_screen.dart';
 import 'package:liga_do_saber_app/features/reading_detective/presentation/reading_detective_screen.dart';
 import 'package:liga_do_saber_app/features/shell/presentation/main_shell.dart';
 import 'package:liga_do_saber_app/features/teo_trail/presentation/teo_trail_screen.dart';
 import 'package:liga_do_saber_app/features/writing_workshop/presentation/writing_workshop_screen.dart';
+import 'package:liga_do_saber_app/features/zuri_atelier/presentation/atelier_games.dart';
+import 'package:liga_do_saber_app/features/zuri_atelier/presentation/zuri_atelier_screen.dart';
+import 'package:liga_do_saber_app/shared/design_system/liga_rewards.dart';
 import 'package:liga_do_saber_app/shared/design_system/liga_widgets.dart';
+import 'package:liga_do_saber_app/shared/models/atelier.dart';
 import 'package:liga_do_saber_app/shared/models/photo_explanation.dart';
 import 'package:liga_do_saber_app/shared/services/app_repository.dart';
 import 'package:liga_do_saber_app/shared/services/mock_app_repository.dart';
@@ -219,6 +224,271 @@ void main() {
     expect(find.text('+20 XP'), findsNothing);
   });
 
+  Future<void> startAtelierGame(WidgetTester tester, String game) async {
+    await tester.pumpWidget(const MaterialApp(home: ZuriAtelierScreen()));
+    await scrollAndTap(tester, find.text(game));
+    await scrollAndTap(tester, find.text('Começar jogo'));
+    await tester.pump();
+    await tester.pump();
+  }
+
+  testWidgets('zuri word search gives XP when every word is found', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await startAtelierGame(tester, 'Caça-palavras');
+    expect(find.text('Caça na horta'), findsOneWidget);
+
+    Future<void> mark((int, int) start, (int, int) end) async {
+      await scrollAndTap(
+        tester,
+        find.byKey(WordSearchGame.cellKey(start.$1, start.$2)),
+      );
+      await scrollAndTap(
+        tester,
+        find.byKey(WordSearchGame.cellKey(end.$1, end.$2)),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    await mark((0, 0), (0, 3));
+    expect(
+      find.text('Essa não é uma das palavras. Tente outra linha!'),
+      findsOneWidget,
+    );
+    await mark((0, 0), (0, 4));
+    expect(find.text('Achou Horta!'), findsOneWidget);
+    // De trás para frente também vale.
+    await mark((2, 7), (0, 7));
+    await mark((1, 1), (4, 4));
+
+    await scrollTo(tester, find.text('Ideia genial! Você é um criador!'));
+    // Resolveu de primeira: 20 XP + 20 de bônus da missão do dia.
+    await scrollTo(tester, find.text('+40 XP'));
+    expect(find.text('+40 XP'), findsOneWidget);
+  });
+
+  testWidgets('zuri mind map sends wrong ideas back and gives half XP', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await startAtelierGame(tester, 'Monte o mapa mental');
+    expect(find.text('A horta da escola'), findsOneWidget);
+
+    Future<void> place(String idea, String branch) async {
+      await scrollAndTap(tester, find.text(idea));
+      await scrollAndTap(tester, find.text(branch));
+    }
+
+    await place('Sementes', 'Plantar');
+    await place('Regar', 'Plantar');
+    await place('Adubo', 'Plantar');
+    await place('Tirar o mato', 'Cuidar');
+    await scrollAndTap(tester, find.text('Conferir mapa'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('As peças vermelhas voltaram'));
+
+    await place('Regar', 'Cuidar');
+    await scrollAndTap(tester, find.text('Conferir mapa'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.text('Ideia genial! Você é um criador!'));
+    // Depois de errar: 10 XP + 20 de bônus da missão do dia.
+    await scrollTo(tester, find.text('+30 XP'));
+    expect(find.text('+30 XP'), findsOneWidget);
+  });
+
+  testWidgets('zuri project puzzle reveals the order without XP', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await startAtelierGame(tester, 'Quebra-cabeça do projeto');
+    expect(find.text('Feira de Ciências'), findsOneWidget);
+
+    await scrollAndTap(tester, find.text('Ver a solução do Zuri'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('Primeiro o tema'));
+    expect(find.text('Conferir ordem'), findsNothing);
+    expect(find.text('+20 XP'), findsNothing);
+  });
+
+  testWidgets('zuri project puzzle solved in order gives XP', (tester) async {
+    usePhoneScreen(tester);
+    await startAtelierGame(tester, 'Quebra-cabeça do projeto');
+
+    await scrollAndTap(tester, find.text('Escolher o tema'));
+    await scrollAndTap(tester, find.text('Montar a maquete'));
+    await scrollAndTap(tester, find.text('Apresentar na feira'));
+    await scrollAndTap(tester, find.text('Conferir ordem'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.text('+40 XP'));
+    expect(find.text('+40 XP'), findsOneWidget);
+  });
+
+  testWidgets('zuri games stop giving XP after the daily limit', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    final repository = AppRepository.instance;
+    for (var i = 0; i < MockAppRepository.atelierGamesWithXp; i++) {
+      await repository.newAtelierGame(AtelierGameType.ordemProjeto);
+      final result = await repository.checkAtelierGame('atelie-1', [1, 2, 0]);
+      expect(result.xp, 20);
+    }
+    await startAtelierGame(tester, 'Quebra-cabeça do projeto');
+    await scrollAndTap(tester, find.text('Escolher o tema'));
+    await scrollAndTap(tester, find.text('Montar a maquete'));
+    await scrollAndTap(tester, find.text('Apresentar na feira'));
+    await scrollAndTap(tester, find.text('Conferir ordem'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('já ganhou o XP da Oficina'));
+    expect(find.text('+20 XP'), findsNothing);
+  });
+
+  testWidgets('zuri builds a mind map for the child project', (tester) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: ZuriAtelierScreen()));
+
+    await scrollAndTap(tester, find.text('Meu projeto'));
+    await scrollTo(tester, find.widgetWithText(TextField, 'Tema do projeto'));
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Tema do projeto'),
+      'Reciclagem',
+    );
+    await scrollAndTap(tester, find.text('Montar meu mapa mental'));
+    await tester.pump();
+    await tester.pump();
+    // 15 XP do projeto (não é a missão do dia).
+    await scrollTo(tester, find.text('+15 XP'));
+    expect(find.text('+15 XP'), findsOneWidget);
+    await scrollTo(tester, find.text('Missão: Reciclagem'));
+    await scrollTo(tester, find.text('Por que importa?'));
+  });
+
+  testWidgets('mila word search gives XP when every word is found', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: MilaArchiveScreen()));
+
+    await scrollAndTap(tester, find.text('Começar jogo'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Palavras do Império'), findsOneWidget);
+    expect(find.text('Palavras: 0 de 4'), findsOneWidget);
+
+    Future<void> mark(int r1, int c1, int r2, int c2) async {
+      await scrollAndTap(tester, find.byKey(ValueKey('letra-$r1-$c1')));
+      await tester.pump();
+      await scrollAndTap(tester, find.byKey(ValueKey('letra-$r2-$c2')));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    await mark(0, 0, 0, 6); // IMPERIO
+    await scrollTo(tester, find.textContaining('governado por um imperador'));
+    await mark(0, 0, 1, 1); // não é palavra
+    await scrollTo(tester, find.textContaining('não é uma das palavras'));
+    await mark(2, 4, 2, 1); // CAFE, de trás para frente
+    await mark(3, 0, 7, 0); // COROA
+    await mark(3, 6, 6, 6); // OURO
+    await scrollTo(tester, find.text('Achou todas! Olho de historiadora!'));
+    // 20 XP + 20 de bônus da missão do dia.
+    await scrollTo(tester, find.text('+40 XP'));
+    await scrollTo(tester, find.textContaining('Você sabia?'));
+  });
+
+  testWidgets('mila timeline counts the cards in place', (tester) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: MilaArchiveScreen()));
+
+    await scrollAndTap(tester, find.text('Linha do tempo'));
+    await scrollAndTap(tester, find.text('Começar jogo'));
+    await tester.pump();
+    await tester.pump();
+
+    Future<void> pick(String text) async {
+      await scrollAndTap(tester, find.textContaining(text));
+      await tester.pump();
+    }
+
+    // Ordem errada: correio, TV, telefone, celular.
+    await pick('cartas a cavalo');
+    await pick('transmissão de TV');
+    await pick('primeiros telefones');
+    await pick('celulares');
+    await scrollAndTap(tester, find.text('Conferir ordem'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('2 de 4 fichas no lugar certo'));
+
+    // Ordem certa: correio, telefone, TV, celular (vale 10 XP + bônus).
+    await pick('cartas a cavalo');
+    await pick('primeiros telefones');
+    await pick('transmissão de TV');
+    await pick('celulares');
+    await scrollAndTap(tester, find.text('Conferir ordem'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.text('Fichas em ordem! Caso resolvido!'));
+    await scrollTo(tester, find.text('1877'));
+    await scrollTo(tester, find.text('+30 XP'));
+  });
+
+  testWidgets('mila document riddle reveals the answer without XP', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: MilaArchiveScreen()));
+
+    await scrollAndTap(tester, find.text('Enigma do documento'));
+    await scrollAndTap(tester, find.text('Começar jogo'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Foto antiga'), findsOneWidget);
+
+    await scrollAndTap(tester, find.text('Tem um quadro na parede'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('quase ninguém usa hoje'));
+
+    await scrollAndTap(tester, find.text('Revelar a solução'));
+    await tester.pump();
+    await tester.pump();
+    await scrollTo(tester, find.textContaining('os tinteiros mostram'));
+    expect(find.byType(LigaRewardCard), findsNothing);
+  });
+
+  testWidgets('mila games stop giving XP after 15 wins in a day', (
+    tester,
+  ) async {
+    usePhoneScreen(tester);
+    await tester.pumpWidget(const MaterialApp(home: MilaArchiveScreen()));
+    await scrollAndTap(tester, find.text('Enigma do documento'));
+
+    for (var game = 1; game <= 16; game++) {
+      await scrollAndTap(
+        tester,
+        find.text(game == 1 ? 'Começar jogo' : 'Nova partida'),
+      );
+      await tester.pump();
+      await tester.pump();
+      await scrollAndTap(
+        tester,
+        find.text('Há tinteiros para molhar a caneta'),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+    await scrollTo(tester, find.textContaining('já ganhou o XP do Arquivo'));
+    expect(find.byType(LigaRewardCard), findsNothing);
+  });
+
   testWidgets('reading detective checks the answers and shows clues', (
     tester,
   ) async {
@@ -279,7 +549,7 @@ void main() {
 
     await tester.tap(find.text('Missões'));
     await tester.pumpAndSettle();
-    expect(find.text('Hoje: 1 de 5 missões'), findsOneWidget);
+    expect(find.text('Hoje: 1 de 8 missões'), findsOneWidget);
     expect(find.text('Feita!'), findsOneWidget);
   });
 

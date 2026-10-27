@@ -3,10 +3,13 @@ import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/archive_case.dart';
+import '../models/atelier.dart';
 import '../models/child_profile.dart';
 import '../models/league_progress.dart';
 import '../models/expedition.dart';
 import '../models/math_challenge.dart';
+import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
 import '../models/progress_update.dart';
 import '../models/reading_case.dart';
@@ -263,6 +266,168 @@ class SupabaseAppRepository extends AppRepository {
         'expedicao_id': expeditionId,
       }),
     );
+  }
+
+  @override
+  Future<ArchiveCase> newArchiveCase(ArchiveMode mode) async {
+    return ArchiveCase.fromJson(
+      await _invoke('arquivo-mila', {'acao': 'novo_caso', 'modo': mode.key}),
+    );
+  }
+
+  @override
+  Future<ArchiveAnswerResult> answerArchiveCase(
+    String caseId, {
+    int? choice,
+    List<int>? order,
+    List<String>? found,
+  }) async {
+    final result = ArchiveAnswerResult.fromJson(
+      await _invoke('arquivo-mila', {
+        'acao': 'responder',
+        'caso_id': caseId,
+        'escolha': ?choice,
+        'ordem': ?order,
+        'encontradas': ?found,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<ArchiveSolution> revealArchiveCase(String caseId) async {
+    return ArchiveSolution.fromJson(
+      await _invoke('arquivo-mila', {'acao': 'revelar', 'caso_id': caseId}),
+    );
+  }
+
+  @override
+  Future<AtelierGame> newAtelierGame(AtelierGameType type) async {
+    return AtelierGame.fromJson(
+      await _invoke('atelie-zuri', {'acao': 'novo_jogo', 'jogo': type.key}),
+    );
+  }
+
+  @override
+  Future<AtelierCheckResult> checkAtelierGame(
+    String gameId,
+    List<Object> move,
+  ) async {
+    final result = AtelierCheckResult.fromJson(
+      await _invoke('atelie-zuri', {
+        'acao': 'conferir',
+        'jogo_id': gameId,
+        'jogada': move,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<AtelierSolution> revealAtelierGame(String gameId) async {
+    return AtelierSolution.fromJson(
+      await _invoke('atelie-zuri', {'acao': 'revelar', 'jogo_id': gameId}),
+    );
+  }
+
+  @override
+  Future<ProjectPlan> planProject(String theme) async {
+    final plan = ProjectPlan.fromJson(
+      await _invoke(
+        'atelie-zuri',
+        {'acao': 'planejar_projeto', 'tema': theme},
+        noConsent:
+            'Peça para um adulto liberar os projetos com IA na Área dos '
+            'responsáveis.',
+      ),
+    );
+    _applyProgress(plan.progress);
+    return plan;
+  }
+
+  @override
+  Future<WordSearchGame> newWordSearch(MinigameSubject subject) async {
+    return WordSearchGame.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'novo',
+        'jogo': 'caca_palavras',
+        'materia': subject.name,
+      }),
+    );
+  }
+
+  @override
+  Future<WordSearchCheck> checkWordSearch(
+    String gameId,
+    GridCell start,
+    GridCell end,
+  ) async {
+    final result = WordSearchCheck.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'conferir_palavra',
+        'jogo_id': gameId,
+        'inicio': start.toJson(),
+        'fim': end.toJson(),
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<OrderPuzzle> newOrderPuzzle(MinigameSubject subject) async {
+    return OrderPuzzle.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'novo',
+        'jogo': 'quebra_cabeca',
+        'materia': subject.name,
+      }),
+    );
+  }
+
+  @override
+  Future<OrderPuzzleCheck> checkOrderPuzzle(
+    String gameId,
+    List<int> order,
+  ) async {
+    final result = OrderPuzzleCheck.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'conferir_ordem',
+        'jogo_id': gameId,
+        'ordem': order,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<LightningRound> newLightningRound(LightningTopic topic) async {
+    return LightningRound.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'novo',
+        'jogo': 'relampago',
+        'tema': topic.name,
+      }),
+    );
+  }
+
+  @override
+  Future<LightningResult> finishLightningRound(
+    String roundId,
+    List<int> answers,
+  ) async {
+    final result = LightningResult.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'fechar_relampago',
+        'jogo_id': roundId,
+        'respostas': answers,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
   }
 
   @override

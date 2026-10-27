@@ -7,6 +7,8 @@ import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/math_challenge.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
+import '../../../shared/models/minigame.dart';
+import '../../minigames/presentation/minigame_style.dart';
 
 /// Arena Matemática: o Nico (IA) cria desafios do ano escolar da criança.
 /// Acertar de primeira vale 20 XP; depois de errar, 10; depois de ver o
@@ -219,6 +221,10 @@ class _MathArenaScreenState extends State<MathArenaScreen> {
                 label: challenge == null ? 'Começar desafio' : 'Novo desafio',
                 icon: Icons.bolt_rounded,
                 onPressed: _loading ? null : _newChallenge,
+              ),
+              const MinigameShortcuts(
+                subject: MinigameSubject.matematica,
+                withLightning: true,
               ),
             ],
           ),

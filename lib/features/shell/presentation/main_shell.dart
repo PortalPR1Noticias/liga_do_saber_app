@@ -10,11 +10,14 @@ import '../../../shared/services/app_repository.dart';
 import '../../onboarding/presentation/onboarding_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
+import '../../mila_archive/presentation/mila_archive_screen.dart';
+import '../../minigames/presentation/minigames_hub_screen.dart';
 import '../../parent_area/presentation/parent_area_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../teo_trail/presentation/teo_trail_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
+import '../../zuri_atelier/presentation/zuri_atelier_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -163,8 +166,8 @@ class _MapScreen extends StatelessWidget {
               Icons.manage_search_rounded,
               LigaColors.adventurePurple,
               LigaCharacter.mila,
-              locked: true,
-              onTap: () => showComingSoon(context),
+              onTap: () =>
+                  Navigator.of(context).pushNamed(MilaArchiveScreen.routeName),
             ),
             _Portal(
               'Trilha do Teo',
@@ -176,13 +179,13 @@ class _MapScreen extends StatelessWidget {
                   Navigator.of(context).pushNamed(TeoTrailScreen.routeName),
             ),
             _Portal(
-              'Ateliê do Zuri',
+              'Oficina do Zuri',
               'Projetos e ideias',
               Icons.lightbulb_rounded,
               LigaColors.sunsetOrange,
               LigaCharacter.zuri,
-              locked: true,
-              onTap: () => showComingSoon(context),
+              onTap: () =>
+                  Navigator.of(context).pushNamed(ZuriAtelierScreen.routeName),
             ),
           ],
         ),
@@ -199,7 +202,6 @@ class _Portal {
     this.color,
     this.character, {
     this.stars = 0,
-    this.locked = false,
     required this.onTap,
   });
 
@@ -209,7 +211,6 @@ class _Portal {
   final Color color;
   final LigaCharacter character;
   final int stars;
-  final bool locked;
   final VoidCallback onTap;
 }
 
@@ -316,7 +317,7 @@ class _PortalNode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = portal.locked ? LigaColors.disabled : portal.color;
+    final color = portal.color;
     return LigaPressable(
       onTap: portal.onTap,
       child: SizedBox(
@@ -329,11 +330,7 @@ class _PortalNode extends StatelessWidget {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  LigaPortrait(
-                    character: portal.character,
-                    size: 96,
-                    locked: portal.locked,
-                  ),
+                  LigaPortrait(character: portal.character, size: 96),
                   Positioned(
                     right: -4,
                     bottom: -2,
@@ -345,11 +342,7 @@ class _PortalNode extends StatelessWidget {
                         color: color,
                         border: Border.all(color: LigaColors.ink, width: 3),
                       ),
-                      child: Icon(
-                        portal.locked ? Icons.lock_rounded : portal.icon,
-                        color: Colors.white,
-                        size: 18,
-                      ),
+                      child: Icon(portal.icon, color: Colors.white, size: 18),
                     ),
                   ),
                 ],
@@ -394,7 +387,7 @@ class _PortalNode extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    portal.locked ? 'Em breve' : portal.subject,
+                    portal.subject,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -458,6 +451,9 @@ class _MissionsScreenState
       'texto' || 'texto_reescrita' => WritingWorkshopScreen.routeName,
       'matematica' => MathArenaScreen.routeName,
       'expedicao' => TeoTrailScreen.routeName,
+      'atelie' || 'projeto' => ZuriAtelierScreen.routeName,
+      'arquivo' => MilaArchiveScreen.routeName,
+      'minijogo' => MinigamesHubScreen.routeName,
       'foto' => PhotoSolverFlowScreen.routeName,
       _ => null,
     };

@@ -6,10 +6,13 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
+import '../../mila_archive/presentation/mila_archive_screen.dart';
+import '../../minigames/presentation/minigames_hub_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../teo_trail/presentation/teo_trail_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
+import '../../zuri_atelier/presentation/zuri_atelier_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -79,6 +82,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ).pushNamed(PhotoSolverFlowScreen.routeName),
           ),
         ),
+        const SizedBox(height: 14),
+        PopIn(
+          delay: const Duration(milliseconds: 190),
+          child: MissionCard(
+            title: 'Jogos da Liga',
+            subtitle: 'Caça-palavras, quebra-cabeça e Desafio Relâmpago.',
+            icon: Icons.sports_esports_rounded,
+            color: LigaColors.adventurePurple,
+            progress: _progressOf('minijogo'),
+            onTap: () =>
+                Navigator.of(context).pushNamed(MinigamesHubScreen.routeName),
+          ),
+        ),
         const SizedBox(height: 24),
         const SectionTitle('Áreas em destaque', icon: Icons.star_rounded),
         PopIn(
@@ -132,6 +148,32 @@ class _HomeScreenState extends State<HomeScreen> {
             progress: _progressOf('expedicao'),
             onTap: () =>
                 Navigator.of(context).pushNamed(TeoTrailScreen.routeName),
+          ),
+        ),
+        const SizedBox(height: 14),
+        PopIn(
+          delay: const Duration(milliseconds: 450),
+          child: MissionCard(
+            title: 'Arquivo da Mila',
+            subtitle: 'Caça-palavras, linha do tempo e enigmas de História.',
+            icon: Icons.history_edu_rounded,
+            color: LigaColors.adventurePurple,
+            progress: _progressOf('arquivo'),
+            onTap: () =>
+                Navigator.of(context).pushNamed(MilaArchiveScreen.routeName),
+          ),
+        ),
+        const SizedBox(height: 14),
+        PopIn(
+          delay: const Duration(milliseconds: 480),
+          child: MissionCard(
+            title: 'Oficina do Zuri',
+            subtitle: 'Caça-palavras, mapas mentais e projetos.',
+            icon: Icons.lightbulb_rounded,
+            color: LigaColors.sunsetOrange,
+            progress: _progressOf('atelie'),
+            onTap: () =>
+                Navigator.of(context).pushNamed(ZuriAtelierScreen.routeName),
           ),
         ),
       ],
