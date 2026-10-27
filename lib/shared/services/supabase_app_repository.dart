@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/archive_case.dart';
 import '../models/child_profile.dart';
 import '../models/league_progress.dart';
 import '../models/expedition.dart';
@@ -262,6 +263,40 @@ class SupabaseAppRepository extends AppRepository {
         'acao': 'revelar',
         'expedicao_id': expeditionId,
       }),
+    );
+  }
+
+  @override
+  Future<ArchiveCase> newArchiveCase(ArchiveMode mode) async {
+    return ArchiveCase.fromJson(
+      await _invoke('arquivo-mila', {'acao': 'novo_caso', 'modo': mode.key}),
+    );
+  }
+
+  @override
+  Future<ArchiveAnswerResult> answerArchiveCase(
+    String caseId, {
+    int? choice,
+    List<int>? order,
+    List<String>? found,
+  }) async {
+    final result = ArchiveAnswerResult.fromJson(
+      await _invoke('arquivo-mila', {
+        'acao': 'responder',
+        'caso_id': caseId,
+        'escolha': ?choice,
+        'ordem': ?order,
+        'encontradas': ?found,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<ArchiveSolution> revealArchiveCase(String caseId) async {
+    return ArchiveSolution.fromJson(
+      await _invoke('arquivo-mila', {'acao': 'revelar', 'caso_id': caseId}),
     );
   }
 

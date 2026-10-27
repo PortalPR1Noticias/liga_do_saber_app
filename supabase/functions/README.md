@@ -44,18 +44,24 @@ medalhas) que todas as funções usam, inclusive a `explicar-foto`.
 | `desafio-matematica` | Arena Matemática (Nico) | Cria um desafio do ano escolar e corrige: 20 XP de primeira, 10 depois de errar, 0 depois de ver o passo a passo. |
 | `oficina-texto` | Oficina de Texto (Luma) | Feedback da versão 1 (15 XP) e avaliação da reescrita (10 a 34 XP, pela evolução). |
 | `expedicao-teo` | Trilha do Teo (Ciências e Geografia) | Cria uma investigação do ano escolar (cena, pistas e pergunta) e corrige: 20 XP de primeira, 10 depois de errar, 0 depois de revelar a descoberta. |
+| `arquivo-mila` | Arquivo da Mila (História) | Minijogos do ano escolar: caça-palavras (grade montada no servidor; achar todas vale 20 XP), linha do tempo (4 fichas para ordenar) e enigma do documento (foto, carta ou objeto antigo). 20 XP de primeira, 10 depois de errar, 0 depois de revelar. |
 
 Todas usam o código comum de `_shared/liga.ts`, o mesmo secret
 `OPENAI_API_KEY` e o mesmo `OPENAI_MODEL`. As respostas certas ficam
 guardadas em `correcoes_ia` e nunca vão para o app, e todo XP é dado no
 servidor. Limites diários opcionais (secrets): `LIMITE_CASOS_POR_DIA`
 (padrão 15), `LIMITE_DESAFIOS_POR_DIA` (40), `LIMITE_TEXTOS_POR_DIA` (20) e
-`LIMITE_EXPEDICOES_POR_DIA` (40).
+`LIMITE_EXPEDICOES_POR_DIA` (40) e `LIMITE_ARQUIVO_POR_DIA` (40).
 
 A `expedicao-teo` precisa também da migration
 `supabase/migrations/0005_trilha_do_teo.sql` (missão do dia e medalha
 Explorador da Liga). Ela só manda à OpenAI o ano escolar e a matéria, nada
 escrito pela criança, então não depende da autorização de IA do responsável.
+
+A `arquivo-mila` precisa da migration
+`supabase/migrations/0006_arquivo_da_mila.sql` (missão do dia e medalha
+Historiador da Liga). Ela também só manda à OpenAI o ano escolar e o jogo
+escolhido, então não depende da autorização de IA.
 
 O texto que a criança escreve na Oficina vai para a OpenAI (`store: false`)
 e fica guardado em `producoes_textuais` para o responsável acompanhar.
@@ -69,6 +75,7 @@ npx supabase functions deploy detetive-leitura --no-verify-jwt
 npx supabase functions deploy desafio-matematica --no-verify-jwt
 npx supabase functions deploy oficina-texto --no-verify-jwt
 npx supabase functions deploy expedicao-teo --no-verify-jwt
+npx supabase functions deploy arquivo-mila --no-verify-jwt
 npx supabase functions deploy explicar-foto --no-verify-jwt
 ```
 

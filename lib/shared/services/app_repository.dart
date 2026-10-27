@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/archive_case.dart';
 import '../models/child_profile.dart';
 import '../models/expedition.dart';
 import '../models/league_progress.dart';
@@ -96,6 +97,23 @@ abstract class AppRepository extends ChangeNotifier {
 
   /// Mostra a descoberta (depois disso a expedição não vale mais XP).
   Future<ExpeditionDiscovery> revealExpedition(String expeditionId);
+
+  /// Arquivo da Mila: a Mila cria uma partida de um minijogo de História
+  /// (caça-palavras, linha do tempo ou enigma do documento).
+  Future<ArchiveCase> newArchiveCase(ArchiveMode mode);
+
+  /// Responde uma partida: `found` (chaves das palavras achadas) no
+  /// caça-palavras; `order` (posições das fichas, da mais antiga à mais
+  /// recente) na linha do tempo; `choice` no enigma do documento.
+  Future<ArchiveAnswerResult> answerArchiveCase(
+    String caseId, {
+    int? choice,
+    List<int>? order,
+    List<String>? found,
+  });
+
+  /// Mostra a explicação (depois disso o caso não vale mais XP).
+  Future<ArchiveSolution> revealArchiveCase(String caseId);
 
   /// Oficina de Texto: feedback da Luma sobre a primeira versão.
   Future<WritingFeedback> requestWritingFeedback({
