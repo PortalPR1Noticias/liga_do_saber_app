@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/archive_case.dart';
+import '../models/atelier.dart';
 import '../models/child_profile.dart';
 import '../models/league_progress.dart';
 import '../models/expedition.dart';
@@ -299,6 +300,51 @@ class SupabaseAppRepository extends AppRepository {
     return ArchiveSolution.fromJson(
       await _invoke('arquivo-mila', {'acao': 'revelar', 'caso_id': caseId}),
     );
+  }
+
+  @override
+  Future<AtelierGame> newAtelierGame(AtelierGameType type) async {
+    return AtelierGame.fromJson(
+      await _invoke('atelie-zuri', {'acao': 'novo_jogo', 'jogo': type.key}),
+    );
+  }
+
+  @override
+  Future<AtelierCheckResult> checkAtelierGame(
+    String gameId,
+    List<Object> move,
+  ) async {
+    final result = AtelierCheckResult.fromJson(
+      await _invoke('atelie-zuri', {
+        'acao': 'conferir',
+        'jogo_id': gameId,
+        'jogada': move,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
+  Future<AtelierSolution> revealAtelierGame(String gameId) async {
+    return AtelierSolution.fromJson(
+      await _invoke('atelie-zuri', {'acao': 'revelar', 'jogo_id': gameId}),
+    );
+  }
+
+  @override
+  Future<ProjectPlan> planProject(String theme) async {
+    final plan = ProjectPlan.fromJson(
+      await _invoke(
+        'atelie-zuri',
+        {'acao': 'planejar_projeto', 'tema': theme},
+        noConsent:
+            'Peça para um adulto liberar os projetos com IA na Área dos '
+            'responsáveis.',
+      ),
+    );
+    _applyProgress(plan.progress);
+    return plan;
   }
 
   @override

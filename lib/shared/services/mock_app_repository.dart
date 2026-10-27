@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../models/archive_case.dart';
+import '../models/atelier.dart';
 import '../models/child_profile.dart';
 import '../models/expedition.dart';
 import '../models/league_progress.dart';
@@ -24,6 +25,17 @@ class MockAppRepository extends AppRepository {
   bool _mathRevealed = false;
   int _expeditionAttempts = 0;
   bool _expeditionRevealed = false;
+  int _atelierAttempts = 0;
+  int _atelierXpGames = 0;
+  int _projectXpCount = 0;
+
+  /// Mesmos limites diários de XP da Edge Function `atelie-zuri`.
+  static const atelierGamesWithXp = 15;
+  static const projectsWithXp = 3;
+  static const _atelierNotice =
+      'Hoje você já ganhou o XP da Oficina. Amanhã tem mais!';
+  bool _atelierRevealed = false;
+  AtelierGameType _atelierType = AtelierGameType.mapaMental;
   int _archiveAttempts = 0;
   bool _archiveRevealed = false;
   int _archiveWinsWithXp = 0;
@@ -199,6 +211,15 @@ class MockAppRepository extends AppRepository {
       xp: 20,
       done: false,
       icon: 'history_edu',
+    ),
+    DailyMission(
+      code: 'atelie_zuri',
+      title: 'Jogar na Oficina do Zuri',
+      description: 'Vença um minijogo na Oficina do Zuri.',
+      type: 'atelie',
+      xp: 20,
+      done: false,
+      icon: 'lightbulb',
     ),
   ];
 
@@ -553,6 +574,175 @@ class MockAppRepository extends AppRepository {
     );
   }
 
+  /// Caça-palavras falso: HORTA na primeira linha, SOL na última coluna
+  /// e AGUA na diagonal de (1, 1) a (4, 4).
+  static const _mockGrid = [
+    'HORTAXBS',
+    'OAZLMNPO',
+    'LTGRSTUL',
+    'ABCUDEFG',
+    'HIJLAMNO',
+    'PRSTUVZA',
+    'BCDEFGHI',
+    'JLMNOPRS',
+  ];
+
+  static const _mockWordLines = [
+    GridLine((0, 0), (0, 4)),
+    GridLine((0, 7), (2, 7)),
+    GridLine((1, 1), (4, 4)),
+  ];
+
+  @override
+  Future<AtelierGame> newAtelierGame(AtelierGameType type) async {
+    _atelierAttempts = 0;
+    _atelierRevealed = false;
+    _atelierType = type;
+    return switch (type) {
+      AtelierGameType.cacaPalavras => AtelierGame(
+        id: 'atelie-1',
+        type: type,
+        title: 'Caça na horta',
+        intro: 'Escondi as palavras da horta da escola. Ache todas!',
+        grid: _mockGrid,
+        words: const [
+          HiddenWord(text: 'Horta', key: 'HORTA'),
+          HiddenWord(text: 'Sol', key: 'SOL'),
+          HiddenWord(text: 'Água', key: 'AGUA'),
+        ],
+      ),
+      AtelierGameType.mapaMental => AtelierGame(
+        id: 'atelie-1',
+        type: type,
+        title: 'O mapa da horta',
+        intro: 'Ajude a pôr cada ideia no ramo certo do meu mapa!',
+        centralIdea: 'A horta da escola',
+        branches: const ['Plantar', 'Cuidar'],
+        pieces: const ['Sementes', 'Regar', 'Adubo', 'Tirar o mato'],
+      ),
+      AtelierGameType.ordemProjeto => AtelierGame(
+        id: 'atelie-1',
+        type: type,
+        title: 'Feira de Ciências',
+        intro: 'As etapas do meu projeto caíram! Ponha em ordem.',
+        pieces: const [
+          'Apresentar na feira',
+          'Escolher o tema',
+          'Montar a maquete',
+        ],
+      ),
+    };
+  }
+
+  AtelierSolution get _atelierSolution => switch (_atelierType) {
+    AtelierGameType.cacaPalavras => const AtelierSolution(
+      explanation: ['Horta, sol e água: tudo que a planta precisa!'],
+      wordLines: _mockWordLines,
+    ),
+    AtelierGameType.mapaMental => const AtelierSolution(
+      explanation: [
+        'Sementes e adubo são para plantar; regar e tirar o '
+            'mato são cuidados.',
+      ],
+      branchOfPiece: [0, 1, 0, 1],
+    ),
+    AtelierGameType.ordemProjeto => const AtelierSolution(
+      explanation: ['Primeiro o tema, depois a maquete e por fim a feira.'],
+      stepOfPiece: [2, 0, 1],
+    ),
+  };
+
+  @override
+  Future<AtelierCheckResult> checkAtelierGame(
+    String gameId,
+    List<Object> move,
+  ) async {
+    final solution = _atelierSolution;
+    final correct = switch (_atelierType) {
+      AtelierGameType.cacaPalavras => [
+        for (var w = 0; w < _mockWordLines.length; w++)
+          move.any((found) {
+            final map = Map<String, dynamic>.from(found as Map);
+            final line = GridLine.fromJson(map);
+            final right = _mockWordLines[w];
+            return map['palavra'] == w &&
+                ((line.start == right.start && line.end == right.end) ||
+                    (line.start == right.end && line.end == right.start));
+          }),
+      ],
+      AtelierGameType.mapaMental => [
+        for (var p = 0; p < solution.branchOfPiece.length; p++)
+          p < move.length && move[p] == solution.branchOfPiece[p],
+      ],
+      AtelierGameType.ordemProjeto => [
+        for (
+          var position = 0;
+          position < solution.stepOfPiece.length;
+          position++
+        )
+          position < move.length &&
+              solution.stepOfPiece[move[position] as int] == position,
+      ],
+    };
+    final solved = correct.every((ok) => ok);
+    var xp = !solved || _atelierRevealed
+        ? 0
+        : (_atelierAttempts == 0 ? 20 : 10);
+    _atelierAttempts++;
+    var notice = '';
+    if (xp > 0 && _atelierXpGames >= atelierGamesWithXp) {
+      xp = 0;
+      notice = _atelierNotice;
+    }
+    if (xp > 0) _atelierXpGames++;
+    return AtelierCheckResult(
+      solved: solved,
+      correct: correct,
+      solution: solved ? solution : const AtelierSolution(explanation: []),
+      xp: xp,
+      progress: xp > 0 ? _grantXp(xp, 'atelie') : null,
+      notice: notice,
+    );
+  }
+
+  @override
+  Future<AtelierSolution> revealAtelierGame(String gameId) async {
+    _atelierRevealed = true;
+    return _atelierSolution;
+  }
+
+  @override
+  Future<ProjectPlan> planProject(String theme) async {
+    final withXp = _projectXpCount < projectsWithXp;
+    if (withXp) _projectXpCount++;
+    final progress = withXp ? _grantXp(15, 'projeto') : null;
+    return ProjectPlan(
+      title: 'Missão: $theme',
+      centralIdea: theme,
+      branches: const [
+        MindMapBranch(
+          title: 'O que é?',
+          ideas: ['Como explicar em uma frase?', 'Onde isso aparece?'],
+        ),
+        MindMapBranch(
+          title: 'Por que importa?',
+          ideas: ['Quem é ajudado?', 'O que muda no dia a dia?'],
+        ),
+        MindMapBranch(title: 'Como mostrar?', ideas: ['Cartaz', 'Maquete']),
+      ],
+      steps: const [
+        'Pesquise em dois livros ou sites com um adulto.',
+        'Anote as descobertas em cada ramo do mapa.',
+        'Escolha como vai apresentar.',
+        'Revise com alguém da família.',
+      ],
+      creativeChallenge: 'Comece a apresentação com uma pergunta surpresa!',
+      xp: withXp ? 15 : 0,
+      progress: progress,
+      notice: withXp ? '' : _atelierNotice,
+    );
+  }
+
   @override
   Future<ArchiveCase> newArchiveCase(ArchiveMode mode) async {
     _archiveAttempts = 0;
@@ -852,6 +1042,18 @@ class MockAppRepository extends AppRepository {
         'Historiador da Liga',
         'Resolveu 10 casos com a Mila.',
         'history_edu',
+      ),
+      (
+        'inventor',
+        'Inventor da Liga',
+        'Venceu 10 jogos na Oficina do Zuri.',
+        'lightbulb',
+      ),
+      (
+        'arquiteto_de_ideias',
+        'Arquiteto de Ideias',
+        'Montou 3 mapas mentais de projetos.',
+        'hub',
       ),
     ];
     return [
