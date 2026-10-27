@@ -13,6 +13,7 @@ import '../../math_arena/presentation/math_arena_screen.dart';
 import '../../parent_area/presentation/parent_area_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
+import '../../teo_trail/presentation/teo_trail_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -171,8 +172,8 @@ class _MapScreen extends StatelessWidget {
               Icons.terrain_rounded,
               LigaColors.progressGreen,
               LigaCharacter.teo,
-              locked: true,
-              onTap: () => showComingSoon(context),
+              onTap: () =>
+                  Navigator.of(context).pushNamed(TeoTrailScreen.routeName),
             ),
             _Portal(
               'Ateliê do Zuri',
@@ -456,6 +457,7 @@ class _MissionsScreenState
       'leitura' => ReadingDetectiveScreen.routeName,
       'texto' || 'texto_reescrita' => WritingWorkshopScreen.routeName,
       'matematica' => MathArenaScreen.routeName,
+      'expedicao' => TeoTrailScreen.routeName,
       'foto' => PhotoSolverFlowScreen.routeName,
       _ => null,
     };

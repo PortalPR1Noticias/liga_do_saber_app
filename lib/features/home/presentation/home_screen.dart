@@ -8,6 +8,7 @@ import '../../../shared/services/app_repository.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
+import '../../teo_trail/presentation/teo_trail_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -118,6 +119,19 @@ class _HomeScreenState extends State<HomeScreen> {
             progress: _progressOf('matematica'),
             onTap: () =>
                 Navigator.of(context).pushNamed(MathArenaScreen.routeName),
+          ),
+        ),
+        const SizedBox(height: 14),
+        PopIn(
+          delay: const Duration(milliseconds: 400),
+          child: MissionCard(
+            title: 'Trilha do Teo',
+            subtitle: 'Investigações de Ciências e Geografia.',
+            icon: Icons.explore_rounded,
+            color: LigaColors.progressGreen,
+            progress: _progressOf('expedicao'),
+            onTap: () =>
+                Navigator.of(context).pushNamed(TeoTrailScreen.routeName),
           ),
         ),
       ],

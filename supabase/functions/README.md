@@ -43,12 +43,19 @@ medalhas) que todas as funções usam, inclusive a `explicar-foto`.
 | `detetive-leitura` | Detetive da Leitura (Luma) | Cria um caso (texto + 3 perguntas) e corrige as respostas: 10 XP por acerto. |
 | `desafio-matematica` | Arena Matemática (Nico) | Cria um desafio do ano escolar e corrige: 20 XP de primeira, 10 depois de errar, 0 depois de ver o passo a passo. |
 | `oficina-texto` | Oficina de Texto (Luma) | Feedback da versão 1 (15 XP) e avaliação da reescrita (10 a 34 XP, pela evolução). |
+| `expedicao-teo` | Trilha do Teo (Ciências e Geografia) | Cria uma investigação do ano escolar (cena, pistas e pergunta) e corrige: 20 XP de primeira, 10 depois de errar, 0 depois de revelar a descoberta. |
 
-As três usam o código comum de `_shared/liga.ts`, o mesmo secret
+Todas usam o código comum de `_shared/liga.ts`, o mesmo secret
 `OPENAI_API_KEY` e o mesmo `OPENAI_MODEL`. As respostas certas ficam
 guardadas em `correcoes_ia` e nunca vão para o app, e todo XP é dado no
 servidor. Limites diários opcionais (secrets): `LIMITE_CASOS_POR_DIA`
-(padrão 15), `LIMITE_DESAFIOS_POR_DIA` (40) e `LIMITE_TEXTOS_POR_DIA` (20).
+(padrão 15), `LIMITE_DESAFIOS_POR_DIA` (40), `LIMITE_TEXTOS_POR_DIA` (20) e
+`LIMITE_EXPEDICOES_POR_DIA` (40).
+
+A `expedicao-teo` precisa também da migration
+`supabase/migrations/0005_trilha_do_teo.sql` (missão do dia e medalha
+Explorador da Liga). Ela só manda à OpenAI o ano escolar e a matéria, nada
+escrito pela criança, então não depende da autorização de IA do responsável.
 
 O texto que a criança escreve na Oficina vai para a OpenAI (`store: false`)
 e fica guardado em `producoes_textuais` para o responsável acompanhar.
@@ -61,9 +68,10 @@ Pela linha de comando (recomendado, porque inclui a pasta `_shared`):
 npx supabase functions deploy detetive-leitura --no-verify-jwt
 npx supabase functions deploy desafio-matematica --no-verify-jwt
 npx supabase functions deploy oficina-texto --no-verify-jwt
+npx supabase functions deploy expedicao-teo --no-verify-jwt
 npx supabase functions deploy explicar-foto --no-verify-jwt
 ```
 
-Essas três funções importam `../_shared/liga.ts`, então publique pela linha
+Essas funções importam `../_shared/liga.ts`, então publique pela linha
 de comando (o editor do painel não leva a pasta `_shared` junto). O
 `--no-verify-jwt` já deixa o "Enforce JWT verification" desligado.

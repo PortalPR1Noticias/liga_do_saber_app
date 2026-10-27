@@ -1,5 +1,5 @@
 // Liga do Saber - código comum das Edge Functions dos módulos
-// (oficina-texto, detetive-leitura, desafio-matematica).
+// (oficina-texto, detetive-leitura, desafio-matematica, expedicao-teo).
 //
 // Cada função confere o login, acha o perfil da criança, aplica um limite
 // diário, chama a OpenAI com saída estruturada e dá XP pela função SQL
@@ -225,6 +225,8 @@ export const VOZES = {
     "Nico, O Estrategista: objetivo, curioso e encorajador; adora estratégias e mostra o raciocínio.",
   luma:
     "Luma, A Guardiã das Palavras: acolhedora, criativa e precisa; elogia o esforço e aponta melhorias com carinho.",
+  teo:
+    "Teo, O Explorador: aventureiro e curioso; transforma o conteúdo em investigação, observa pistas e comemora cada descoberta.",
 };
 
 export const REGRAS_DE_SEGURANCA = `Regras de segurança:

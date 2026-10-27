@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../models/child_profile.dart';
+import '../models/expedition.dart';
 import '../models/league_progress.dart';
 import '../models/math_challenge.dart';
 import '../models/photo_explanation.dart';
@@ -19,6 +20,8 @@ class MockAppRepository extends AppRepository {
   final _badges = <String>{};
   int _mathAttempts = 0;
   bool _mathRevealed = false;
+  int _expeditionAttempts = 0;
+  bool _expeditionRevealed = false;
 
   @override
   ResponsibleAccount get responsible {
@@ -161,6 +164,15 @@ class MockAppRepository extends AppRepository {
       xp: 15,
       done: false,
       icon: 'camera',
+    ),
+    DailyMission(
+      code: 'expedicao_teo',
+      title: 'Desvendar uma expedição do Teo',
+      description: 'Resolva uma investigação na Trilha do Teo.',
+      type: 'expedicao',
+      xp: 20,
+      done: false,
+      icon: 'explore',
     ),
   ];
 
@@ -315,6 +327,71 @@ class MockAppRepository extends AppRepository {
   }
 
   @override
+  Future<Expedition> newExpedition(ExpeditionSubject subject) async {
+    _expeditionAttempts = 0;
+    _expeditionRevealed = false;
+    return Expedition(
+      id: 'expedicao-1',
+      subject: subject,
+      title: 'O mistério da poça sumida',
+      topic: 'Ciclo da água',
+      scene:
+          'Depois da chuva, encontrei uma poça enorme no pátio da escola. '
+          'Voltei à tarde, com o sol forte, e ela tinha sumido! Para onde '
+          'foi essa água?',
+      clues: const [
+        'O dia ficou quente e ensolarado.',
+        'Ninguém secou o pátio.',
+      ],
+      question: 'O que aconteceu com a água da poça?',
+      options: const [
+        'Virou terra',
+        'Evaporou com o calor do sol',
+        'Foi bebida pelos passarinhos',
+        'Desapareceu para sempre',
+      ],
+    );
+  }
+
+  static const _expeditionDiscovery = ExpeditionDiscovery(
+    steps: [
+      'Pista 1: o sol esquentou o pátio e a água.',
+      'Água aquecida vira vapor, que é invisível e sobe para o ar.',
+      'Esse vapor depois forma as nuvens: é o ciclo da água!',
+      'Então a água da poça evaporou com o calor do sol.',
+    ],
+    funFact: 'A água que você bebe hoje já pode ter passado por uma nuvem!',
+    correct: 1,
+  );
+
+  @override
+  Future<ExpeditionAnswerResult> answerExpedition(
+    String expeditionId,
+    int choice,
+  ) async {
+    final hit = choice == 1;
+    final xp = !hit || _expeditionRevealed
+        ? 0
+        : (_expeditionAttempts == 0 ? 20 : 10);
+    _expeditionAttempts++;
+    return ExpeditionAnswerResult(
+      hit: hit,
+      tip: hit ? '' : 'Pense no que o calor faz com a água.',
+      discovery: hit
+          ? _expeditionDiscovery
+          : const ExpeditionDiscovery(steps: [], funFact: '', correct: null),
+      xp: xp,
+      progress: xp > 0 ? _grantXp(xp, 'expedicao') : null,
+    );
+  }
+
+  @override
+  Future<ExpeditionDiscovery> revealExpedition(String expeditionId) async {
+    _expeditionRevealed = true;
+    return _expeditionDiscovery;
+  }
+
+  @override
   Future<WritingFeedback> requestWritingFeedback({
     required String theme,
     required WritingPlan plan,
@@ -416,6 +493,12 @@ class MockAppRepository extends AppRepository {
         'fire',
       ),
       ('olho_de_aguia', 'Olho de Águia', 'Mandou 5 fotos de lição.', 'camera'),
+      (
+        'explorador',
+        'Explorador da Liga',
+        'Desvendou 10 expedições.',
+        'explore',
+      ),
     ];
     return [
       for (final (id, name, description, icon) in catalog)
