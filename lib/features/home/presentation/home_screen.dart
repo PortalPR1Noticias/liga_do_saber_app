@@ -10,6 +10,7 @@ import '../../../shared/services/app_repository.dart';
 import '../../minigames/presentation/minigames_hub_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../practice_exam/presentation/revanche_screen.dart';
+import '../../world/boss/boss_battle_screen.dart';
 import '../../world/world_islands.dart';
 
 /// A Base do jogador: o herói escolhido em destaque, o HUD com nível e
@@ -28,6 +29,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<DailyMission>? _missions;
   Map<String, int> _counts = const {};
+  Map<String, int> _bosses = const {};
 
   @override
   void initState() {
@@ -39,26 +41,52 @@ class _HomeScreenState extends State<HomeScreen> {
           if (mounted) setState(() => _missions = missions);
         })
         .catchError((_) {});
-    repository
-        .loadActivityCounts()
-        .then((counts) {
-          if (mounted) setState(() => _counts = counts);
-        })
-        .catchError((_) {});
+    _loadWorld();
   }
 
-  void _play() {
-    final island = LigaIsland.next(_counts);
-    Navigator.of(
+  Future<void> _loadWorld() async {
+    final repository = AppRepository.instance;
+    try {
+      final results = await Future.wait([
+        repository.loadActivityCounts(),
+        repository.loadBossWins(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _counts = results[0];
+        _bosses = results[1];
+      });
+    } catch (_) {}
+  }
+
+  /// O chefão da ilha está esperando: fases vencidas e ele ainda de pé.
+  bool _bossWaiting(LigaIsland island) =>
+      island.bossReady(_counts) && !_bosses.containsKey(island.id);
+
+  Future<void> _play() async {
+    final island = LigaIsland.next(_counts, _bosses);
+    if (_bossWaiting(island)) {
+      await BossBattleScreen.open(context, island);
+      await _loadWorld();
+      return;
+    }
+    await Navigator.of(
       context,
     ).pushNamed(island.routeFor(island.currentPhase(_counts)));
+    await _loadWorld();
+  }
+
+  String _playSubtitle(LigaIsland island) {
+    if (_bossWaiting(island)) return 'Chefão: ${island.boss}';
+    if (_bosses.containsKey(island.id)) return '${island.name} · Treino livre';
+    return '${island.name} · Fase ${island.currentPhase(_counts)}';
   }
 
   @override
   Widget build(BuildContext context) {
     final profile = AppRepository.instance.childProfile;
     final avatar = LigaAvatar.byId(profile.avatarId);
-    final island = LigaIsland.next(_counts);
+    final island = LigaIsland.next(_counts, _bosses);
     final missions = _missions;
     final missionsLeft = missions?.where((m) => !m.done).length ?? 0;
 
@@ -151,14 +179,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 14),
                     _IslandStrip(
                       counts: _counts,
+                      bosses: _bosses,
                       onTap: () => widget.onOpenTab?.call(1),
                     ),
                     const Spacer(),
                     const SizedBox(height: 18),
                     LigaPlayButton(
                       label: 'JOGAR',
-                      subtitle:
-                          '${island.name} · Fase ${island.currentPhase(_counts)}',
+                      subtitle: _playSubtitle(island),
                       color: LigaColors.progressGreen,
                       textColor: Colors.white,
                       onPressed: _play,
@@ -531,9 +559,14 @@ class _DailyChest extends StatelessWidget {
 /// As cinco ilhas com as fases vencidas em cada uma: o que a criança já
 /// treinou de cada matéria.
 class _IslandStrip extends StatelessWidget {
-  const _IslandStrip({required this.counts, required this.onTap});
+  const _IslandStrip({
+    required this.counts,
+    required this.bosses,
+    required this.onTap,
+  });
 
   final Map<String, int> counts;
+  final Map<String, int> bosses;
   final VoidCallback onTap;
 
   @override
@@ -561,7 +594,7 @@ class _IslandStrip extends StatelessWidget {
                       LigaPortrait(character: island.character, size: 46),
                       const SizedBox(height: 4),
                       Text(
-                        '${island.clearedPhases(counts)}/${LigaIsland.phases}',
+                        '${island.progress(counts, bosses)}/${LigaIsland.phases}',
                         style: TextStyle(
                           color: Color.lerp(
                             island.character.color,

@@ -1247,6 +1247,22 @@ class MockAppRepository extends AppRepository {
     aiReports.add(report);
   }
 
+  final _bossWins = <String, int>{};
+
+  @override
+  Future<Map<String, int>> loadBossWins() async => Map.of(_bossWins);
+
+  @override
+  Future<ProgressUpdate?> registerBossWin(String island, int stars) async {
+    final first = !_bossWins.containsKey(island);
+    _bossWins.update(
+      island,
+      (best) => best > stars ? best : stars,
+      ifAbsent: () => stars,
+    );
+    return first ? _grantXp(50, 'chefao') : null;
+  }
+
   @override
   Future<void> setAiConsent(bool allowed) async {
     _responsible = ResponsibleAccount(

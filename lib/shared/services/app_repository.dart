@@ -9,6 +9,7 @@ import '../models/league_progress.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
+import '../models/progress_update.dart';
 import '../models/practice_exam.dart';
 import '../models/reading_case.dart';
 import '../models/writing_feedback.dart';
@@ -210,6 +211,14 @@ abstract class AppRepository extends ChangeNotifier {
   /// Botão "Avisar um problema": guarda a denúncia de uma resposta da IA
   /// para a equipe revisar (exigência do Google Play para conteúdo de IA).
   Future<void> reportAiContent(AiReport report);
+
+  /// Chefões já vencidos: id da ilha (nico, luma...) → melhor nota, de 1 a
+  /// 3 estrelas.
+  Future<Map<String, int>> loadBossWins();
+
+  /// Registra a vitória contra o chefão da ilha. Devolve o XP ganho (bônus
+  /// só na primeira vitória de cada ilha).
+  Future<ProgressUpdate?> registerBossWin(String island, int stars);
 
   /// Liga ou desliga a autorização do responsável para a Foto + IA.
   Future<void> setAiConsent(bool allowed);
