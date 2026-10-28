@@ -13,6 +13,7 @@ import '../models/photo_explanation.dart';
 import '../models/progress_update.dart';
 import '../models/practice_exam.dart';
 import '../models/reading_case.dart';
+import '../models/shop.dart';
 import '../models/writing_feedback.dart';
 import '../models/responsible_account.dart';
 import 'mock_app_repository.dart';
@@ -234,6 +235,18 @@ abstract class AppRepository extends ChangeNotifier {
   /// Registra a vitória contra o chefão da ilha. Devolve o XP ganho (bônus
   /// só na primeira vitória de cada ilha).
   Future<ProgressUpdate?> registerBossWin(String island, int stars);
+
+  /// Moedas, visuais da criança e a temporada do mês.
+  Future<ShopState> loadShop();
+
+  /// Compra um visual com moedas (que vêm só de XP).
+  Future<ShopState> buyVisual(String itemId);
+
+  /// Ganha o prêmio da temporada, se o nível do mês já chegou nele.
+  Future<ShopState> claimSeasonReward(String itemId);
+
+  /// Usa um visual que a criança já tem, ou tira o do [slot] (null).
+  Future<ShopState> equipVisual(VisualSlot slot, String? itemId);
 
   /// Liga ou desliga a autorização do responsável para a Foto + IA.
   Future<void> setAiConsent(bool allowed);

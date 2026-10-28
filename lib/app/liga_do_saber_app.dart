@@ -15,6 +15,7 @@ import '../features/shell/presentation/main_shell.dart';
 import '../features/teo_trail/presentation/teo_trail_screen.dart';
 import '../features/writing_workshop/presentation/writing_workshop_screen.dart';
 import '../features/zuri_atelier/presentation/zuri_atelier_screen.dart';
+import '../features/shop/shop_screen.dart';
 import 'theme.dart';
 
 class LigaDoSaberApp extends StatelessWidget {
@@ -43,6 +44,7 @@ class LigaDoSaberApp extends StatelessWidget {
         ZuriAtelierScreen.routeName: (_) => const ZuriAtelierScreen(),
         MilaArchiveScreen.routeName: (_) => const MilaArchiveScreen(),
         RevancheScreen.routeName: (_) => const RevancheScreen(),
+        ShopScreen.routeName: (_) => const ShopScreen(),
       },
     );
   }

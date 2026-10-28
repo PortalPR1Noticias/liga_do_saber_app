@@ -4,12 +4,15 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_game.dart';
 import '../../../shared/design_system/liga_mascots.dart';
+import '../../../shared/design_system/liga_visuals.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/league_progress.dart';
+import '../../../shared/models/shop.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../minigames/presentation/minigames_hub_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../practice_exam/presentation/revanche_screen.dart';
+import '../../shop/shop_screen.dart';
 import '../../world/boss/boss_battle_screen.dart';
 import '../../world/world_islands.dart';
 
@@ -30,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<DailyMission>? _missions;
   Map<String, int> _counts = const {};
   Map<String, int> _bosses = const {};
+  ShopState? _shop;
 
   @override
   void initState() {
@@ -42,6 +46,21 @@ class _HomeScreenState extends State<HomeScreen> {
         })
         .catchError((_) {});
     _loadWorld();
+    _loadShop();
+  }
+
+  Future<void> _loadShop() async {
+    try {
+      final shop = await AppRepository.instance.loadShop();
+      if (mounted) setState(() => _shop = shop);
+    } catch (_) {}
+  }
+
+  Future<void> _openShop({bool season = false}) async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => ShopScreen(season: season)));
+    await _loadShop();
   }
 
   Future<void> _loadWorld() async {
@@ -88,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final avatar = LigaAvatar.byId(profile.avatarId);
     final island = LigaIsland.next(_counts, _bosses);
     final missions = _missions;
+    final shop = _shop;
     final missionsLeft = missions?.where((m) => !m.done).length ?? 0;
 
     return LigaNightBackground(
@@ -106,6 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _Hud(
                       avatarId: profile.avatarId,
+                      frame: shop?.equippedIn(VisualSlot.moldura),
+                      coins: shop?.coins,
+                      onCoins: _openShop,
                       nickname: profile.nickname,
                       level: profile.level,
                       levelProgress: profile.levelProgress,
@@ -144,7 +167,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        Expanded(child: _Hero(avatar: avatar)),
+                        Expanded(
+                          child: _Hero(
+                            avatar: avatar,
+                            aura: shop?.equippedIn(VisualSlot.aura),
+                            pedestal: shop?.equippedIn(VisualSlot.pedestal),
+                            title: shop?.equippedIn(VisualSlot.titulo),
+                          ),
+                        ),
                         Column(
                           children: [
                             _SideTile(
@@ -164,6 +194,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 context,
                               ).pushNamed(PhotoSolverFlowScreen.routeName),
                             ),
+                            const SizedBox(height: 14),
+                            _SideTile(
+                              label: 'Loja',
+                              icon: Icons.storefront_rounded,
+                              color: LigaColors.achievementYellow,
+                              onTap: _openShop,
+                            ),
                           ],
                         ),
                       ],
@@ -182,6 +219,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       bosses: _bosses,
                       onTap: () => widget.onOpenTab?.call(1),
                     ),
+                    if (shop != null) ...[
+                      const SizedBox(height: 14),
+                      _SeasonStrip(
+                        season: shop.season,
+                        onTap: () => _openShop(season: true),
+                      ),
+                    ],
                     const Spacer(),
                     const SizedBox(height: 18),
                     LigaPlayButton(
@@ -205,6 +249,9 @@ class _HomeScreenState extends State<HomeScreen> {
 class _Hud extends StatelessWidget {
   const _Hud({
     required this.avatarId,
+    required this.frame,
+    required this.coins,
+    required this.onCoins,
     required this.nickname,
     required this.level,
     required this.levelProgress,
@@ -214,6 +261,11 @@ class _Hud extends StatelessWidget {
   });
 
   final String avatarId;
+  final VisualItem? frame;
+
+  /// Saldo de moedas; nulo enquanto carrega.
+  final int? coins;
+  final VoidCallback onCoins;
   final String nickname;
   final int level;
   final double levelProgress;
@@ -231,7 +283,7 @@ class _Hud extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              LigaAvatarBadge(avatarId: avatarId, radius: 24),
+              LigaFramedAvatar(avatarId: avatarId, radius: 24, frame: frame),
               Positioned(
                 left: -6,
                 bottom: -8,
@@ -289,6 +341,16 @@ class _Hud extends StatelessWidget {
             ],
           ),
         ),
+        if (coins != null) ...[
+          const SizedBox(width: 8),
+          LigaPressable(
+            onTap: onCoins,
+            child: LigaCoinCounter(
+              key: const ValueKey('hud-moedas'),
+              coins: coins!,
+            ),
+          ),
+        ],
         const SizedBox(width: 8),
         LigaHudChip(
           icon: Icons.local_fire_department_rounded,
@@ -341,9 +403,12 @@ class _XpBar extends StatelessWidget {
 
 /// O herói da criança no centro da Base, em cima de um pedestal brilhante.
 class _Hero extends StatelessWidget {
-  const _Hero({required this.avatar});
+  const _Hero({required this.avatar, this.aura, this.pedestal, this.title});
 
   final LigaAvatar avatar;
+  final VisualItem? aura;
+  final VisualItem? pedestal;
+  final VisualItem? title;
 
   @override
   Widget build(BuildContext context) {
@@ -353,35 +418,29 @@ class _Hero extends StatelessWidget {
         LigaBob(
           tilt: 0.04,
           duration: const Duration(milliseconds: 1500),
-          child: LigaPortrait(character: character, size: 164),
-        ),
-        Container(
-          width: 150,
-          height: 22,
-          margin: const EdgeInsets.only(top: 8),
-          decoration: BoxDecoration(
-            borderRadius: const BorderRadius.all(Radius.elliptical(75, 11)),
-            color: character.color.withValues(alpha: 0.7),
-            border: Border.all(color: LigaColors.ink, width: 2.5),
-            boxShadow: [
-              BoxShadow(
-                color: character.color.withValues(alpha: 0.8),
-                blurRadius: 24,
-                spreadRadius: 4,
-              ),
-            ],
+          child: LigaAura(
+            aura: aura,
+            size: 164,
+            child: LigaPortrait(character: character, size: 164),
           ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: LigaPedestal(pedestal: pedestal, fallback: character.color),
         ),
         const SizedBox(height: 4),
         LigaGameText(character.displayName, size: 26),
-        Text(
-          character.title,
-          style: TextStyle(
-            color: Color.lerp(character.color, Colors.white, 0.35),
-            fontWeight: FontWeight.w900,
-            fontSize: 13,
+        if (title != null)
+          LigaTitleTag(item: title!)
+        else
+          Text(
+            character.title,
+            style: TextStyle(
+              color: Color.lerp(character.color, Colors.white, 0.35),
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+            ),
           ),
-        ),
       ],
     );
   }
@@ -609,6 +668,61 @@ class _IslandStrip extends StatelessWidget {
                   ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Faixa da temporada na Base: nível do mês e quanto falta para o próximo.
+class _SeasonStrip extends StatelessWidget {
+  const _SeasonStrip({required this.season, required this.onTap});
+
+  final SeasonState season;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return LigaPressable(
+      onTap: onTap,
+      child: Container(
+        key: const ValueKey('base-temporada'),
+        padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: LigaColors.ink, width: 3),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF6A4BFF), Color(0xFFB23FD8)],
+          ),
+          boxShadow: const [
+            BoxShadow(color: LigaColors.ink, offset: Offset(0, 4)),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.military_tech_rounded,
+              color: LigaColors.achievementYellow,
+              size: 34,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LigaGameText(
+                    '${season.name} · Nível ${season.level}/${SeasonState.maxLevel}',
+                    size: 15,
+                    maxLines: 1,
+                  ),
+                  const SizedBox(height: 4),
+                  _XpBar(value: season.levelProgress),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white),
           ],
         ),
       ),
