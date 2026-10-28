@@ -5,12 +5,13 @@ import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/performance_report.dart';
 import '../../../shared/services/app_repository.dart';
+import '../../auth/presentation/liga_text_field.dart';
 import '../../auth/presentation/login_choice_screen.dart';
 import '../../legal/presentation/legal_document_screen.dart';
 import '../../performance/presentation/performance_view.dart';
 
-/// Painel do professor: as crianças que os responsáveis liberaram para o
-/// e-mail dele, com o nome que a família escolheu e o desempenho de cada uma.
+/// Painel do professor: as crianças cujos códigos ele digitou (o responsável
+/// manda o código), com o nome que a família escolheu e o desempenho.
 class TeacherHomeScreen extends StatefulWidget {
   const TeacherHomeScreen({super.key});
 
@@ -23,6 +24,34 @@ class TeacherHomeScreen extends StatefulWidget {
 class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
   late Future<List<TeacherStudent>> _students = AppRepository.instance
       .loadTeacherPanel();
+  final _codeController = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _redeemCode() async {
+    final code = _codeController.text.trim();
+    if (code.isEmpty) return;
+    setState(() => _busy = true);
+    String message;
+    try {
+      final name = await AppRepository.instance.redeemTeacherCode(code);
+      message = 'Pronto! $name entrou na sua lista.';
+      _codeController.clear();
+      _reload();
+    } on AppRepositoryException catch (error) {
+      message = error.message;
+    }
+    if (!mounted) return;
+    setState(() => _busy = false);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 
   void _reload() {
     setState(() {
@@ -102,21 +131,30 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
               Text('Olá, ${teacher.name}!', style: textTheme.headlineMedium),
               const SizedBox(height: 4),
               Text(
-                'Aqui aparecem os alunos que as famílias liberaram para '
-                '${teacher.email}.',
+                'Aqui aparecem os alunos que as famílias liberaram para você.',
                 style: textTheme.bodyMedium,
               ),
-              if (!teacher.emailConfirmed) ...[
-                const SizedBox(height: 12),
-                LigaPanel(
-                  borderColor: LigaColors.sunsetOrange,
-                  child: Text(
-                    'Confirme o seu e-mail pelo link que enviamos para ver os '
-                    'alunos. Depois, saia e entre de novo.',
-                    style: textTheme.bodyMedium,
-                  ),
+              const SizedBox(height: 12),
+              LigaPanel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    LigaTextField(
+                      key: const Key('teacherCode'),
+                      controller: _codeController,
+                      label: 'Código do responsável',
+                      icon: Icons.vpn_key_rounded,
+                    ),
+                    const SizedBox(height: 10),
+                    LigaActionButton(
+                      label: 'Adicionar aluno',
+                      icon: Icons.person_add_alt_1_rounded,
+                      color: LigaColors.adventurePurple,
+                      onPressed: _busy ? null : _redeemCode,
+                    ),
+                  ],
                 ),
-              ],
+              ),
               const SizedBox(height: 18),
               FutureBuilder<List<TeacherStudent>>(
                 future: _students,
@@ -141,7 +179,8 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                       child: Text(
                         'Nenhum aluno por enquanto. Peça aos responsáveis para '
                         'abrirem o painel deles na Liga, tocarem em '
-                        'Professores e liberarem o e-mail ${teacher.email}.',
+                        'Professores, liberarem o e-mail ${teacher.email} e '
+                        'mandarem o código para você digitar acima.',
                         style: textTheme.bodyMedium,
                       ),
                     );

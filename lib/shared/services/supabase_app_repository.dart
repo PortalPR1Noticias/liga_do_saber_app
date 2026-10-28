@@ -291,6 +291,17 @@ class SupabaseAppRepository extends AppRepository {
   }
 
   @override
+  Future<String> redeemTeacherCode(String code) {
+    return _guard(() async {
+      final name = await _client.rpc(
+        'usar_codigo_professor',
+        params: {'p_codigo': code},
+      );
+      return name as String;
+    });
+  }
+
+  @override
   Future<void> saveChildProfile({
     required String nickname,
     required int schoolYear,
@@ -933,7 +944,6 @@ class SupabaseAppRepository extends AppRepository {
       _teacher = TeacherAccount(
         name: teacher['nome'] as String,
         email: teacher['email'] as String,
-        emailConfirmed: user.emailConfirmedAt != null,
       );
       notifyListeners();
       return AuthOutcome.readyAsTeacher;

@@ -148,11 +148,12 @@ npx supabase functions deploy explicar-foto --no-verify-jwt
 npx supabase functions deploy revanche-prova --no-verify-jwt
 ```
 
-O professor cria a conta dele no app (Sou professor) e precisa confirmar o
-e-mail: o painel dele só mostra as crianças que os responsáveis liberaram
-para esse e-mail confirmado (`painel_professor` e `avaliacao_desempenho`,
-migration 0014). Ele vê só o resumo de desempenho, nunca textos, fotos ou
-provas. A Revanche da prova continua com o envio de fotos só pelo
+O professor cria a conta dele no app (Sou professor). Cada liberação que o
+responsável faz gera um código de 6 letras (migration 0020); o responsável
+manda o código ao professor, que digita no painel dele. Só quem usou o
+código vê a criança (`usar_codigo_professor`, `painel_professor` e
+`avaliacao_desempenho`). Ele vê só o resumo de desempenho, nunca textos,
+fotos ou provas. A Revanche da prova continua com o envio de fotos só pelo
 responsável; a criança treina.
 
 ## Limites de uso da IA e cuidados de segurança (migration 0016)
@@ -190,8 +191,11 @@ Fora do código, confira no painel:
 1. **OpenAI > Settings > Limits:** um limite mensal de gasto (budget). É a
    última barreira se algo escapar dos limites acima.
 2. **Supabase > Authentication > Sign In / Providers > Email:** "Confirm
-   email" ligado. Sem isso, qualquer pessoa cria uma conta com o e-mail de
-   um professor antes dele e vê o painel das crianças liberadas para ele.
+   email" desligado, para o cadastro entrar direto sem mandar e-mail. Rode
+   a migration 0020 antes: sem ela, o professor é reconhecido pelo e-mail e,
+   sem confirmação, qualquer pessoa criaria uma conta com o e-mail de um
+   professor e veria as crianças liberadas para ele. Com a 0020, o acesso é
+   pelo código que o responsável manda.
 3. **Domínio dos logins das crianças:** os logins usam e-mails
    `@crianca.gpmkt.art.br` (subdomínio do domínio da GPLABS; nunca recebem
    e-mail). Mantenha o `gpmkt.art.br` renovado: quem for dono do domínio

@@ -192,8 +192,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('prof.ana@escola.br'), findsOneWidget);
     expect(find.text('Vê a criança como "Beatriz Souza"'), findsOneWidget);
+    final link = (await repository.loadTeacherLinks()).single;
+    expect(find.text('Código: ${link.code}'), findsOneWidget);
 
-    // O professor entra e vê a criança com o nome que o responsável deu.
+    // Só o e-mail não basta: sem o código, o professor não vê a criança.
     await repository.signUpTeacher(
       name: 'Ana',
       email: 'prof.ana@escola.br',
@@ -204,7 +206,27 @@ void main() {
       MaterialApp(key: UniqueKey(), home: const TeacherHomeScreen()),
     );
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('teacherEmpty')), findsOneWidget);
+
+    // Código errado não libera.
+    await tester.enterText(find.byKey(const Key('teacherCode')), 'XXXXXX');
+    await tester.tap(find.text('Adicionar aluno'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Código inválido ou já usado. Confira com o responsável.'),
+      findsOneWidget,
+    );
+
+    // Com o código que o responsável mandou, a criança aparece com o nome
+    // que ele deu.
+    await tester.enterText(
+      find.byKey(const Key('teacherCode')),
+      link.code.toLowerCase(),
+    );
+    await tester.tap(find.text('Adicionar aluno'));
+    await tester.pumpAndSettle();
     expect(find.text('Beatriz Souza'), findsOneWidget);
+    expect((await repository.loadTeacherLinks()).single.connected, isTrue);
     expect(find.text('Reforço: Português'), findsOneWidget);
 
     await tester.tap(find.text('Beatriz Souza'));

@@ -122,6 +122,10 @@ abstract class AppRepository extends ChangeNotifier {
   /// Painel do professor: crianças liberadas, com o desempenho de cada uma.
   Future<List<TeacherStudent>> loadTeacherPanel();
 
+  /// O professor digita o código que o responsável mandou e passa a ver a
+  /// criança. Devolve o nome com que ela aparece para ele.
+  Future<String> redeemTeacherCode(String code);
+
   Future<AuthOutcome> signUp({
     required String name,
     required String email,
