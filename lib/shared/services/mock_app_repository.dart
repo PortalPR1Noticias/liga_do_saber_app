@@ -13,6 +13,7 @@ import '../models/photo_explanation.dart';
 import '../models/practice_exam.dart';
 import '../models/progress_update.dart';
 import '../models/reading_case.dart';
+import '../models/shop.dart';
 import '../models/responsible_account.dart';
 import '../models/writing_feedback.dart';
 import 'app_repository.dart';
@@ -1375,6 +1376,78 @@ class MockAppRepository extends AppRepository {
       xp: xp,
       progress: xp > 0 ? _grantXp(xp, 'minijogo') : null,
     );
+  }
+
+  final _owned = <String, int>{};
+  final _equipped = <VisualSlot, String>{};
+
+  ShopState _shop() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month);
+    final spent = _owned.values.fold(0, (sum, price) => sum + price);
+    return ShopState(
+      coins: (childProfile.totalXp ~/ ShopState.xpPerCoin - spent).clamp(
+        0,
+        1 << 30,
+      ),
+      owned: _owned.keys.toSet(),
+      equipped: Map.of(_equipped),
+      season: SeasonState(
+        id: '${now.year}-${now.month.toString().padLeft(2, '0')}',
+        xp: learningEvents
+            .where((e) => !e.at.isBefore(start))
+            .fold(0, (sum, e) => sum + e.xp),
+        endsAt: DateTime(now.year, now.month + 1),
+      ),
+    );
+  }
+
+  @override
+  Future<ShopState> loadShop() async => _shop();
+
+  @override
+  Future<ShopState> buyVisual(String itemId) async {
+    final item = VisualItem.byId(itemId);
+    final price = item?.price;
+    if (item == null || price == null) {
+      throw const AppRepositoryException('Esse visual não está à venda.');
+    }
+    if (_owned.containsKey(itemId)) return _shop();
+    if (_shop().coins < price) {
+      throw const AppRepositoryException(
+        'Moedas insuficientes. Acerte mais desafios para ganhar moedas!',
+      );
+    }
+    _owned[itemId] = price;
+    return _shop();
+  }
+
+  @override
+  Future<ShopState> claimSeasonReward(String itemId) async {
+    final level = VisualItem.byId(itemId)?.seasonLevel;
+    if (level == null) {
+      throw const AppRepositoryException('Esse prêmio não é da temporada.');
+    }
+    if (_shop().season.level < level) {
+      throw AppRepositoryException(
+        'Chegue ao nível $level da temporada para ganhar esse prêmio.',
+      );
+    }
+    _owned.putIfAbsent(itemId, () => 0);
+    return _shop();
+  }
+
+  @override
+  Future<ShopState> equipVisual(VisualSlot slot, String? itemId) async {
+    if (itemId == null) {
+      _equipped.remove(slot);
+      return _shop();
+    }
+    if (!_owned.containsKey(itemId) || VisualItem.byId(itemId)?.slot != slot) {
+      throw const AppRepositoryException('Ganhe esse visual antes de usar.');
+    }
+    _equipped[slot] = itemId;
+    return _shop();
   }
 
   @override

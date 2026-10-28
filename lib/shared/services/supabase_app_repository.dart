@@ -16,6 +16,7 @@ import '../models/photo_explanation.dart';
 import '../models/practice_exam.dart';
 import '../models/progress_update.dart';
 import '../models/reading_case.dart';
+import '../models/shop.dart';
 import '../models/responsible_account.dart';
 import '../models/writing_feedback.dart';
 import 'app_repository.dart';
@@ -973,6 +974,36 @@ class SupabaseAppRepository extends AppRepository {
   }
 
   @override
+  Future<ShopState> loadShop() => _shopRpc('estado_loja', const {});
+
+  @override
+  Future<ShopState> buyVisual(String itemId) =>
+      _shopRpc('comprar_visual', {'p_item': itemId});
+
+  @override
+  Future<ShopState> claimSeasonReward(String itemId) =>
+      _shopRpc('resgatar_temporada', {'p_item': itemId});
+
+  @override
+  Future<ShopState> equipVisual(VisualSlot slot, String? itemId) =>
+      _shopRpc('equipar_visual', {'p_slot': slot.name, 'p_item': itemId});
+
+  Future<ShopState> _shopRpc(String function, Map<String, dynamic> params) {
+    return _guard(() async {
+      if (_childProfileId == null) {
+        throw const AppRepositoryException(
+          'Cadastre o perfil da criança primeiro.',
+        );
+      }
+      final data = await _client.rpc(
+        function,
+        params: {'p_perfil': _childProfileId, ...params},
+      );
+      return ShopState.fromJson(Map<String, dynamic>.from(data as Map));
+    });
+  }
+
+  @override
   Future<void> setAiConsent(bool allowed) {
     return _guard(() async {
       final responsibleId = _responsibleId ?? await _ensureResponsible();
@@ -1028,6 +1059,8 @@ class SupabaseAppRepository extends AppRepository {
           'Rode as migrations de supabase/migrations no Supabase.',
         );
       }
+      // Aviso escrito para a criança numa função do banco (raise exception).
+      if (error.code == 'P0001') throw AppRepositoryException(error.message);
       throw AppRepositoryException(
         'Não foi possível salvar os dados (${error.message}).',
       );
