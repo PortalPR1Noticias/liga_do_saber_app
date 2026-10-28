@@ -4,6 +4,7 @@ import '../models/ai_report.dart';
 import '../models/account_role.dart';
 import '../models/archive_case.dart';
 import '../models/atelier.dart';
+import '../models/avatar.dart';
 import '../models/child_profile.dart';
 import '../models/expedition.dart';
 import '../models/league_progress.dart';
@@ -14,6 +15,7 @@ import '../models/performance_report.dart';
 import '../models/photo_explanation.dart';
 import '../models/practice_exam.dart';
 import '../models/progress_update.dart';
+import '../models/ranking.dart';
 import '../models/reading_case.dart';
 import '../models/shop.dart';
 import '../models/responsible_account.dart';
@@ -102,6 +104,7 @@ class MockAppRepository extends AppRepository {
           level: 11,
           totalXp: 5840,
           streakDays: 19,
+          leagueName: 'Raposa Genial 8',
         );
   }
 
@@ -1665,6 +1668,134 @@ class MockAppRepository extends AppRepository {
     }
     _equipped[slot] = itemId;
     return _shop();
+  }
+
+  @override
+  Future<void> saveAvatarLook(AvatarLook look) async {
+    final owned = _owned.keys.toSet();
+    for (final id in look.parts.values) {
+      final part = AvatarPart.byId(id);
+      if (part == null ||
+          !part.isUnlocked(level: childProfile.level, owned: owned)) {
+        throw AppRepositoryException(
+          'Ainda falta liberar ${part?.name ?? 'essa peça'}.',
+        );
+      }
+    }
+    _childProfile = childProfile.copyWith(look: look);
+    _saveChild();
+  }
+
+  @override
+  Future<void> saveGameProfile({
+    required String nickname,
+    required String avatarId,
+    required String leagueName,
+  }) async {
+    final name = nickname.trim();
+    if (name.length < 2 || name.length > 20) {
+      throw const AppRepositoryException(
+        'O apelido precisa ter de 2 a 20 letras.',
+      );
+    }
+    if (!LeagueName.isValid(leagueName)) {
+      throw const AppRepositoryException('Escolha o nome da Liga na lista.');
+    }
+    _childProfile = childProfile.copyWith(
+      nickname: name,
+      avatarId: avatarId,
+      leagueName: leagueName,
+    );
+    _saveChild();
+  }
+
+  /// Outras crianças do ranking de mentira (só nome da Liga e avatar).
+  static final _rivals = [
+    ('Coruja Veloz 7', 'cabelo_longo', 'camisa_listrada', 320, 4),
+    ('Tigre Valente 21', 'cabelo_espetado', 'uniforme_heroi', 210, 6),
+    ('Capivara Genial 3', 'cabelo_black', 'moletom_roxo', 150, 3),
+    ('Fênix Estelar 45', 'cabelo_rabo', 'camiseta_liga', 90, 5),
+    ('Panda Feliz 12', 'cabelo_coque', 'camiseta_verde', 40, 2),
+  ];
+
+  @override
+  Future<Ranking> loadRanking(RankingPeriod period) async {
+    // Dia, semana e mês valem uma fração do total, para variar nos testes.
+    final factor = switch (period) {
+      RankingPeriod.dia => 1,
+      RankingPeriod.semana => 3,
+      RankingPeriod.mes => 8,
+      RankingPeriod.geral => 20,
+    };
+    final rows = [
+      for (final (name, hair, shirt, xp, level) in _rivals)
+        (
+          name,
+          AvatarLook.fromJson({
+            ...AvatarLook.initial.toJson(),
+            'cabelo': hair,
+            'camisa': shirt,
+          }),
+          xp * factor,
+          level,
+          false,
+        ),
+      (
+        childProfile.leagueName ?? 'Jogador da Liga',
+        childProfile.look,
+        period == RankingPeriod.geral
+            ? childProfile.totalXp
+            : learningEvents
+                  .where(
+                    (e) => !e.at.isBefore(switch (period) {
+                      RankingPeriod.dia => DateTime.now().subtract(
+                        const Duration(days: 1),
+                      ),
+                      RankingPeriod.semana => DateTime.now().subtract(
+                        const Duration(days: 7),
+                      ),
+                      _ => DateTime.now().subtract(const Duration(days: 30)),
+                    }),
+                  )
+                  .fold(0, (sum, e) => sum + e.xp),
+        childProfile.level,
+        true,
+      ),
+    ]..sort((a, b) => b.$3.compareTo(a.$3));
+    final entries = [
+      for (var i = 0; i < rows.length; i++)
+        RankingEntry(
+          position: i + 1,
+          leagueName: rows[i].$1,
+          look: rows[i].$2,
+          xp: rows[i].$3,
+          level: rows[i].$4,
+          isMe: rows[i].$5,
+        ),
+    ];
+    final participating = childProfile.inRanking;
+    return Ranking(
+      period: period,
+      top: [
+        for (final entry in entries)
+          if (participating || !entry.isMe) entry,
+      ],
+      me: entries.firstWhere((entry) => entry.isMe),
+      participating: participating,
+      players: entries.length - (participating ? 0 : 1),
+    );
+  }
+
+  @override
+  Future<void> setRankingVisible(String profileId, bool visible) async {
+    final index = _children.indexWhere((c) => c.id == profileId);
+    if (index < 0) return;
+    _children[index] = _children[index].copyWith(
+      inRanking: visible,
+      leagueName: _children[index].leagueName ?? LeagueName.random(),
+    );
+    if (_childProfile?.id == profileId) _childProfile = _children[index];
+    notifyListeners();
   }
 
   @override

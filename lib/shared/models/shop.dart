@@ -1,11 +1,17 @@
 import 'dart:ui';
 
+import 'avatar.dart';
+
 /// Onde o visual aparece na Base.
 enum VisualSlot {
   moldura('Molduras', 'Moldura'),
   aura('Auras', 'Aura'),
   pedestal('Pedestais', 'Pedestal'),
-  titulo('Títulos', 'Título');
+  titulo('Títulos', 'Título'),
+
+  /// Roupas e acessórios do avatar 3D. Não vão para `visuais_equipados`:
+  /// a criança veste no avatar (`perfis_criancas.avatar_visual`).
+  roupa('Roupas', 'Roupa do avatar');
 
   const VisualSlot(this.label, this.singular);
 
@@ -47,7 +53,27 @@ class VisualItem {
 
   bool get isSeasonReward => seasonLevel != null;
 
-  static const all = [
+  /// A peça do avatar 3D, nos visuais da aba Roupas.
+  AvatarPart? get avatarPart =>
+      slot == VisualSlot.roupa ? AvatarPart.byId(id) : null;
+
+  /// Visuais clássicos e as roupas do avatar vendidas na Loja ou dadas na
+  /// temporada.
+  static final List<VisualItem> all = [
+    ..._classic,
+    for (final part in AvatarPart.all)
+      if (part.fromShop)
+        VisualItem(
+          id: part.id,
+          slot: VisualSlot.roupa,
+          name: part.name,
+          colors: part.colors,
+          price: part.price,
+          seasonLevel: part.seasonLevel,
+        ),
+  ];
+
+  static const _classic = [
     VisualItem(
       id: 'moldura_ouro',
       slot: VisualSlot.moldura,

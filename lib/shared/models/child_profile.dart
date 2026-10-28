@@ -1,3 +1,4 @@
+import 'avatar.dart';
 import 'progress_update.dart';
 
 class ChildProfile {
@@ -11,6 +12,9 @@ class ChildProfile {
     this.level = 1,
     this.totalXp = 0,
     this.streakDays = 0,
+    this.look = AvatarLook.initial,
+    this.leagueName,
+    this.inRanking = false,
   });
 
   /// Id em `perfis_criancas` (nulo antes de salvar).
@@ -26,6 +30,15 @@ class ChildProfile {
   final int level;
   final int totalXp;
   final int streakDays;
+
+  /// Visual do avatar 3D (`perfis_criancas.avatar_visual`).
+  final AvatarLook look;
+
+  /// Nome que aparece no ranking, montado de listas (ver [LeagueName]).
+  final String? leagueName;
+
+  /// O responsável liberou a criança no ranking da Liga.
+  final bool inRanking;
 
   /// XP em que o nível começa: 50 × n × (n − 1). É a mesma conta da
   /// função SQL `nivel_do_xp` (migration 0003).
@@ -56,6 +69,9 @@ class ChildProfile {
     int? level,
     int? totalXp,
     int? streakDays,
+    AvatarLook? look,
+    String? leagueName,
+    bool? inRanking,
   }) {
     return ChildProfile(
       id: id ?? this.id,
@@ -67,6 +83,9 @@ class ChildProfile {
       level: level ?? this.level,
       totalXp: totalXp ?? this.totalXp,
       streakDays: streakDays ?? this.streakDays,
+      look: look ?? this.look,
+      leagueName: leagueName ?? this.leagueName,
+      inRanking: inRanking ?? this.inRanking,
     );
   }
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../models/avatar.dart';
 import '../models/shop.dart';
+import 'liga_avatar_3d.dart';
 import 'liga_avatars.dart';
 import 'liga_game.dart';
 
@@ -204,11 +206,15 @@ class LigaVisualPreview extends StatelessWidget {
     required this.item,
     required this.avatarId,
     this.size = 72,
+    this.look = AvatarLook.initial,
   });
 
   final VisualItem item;
   final String avatarId;
   final double size;
+
+  /// Avatar 3D da criança, para mostrar as roupas vestidas nele.
+  final AvatarLook look;
 
   @override
   Widget build(BuildContext context) {
@@ -218,6 +224,20 @@ class LigaVisualPreview extends StatelessWidget {
       height: size,
       child: Center(
         child: switch (item.slot) {
+          VisualSlot.roupa => LigaAvatar3D(
+            look: switch (item.avatarPart) {
+              final part? => look.withPart(part),
+              null => look,
+            },
+            size: size,
+            bust: const {
+              AvatarCategory.chapeu,
+              AvatarCategory.oculos,
+            }.contains(item.avatarPart?.category),
+            yaw: item.avatarPart?.category == AvatarCategory.costas
+                ? 2.6
+                : -0.4,
+          ),
           VisualSlot.moldura => LigaFramedAvatar(
             avatarId: avatarId,
             radius: avatarRadius,

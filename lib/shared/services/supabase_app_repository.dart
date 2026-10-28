@@ -7,6 +7,7 @@ import '../models/ai_report.dart';
 import '../models/account_role.dart';
 import '../models/archive_case.dart';
 import '../models/atelier.dart';
+import '../models/avatar.dart';
 import '../models/child_profile.dart';
 import '../models/league_progress.dart';
 import '../models/learning_report.dart';
@@ -17,6 +18,7 @@ import '../models/performance_report.dart';
 import '../models/photo_explanation.dart';
 import '../models/practice_exam.dart';
 import '../models/progress_update.dart';
+import '../models/ranking.dart';
 import '../models/reading_case.dart';
 import '../models/shop.dart';
 import '../models/responsible_account.dart';
@@ -1048,6 +1050,9 @@ class SupabaseAppRepository extends AppRepository {
       level: row['nivel'] as int,
       totalXp: row['xp_total'] as int,
       streakDays: streakAlive ? row['sequencia_dias'] as int : 0,
+      look: AvatarLook.fromJson(row['avatar_visual']),
+      leagueName: row['nome_liga'] as String?,
+      inRanking: row['ranking_publico'] as bool? ?? false,
     );
   }
 
@@ -1283,6 +1288,80 @@ class SupabaseAppRepository extends AppRepository {
       );
       return ShopState.fromJson(Map<String, dynamic>.from(data as Map));
     });
+  }
+
+  @override
+  Future<void> saveAvatarLook(AvatarLook look) {
+    return _guard(() async {
+      final id = _requireChild();
+      final row = await _client.rpc(
+        'salvar_avatar',
+        params: {'p_perfil': id, 'p_visual': look.toJson()},
+      );
+      _setChildProfile(Map<String, dynamic>.from(row as Map));
+    });
+  }
+
+  @override
+  Future<void> saveGameProfile({
+    required String nickname,
+    required String avatarId,
+    required String leagueName,
+  }) {
+    return _guard(() async {
+      final id = _requireChild();
+      final row = await _client.rpc(
+        'salvar_perfil_jogador',
+        params: {
+          'p_perfil': id,
+          'p_apelido': nickname.trim(),
+          'p_avatar_id': avatarId,
+          'p_nome_liga': leagueName,
+        },
+      );
+      _setChildProfile(Map<String, dynamic>.from(row as Map));
+    });
+  }
+
+  @override
+  Future<Ranking> loadRanking(RankingPeriod period) {
+    return _guard(() async {
+      final id = _requireChild();
+      final data = await _client.rpc(
+        'ranking_liga',
+        params: {'p_perfil': id, 'p_periodo': period.key},
+      );
+      return Ranking.fromJson(period, Map<String, dynamic>.from(data as Map));
+    });
+  }
+
+  @override
+  Future<void> setRankingVisible(String profileId, bool visible) {
+    return _guard(() async {
+      final row = await _client
+          .from('perfis_criancas')
+          .update({'ranking_publico': visible})
+          .eq('id', profileId)
+          .select()
+          .single();
+      final child = _childFromRow(row);
+      _children = [for (final c in _children) c.id == child.id ? child : c];
+      if (_childProfileId == child.id) {
+        _updateChild(child);
+      } else {
+        notifyListeners();
+      }
+    });
+  }
+
+  String _requireChild() {
+    final id = _childProfileId;
+    if (id == null) {
+      throw const AppRepositoryException(
+        'Cadastre o perfil da criança primeiro.',
+      );
+    }
+    return id;
   }
 
   @override
