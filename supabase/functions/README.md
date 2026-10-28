@@ -137,7 +137,7 @@ avisa "Voz criada por IA".
   áudio não é guardado. O app guarda os últimos 30 áudios na memória, então
   ouvir de novo não gera custo.
 - Limites próprios, separados da cota da IA de texto (migration
-  `0020_voz_dos_herois.sql`, função `reservar_uso_voz`):
+  `0021_voz_dos_herois.sql`, função `reservar_uso_voz`):
   `LIMITE_VOZ_POR_DIA` (60 por criança), `LIMITE_VOZ_FAMILIA_POR_DIA` (200) e
   `LIMITE_VOZ_GLOBAL_POR_DIA` (5000), a cada 24 horas. Um áudio de 30
   segundos custa por volta de 1 centavo de dólar.
