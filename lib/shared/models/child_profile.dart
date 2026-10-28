@@ -6,10 +6,18 @@ class ChildProfile {
     required this.schoolYear,
     required this.focusAreas,
     required this.avatarId,
+    this.id,
+    this.username,
     this.level = 1,
     this.totalXp = 0,
     this.streakDays = 0,
   });
+
+  /// Id em `perfis_criancas` (nulo antes de salvar).
+  final String? id;
+
+  /// Usuário do login da criança (nulo enquanto o responsável não criar).
+  final String? username;
 
   final String nickname;
   final int schoolYear;
@@ -39,6 +47,8 @@ class ChildProfile {
   );
 
   ChildProfile copyWith({
+    String? id,
+    String? username,
     String? nickname,
     int? schoolYear,
     List<String>? focusAreas,
@@ -48,6 +58,8 @@ class ChildProfile {
     int? streakDays,
   }) {
     return ChildProfile(
+      id: id ?? this.id,
+      username: username ?? this.username,
       nickname: nickname ?? this.nickname,
       schoolYear: schoolYear ?? this.schoolYear,
       focusAreas: focusAreas ?? this.focusAreas,

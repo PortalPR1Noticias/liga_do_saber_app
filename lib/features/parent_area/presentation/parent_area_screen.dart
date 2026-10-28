@@ -8,12 +8,12 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../legal/presentation/legal_document_screen.dart';
-import '../../onboarding/presentation/onboarding_screen.dart';
-import '../../practice_exam/presentation/parent_exams_screen.dart';
+import '../../auth/presentation/login_choice_screen.dart';
 
-/// Pergunta de adulto antes da Área dos responsáveis, para a criança não
-/// mexer sozinha em autorizações e na exclusão da conta (pedido da política
-/// Famílias do Google Play). Devolve `true` se a resposta estiver certa.
+/// Pergunta de adulto antes do painel do responsável quando a sessão dele
+/// estava salva no aparelho, para a criança não mexer sozinha em
+/// autorizações e na exclusão da conta (pedido da política Famílias do
+/// Google Play). Devolve `true` se a resposta estiver certa.
 Future<bool> showParentGate(BuildContext context) async {
   final random = math.Random();
   final a = 6 + random.nextInt(4);
@@ -54,16 +54,10 @@ Future<bool> showParentGate(BuildContext context) async {
   return passed ?? false;
 }
 
+/// Autorizações, cópia dos dados, documentos e exclusão da conta. Abre pelo
+/// painel do responsável.
 class ParentAreaScreen extends StatefulWidget {
   const ParentAreaScreen({super.key});
-
-  /// Abre a área depois da pergunta de adulto.
-  static Future<void> open(BuildContext context) async {
-    if (!await showParentGate(context) || !context.mounted) return;
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const ParentAreaScreen()));
-  }
 
   @override
   State<ParentAreaScreen> createState() => _ParentAreaScreenState();
@@ -142,7 +136,7 @@ class _ParentAreaScreenState extends State<ParentAreaScreen> {
       final messenger = ScaffoldMessenger.of(context);
       Navigator.of(
         context,
-      ).pushNamedAndRemoveUntil(OnboardingScreen.routeName, (_) => false);
+      ).pushNamedAndRemoveUntil(LoginChoiceScreen.routeName, (_) => false);
       messenger.showSnackBar(
         const SnackBar(content: Text('Conta e dados excluídos.')),
       );
@@ -155,7 +149,7 @@ class _ParentAreaScreenState extends State<ParentAreaScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Área dos responsáveis')),
+      appBar: AppBar(title: const Text('Autorizações, dados e privacidade')),
       body: LigaBackground(
         child: SafeArea(
           top: false,
@@ -203,20 +197,6 @@ class _ParentAreaScreenState extends State<ParentAreaScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                LigaActionButton(
-                  key: const Key('parentExamsButton'),
-                  label: 'Provas para treinar',
-                  icon: Icons.assignment_rounded,
-                  color: LigaColors.sunsetOrange,
-                  onPressed: _busy
-                      ? null
-                      : () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const ParentExamsScreen(),
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 12),
                 LigaActionButton(
                   label: 'Baixar cópia dos dados',
                   icon: Icons.download_rounded,

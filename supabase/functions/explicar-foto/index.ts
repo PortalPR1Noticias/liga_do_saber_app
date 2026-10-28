@@ -157,16 +157,26 @@ Deno.serve(async (req) => {
     return erro(413, "A foto ficou grande demais. Tente de novo.");
   }
 
+  // O perfil precisa ser do responsável logado ou da própria criança, com o
+  // login dela (migration 0014).
   const { data: perfil } = await servico
     .from("perfis_criancas")
-    .select("id, ano_escolar, responsaveis!inner(auth_user_id, autoriza_ia)")
+    .select("id, ano_escolar, auth_user_id, responsaveis!inner(auth_user_id, autoriza_ia)")
     .eq("id", perfilId)
-    .eq("responsaveis.auth_user_id", usuario.user.id)
     .maybeSingle();
-  if (!perfil) return erro(403, "Perfil da criança não encontrado.");
+  const responsavel = perfil?.responsaveis as unknown as {
+    auth_user_id?: string;
+    autoriza_ia?: boolean;
+  } | undefined;
+  if (
+    !perfil ||
+    (responsavel?.auth_user_id !== usuario.user.id &&
+      perfil.auth_user_id !== usuario.user.id)
+  ) {
+    return erro(403, "Perfil da criança não encontrado.");
+  }
   // LGPD art. 14: a foto só vai para a OpenAI com a autorização do
   // responsável (migration 0004, Área dos responsáveis no app).
-  const responsavel = perfil.responsaveis as unknown as { autoriza_ia?: boolean };
   if (!responsavel?.autoriza_ia) {
     return erro(
       403,

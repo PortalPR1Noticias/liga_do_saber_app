@@ -229,7 +229,9 @@ function somarProgresso(
 }
 
 async function enviar(ctx: Contexto): Promise<Response> {
+  // Quem manda as provas é o responsável; a criança só treina.
   const perfil = await carregarPerfil(ctx, {
+    somenteResponsavel: true,
     exigirAutorizacaoIA:
       "Ligue a autorização de IA na Área dos responsáveis para enviar provas.",
   });

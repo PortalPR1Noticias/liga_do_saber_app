@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/models/account_role.dart';
 import '../../../shared/services/app_repository.dart';
+import '../../parent_area/presentation/child_login_setup_screen.dart';
 import '../../shell/presentation/main_shell.dart';
 
 class ChooseAvatarScreen extends StatefulWidget {
@@ -31,6 +33,13 @@ class _ChooseAvatarScreenState extends State<ChooseAvatarScreen> {
       return;
     }
     if (!mounted) return;
+    // O responsável cadastrou a criança: falta o login dela.
+    if (AppRepository.instance.role == AccountRole.responsible) {
+      Navigator.of(
+        context,
+      ).pushNamed(ChildLoginSetupScreen.routeName, arguments: true);
+      return;
+    }
     Navigator.of(
       context,
     ).pushNamedAndRemoveUntil(MainShell.routeName, (route) => false);

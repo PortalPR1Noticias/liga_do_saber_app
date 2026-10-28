@@ -15,7 +15,7 @@ enum LegalDocument {
 
   /// Versão gravada em `responsaveis.termos_versao` no aceite. Troque junto
   /// com o texto dos dois arquivos quando houver mudança importante.
-  static const version = '2026-10-27';
+  static const version = '2026-10-28';
 
   final String title;
   final String assetPath;

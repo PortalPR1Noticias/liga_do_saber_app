@@ -1,12 +1,14 @@
 # Termos de Uso da Liga do Saber
 
-Versão 2026-10-27. Última atualização: 27 de outubro de 2026.
+Versão 2026-10-28. Última atualização: 28 de outubro de 2026.
 
 Estes termos valem entre você, responsável que cria a conta, e GPLABS, [RAZÃO SOCIAL], CNPJ [CNPJ], que oferece a Liga do Saber.
 
 ## Quem pode usar
 
-A conta só pode ser criada por um adulto com 18 anos ou mais, pai, mãe ou responsável legal pela criança que vai usar o app. Ao criar a conta, você declara que é esse responsável e que leu a Política de Privacidade.
+A conta só pode ser criada por um adulto com 18 anos ou mais, pai, mãe ou responsável legal pela criança que vai usar o app. Ao criar a conta, você declara que é esse responsável e que leu a Política de Privacidade. O responsável cria o login de cada criança e cuida da senha dela.
+
+Professores podem criar uma conta própria para acompanhar o desempenho das crianças que os responsáveis liberarem para o e-mail deles. O professor se compromete a usar esse resumo só para acompanhar o aprendizado da criança e a não compartilhá-lo com outras pessoas.
 
 ## O que é a Liga do Saber
 
@@ -35,7 +37,7 @@ Os personagens Nico, Luma, Teo, Mila e Zuri, a marca Liga do Saber e o conteúdo
 
 ## Cancelamento
 
-Você pode excluir a conta a qualquer momento em "Área dos responsáveis > Excluir conta e dados". A exclusão apaga todos os dados, como descrito na Política de Privacidade.
+Você pode excluir a conta a qualquer momento em "Painel do responsável > Autorizações, dados e privacidade > Excluir conta e dados". A exclusão apaga todos os dados, como descrito na Política de Privacidade.
 
 ## Contato e foro
 
