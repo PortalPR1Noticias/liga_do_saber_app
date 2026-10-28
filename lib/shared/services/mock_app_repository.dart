@@ -89,7 +89,7 @@ class MockAppRepository extends AppRepository {
     return _responsible ??
         const ResponsibleAccount(
           name: 'Responsável',
-          email: 'responsavel@ligadosaber.app',
+          email: 'responsavel@gpmkt.art.br',
         );
   }
 
@@ -122,7 +122,7 @@ class MockAppRepository extends AppRepository {
     _responsible = ResponsibleAccount(
       name: name.trim().isEmpty ? 'Responsável' : name.trim(),
       email: email.trim().isEmpty
-          ? 'responsavel@ligadosaber.app'
+          ? 'responsavel@gpmkt.art.br'
           : email.trim(),
     );
     _children = [];
