@@ -17,6 +17,7 @@
 import {
   carregarPerfil,
   concederXp,
+  conferirLimiteDiario,
   ErroDaLiga,
   perguntarIA,
   REGRAS_DE_SEGURANCA,
@@ -264,15 +265,13 @@ async function enviar(ctx: Contexto): Promise<Response> {
     throw new ErroDaLiga(413, "As fotos ficaram grandes demais. Mande menos fotos.");
   }
 
-  const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count } = await ctx.servico
-    .from("provas_treino")
-    .select("id", { count: "exact", head: true })
-    .eq("perfil_crianca_id", perfil.id)
-    .gte("created_at", desde);
-  if ((count ?? 0) >= LIMITE_DIARIO) {
-    throw new ErroDaLiga(429, "Hoje já foram enviadas muitas provas. Tente amanhã.");
-  }
+  await conferirLimiteDiario(
+    ctx,
+    perfil,
+    "revanche_envio",
+    LIMITE_DIARIO,
+    "Hoje já foram enviadas muitas provas. Tente amanhã.",
+  );
 
   const pedido = observacao
     ? `Recado do responsável: ${observacao}`

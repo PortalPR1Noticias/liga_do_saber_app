@@ -154,3 +154,46 @@ para esse e-mail confirmado (`painel_professor` e `avaliacao_desempenho`,
 migration 0014). Ele vê só o resumo de desempenho, nunca textos, fotos ou
 provas. A Revanche da prova continua com o envio de fotos só pelo
 responsável; a criança treina.
+
+## Limites de uso da IA e cuidados de segurança (migration 0016)
+
+Rode `supabase/migrations/0016_seguranca_limites.sql` **antes** de publicar
+de novo as funções. A partir dela, cada chamada à OpenAI reserva uma vaga
+pela função SQL `reservar_uso_ia` antes de chamar a IA, com três limites a
+cada 24 horas:
+
+- por criança e módulo: os `LIMITE_..._POR_DIA` de cada função (acima);
+- por família (todas as crianças de um responsável):
+  `LIMITE_IA_FAMILIA_POR_DIA` (padrão 300);
+- no app todo: `LIMITE_IA_GLOBAL_POR_DIA` (padrão 3000). Quando estoura, a
+  IA fica fechada até o dia seguinte para todo mundo: é o freio de custo.
+
+Sem a migration 0016, as funções respondem "A Liga ainda está sendo
+preparada" (a IA fica fechada em vez de ficar sem limite). Cada responsável
+pode ter até 10 crianças.
+
+```bash
+npx supabase functions deploy detetive-leitura --no-verify-jwt
+npx supabase functions deploy desafio-matematica --no-verify-jwt
+npx supabase functions deploy oficina-texto --no-verify-jwt
+npx supabase functions deploy expedicao-teo --no-verify-jwt
+npx supabase functions deploy arquivo-mila --no-verify-jwt
+npx supabase functions deploy atelie-zuri --no-verify-jwt
+npx supabase functions deploy minijogo --no-verify-jwt
+npx supabase functions deploy explicar-foto --no-verify-jwt
+npx supabase functions deploy revanche-prova --no-verify-jwt
+npx supabase functions deploy contas-liga --no-verify-jwt
+```
+
+Fora do código, confira no painel:
+
+1. **OpenAI > Settings > Limits:** um limite mensal de gasto (budget). É a
+   última barreira se algo escapar dos limites acima.
+2. **Supabase > Authentication > Sign In / Providers > Email:** "Confirm
+   email" ligado. Sem isso, qualquer pessoa cria uma conta com o e-mail de
+   um professor antes dele e vê o painel das crianças liberadas para ele.
+3. **Domínio `ligadosaber.app`:** os logins das crianças usam e-mails
+   `@crianca.ligadosaber.app`. Quem for dono desse domínio pode pedir
+   "esqueci a senha" e receber o link de troca de senha da criança. Registre
+   o domínio no nome da GPLABS (ou troque `DOMINIO_CRIANCA` em
+   `contas-liga` por um domínio que já seja seu antes de criar logins).

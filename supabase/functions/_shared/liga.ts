@@ -147,8 +147,15 @@ export async function buscarPerfilPermitido(
   };
 }
 
+/// Chamadas à IA por família (todas as crianças de um responsável) e no app
+/// inteiro, a cada 24 horas. Protegem a conta da OpenAI de abuso.
+const LIMITE_FAMILIA = Number(Deno.env.get("LIMITE_IA_FAMILIA_POR_DIA") ?? "300");
+const LIMITE_GLOBAL = Number(Deno.env.get("LIMITE_IA_GLOBAL_POR_DIA") ?? "3000");
+
 /// Limita quantas vezes por dia a criança usa a IA num módulo (protege o
-/// custo). Conta os registros de `correcoes_ia` daquele tipo.
+/// custo). Reserva a vaga antes de chamar a OpenAI pela função SQL
+/// public.reservar_uso_ia (migration 0016), que também confere o limite da
+/// família e o do app todo, sem brecha para pedidos ao mesmo tempo.
 export async function conferirLimiteDiario(
   ctx: Contexto,
   perfil: Perfil,
@@ -156,14 +163,25 @@ export async function conferirLimiteDiario(
   limite: number,
   mensagem: string,
 ): Promise<void> {
-  const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count } = await ctx.servico
-    .from("correcoes_ia")
-    .select("id", { count: "exact", head: true })
-    .eq("perfil_crianca_id", perfil.id)
-    .eq("tipo", tipo)
-    .gte("created_at", desde);
-  if ((count ?? 0) >= limite) throw new ErroDaLiga(429, mensagem);
+  const { data, error } = await ctx.servico.rpc("reservar_uso_ia", {
+    p_perfil: perfil.id,
+    p_tipo: tipo,
+    p_limite_perfil: limite,
+    p_limite_familia: LIMITE_FAMILIA,
+    p_limite_global: LIMITE_GLOBAL,
+  });
+  if (error) {
+    // Sem a migration 0016 a IA fica fechada: melhor do que ficar sem limite.
+    console.error("Falha ao reservar uso da IA", error.message);
+    throw new ErroDaLiga(503, "A Liga ainda está sendo preparada. Tente mais tarde.");
+  }
+  if (data === "perfil") throw new ErroDaLiga(429, mensagem);
+  if (data === "familia") {
+    throw new ErroDaLiga(429, "Sua família já usou muito a IA hoje. Volte amanhã!");
+  }
+  if (data === "global") {
+    throw new ErroDaLiga(503, "A Liga está muito movimentada agora. Tente mais tarde.");
+  }
 }
 
 /// Pede à OpenAI uma resposta no formato do `esquema` e devolve o objeto.
