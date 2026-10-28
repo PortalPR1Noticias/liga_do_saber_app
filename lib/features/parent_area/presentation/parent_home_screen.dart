@@ -13,6 +13,7 @@ import '../../practice_exam/presentation/parent_exams_screen.dart';
 import 'child_login_setup_screen.dart';
 import 'parent_area_screen.dart';
 import 'teacher_links_screen.dart';
+import 'weekly_report_screen.dart';
 
 /// Painel do responsável: as crianças da conta, o desempenho de cada uma, o
 /// login delas, os professores liberados e as provas para treinar.
@@ -192,6 +193,13 @@ class _ChildCard extends StatelessWidget {
                   context,
                   (_) => PerformanceScreen(childName: child.nickname),
                 ),
+              ),
+              FilledButton.tonalIcon(
+                key: ValueKey('weeklyReport-${child.id}'),
+                icon: const Icon(Icons.calendar_month_rounded),
+                label: const Text('Relatório da semana'),
+                onPressed: () =>
+                    _open(context, (_) => const WeeklyReportScreen()),
               ),
               FilledButton.tonalIcon(
                 key: ValueKey('childLogin-${child.id}'),

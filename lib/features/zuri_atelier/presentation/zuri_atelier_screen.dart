@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/models/atelier.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
@@ -127,7 +128,12 @@ class _ZuriAtelierScreenState extends State<ZuriAtelierScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Oficina do Zuri')),
+      appBar: AppBar(
+        title: const Text('Oficina do Zuri'),
+        actions: [
+          LigaReportAiButton(module: 'atelie', reference: () => _game?.id),
+        ],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,

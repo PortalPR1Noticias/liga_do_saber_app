@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/models/minigame.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
@@ -86,7 +87,12 @@ class _WordSearchScreenState extends State<WordSearchScreen> {
     final color = _subject.color;
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Caça-palavras')),
+      appBar: AppBar(
+        title: const Text('Caça-palavras'),
+        actions: [
+          LigaReportAiButton(module: 'minijogo', reference: () => _game?.id),
+        ],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,

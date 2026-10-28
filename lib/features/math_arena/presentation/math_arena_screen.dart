@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/models/math_challenge.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
@@ -90,7 +91,15 @@ class _MathArenaScreenState extends State<MathArenaScreen> {
     final challenge = _challenge;
     final solved = _right != null;
     return Scaffold(
-      appBar: AppBar(title: const Text('Arena Matemática')),
+      appBar: AppBar(
+        title: const Text('Arena Matemática'),
+        actions: [
+          LigaReportAiButton(
+            module: 'matematica',
+            reference: () => _challenge?.id,
+          ),
+        ],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,

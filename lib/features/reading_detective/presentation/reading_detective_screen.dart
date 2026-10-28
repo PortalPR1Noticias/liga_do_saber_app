@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/models/reading_case.dart';
 import '../../../shared/models/minigame.dart';
 import '../../../shared/services/app_repository.dart';
@@ -69,7 +70,12 @@ class _ReadingDetectiveScreenState extends State<ReadingDetectiveScreen> {
     final result = _result;
     final allAnswered = _answers.isNotEmpty && !_answers.contains(null);
     return Scaffold(
-      appBar: AppBar(title: const Text('Detetive da Leitura')),
+      appBar: AppBar(
+        title: const Text('Detetive da Leitura'),
+        actions: [
+          LigaReportAiButton(module: 'leitura', reference: () => _case?.id),
+        ],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,

@@ -4,13 +4,14 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/minigame.dart';
+import 'crossword_screen.dart';
 import 'lightning_challenge_screen.dart';
 import 'minigame_style.dart';
 import 'order_puzzle_screen.dart';
 import 'word_search_screen.dart';
 
 /// Jogos da Liga: o conteúdo da escola em formato de jogo (caça-palavras,
-/// quebra-cabeça e Desafio Relâmpago), para o tempo de tela virar
+/// Cruzadas, quebra-cabeça e Desafio Relâmpago), para o tempo de tela virar
 /// contraturno escolar.
 class MinigamesHubScreen extends StatefulWidget {
   const MinigamesHubScreen({super.key});
@@ -62,6 +63,18 @@ class _MinigamesHubScreenState extends State<MinigamesHubScreen> {
                   color: _subject.color,
                   progress: 0,
                   onTap: () => _open(WordSearchScreen(subject: _subject)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              PopIn(
+                delay: const Duration(milliseconds: 110),
+                child: MissionCard(
+                  title: 'Cruzadas da Liga',
+                  subtitle: 'Descubra as palavras pelas pistas e cruze tudo.',
+                  icon: Icons.border_all_rounded,
+                  color: _subject.color,
+                  progress: 0,
+                  onTap: () => _open(CrosswordScreen(subject: _subject)),
                 ),
               ),
               const SizedBox(height: 14),

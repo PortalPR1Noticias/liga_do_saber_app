@@ -1,15 +1,18 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/ai_report.dart';
 import '../models/account_role.dart';
 import '../models/atelier.dart';
 import '../models/archive_case.dart';
 import '../models/child_profile.dart';
 import '../models/expedition.dart';
 import '../models/league_progress.dart';
+import '../models/learning_report.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
 import '../models/performance_report.dart';
 import '../models/photo_explanation.dart';
+import '../models/progress_update.dart';
 import '../models/practice_exam.dart';
 import '../models/reading_case.dart';
 import '../models/writing_feedback.dart';
@@ -258,6 +261,16 @@ abstract class AppRepository extends ChangeNotifier {
     List<int> answers,
   );
 
+  /// Cruzadas da Liga: palavras cruzadas com palavras do tema escolhido.
+  Future<CrosswordGame> newCrossword(MinigameSubject subject);
+
+  /// Confere a palavra digitada para a pista [index] de [CrosswordGame.clues].
+  Future<CrosswordCheck> checkCrossword(
+    String gameId,
+    int index,
+    String answer,
+  );
+
   /// Missões do dia, com as que já foram concluídas hoje.
   Future<List<DailyMission>> loadDailyMissions();
 
@@ -267,6 +280,22 @@ abstract class AppRepository extends ChangeNotifier {
   /// Quantas atividades já valeram XP em cada origem (`matematica`,
   /// `leitura`, `arquivo`...). É o que avança as fases do Mundo da Liga.
   Future<Map<String, int>> loadActivityCounts();
+
+  /// Histórico de atividades com a matéria de cada uma: base do progresso
+  /// por matéria e do relatório semanal dos responsáveis.
+  Future<LearningLog> loadLearningLog();
+
+  /// Botão "Avisar um problema": guarda a denúncia de uma resposta da IA
+  /// para a equipe revisar (exigência do Google Play para conteúdo de IA).
+  Future<void> reportAiContent(AiReport report);
+
+  /// Chefões já vencidos: id da ilha (nico, luma...) → melhor nota, de 1 a
+  /// 3 estrelas.
+  Future<Map<String, int>> loadBossWins();
+
+  /// Registra a vitória contra o chefão da ilha. Devolve o XP ganho (bônus
+  /// só na primeira vitória de cada ilha).
+  Future<ProgressUpdate?> registerBossWin(String island, int stars);
 
   /// Liga ou desliga a autorização do responsável para a Foto + IA.
   Future<void> setAiConsent(bool allowed);

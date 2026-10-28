@@ -16,6 +16,7 @@ import '../../mila_archive/presentation/mila_archive_screen.dart';
 import '../../minigames/presentation/minigames_hub_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../practice_exam/presentation/revanche_screen.dart';
+import '../../progress/presentation/subject_progress_section.dart';
 import '../../reading_detective/presentation/reading_detective_screen.dart';
 import '../../teo_trail/presentation/teo_trail_screen.dart';
 import '../../writing_workshop/presentation/writing_workshop_screen.dart';
@@ -390,6 +391,7 @@ class _ProgressScreenState
             ],
           ),
         ),
+        const SubjectProgressSection(),
         const SectionTitle('Medalhas', icon: Icons.emoji_events_rounded),
         if (error != null)
           LigaPanel(child: Text(error))

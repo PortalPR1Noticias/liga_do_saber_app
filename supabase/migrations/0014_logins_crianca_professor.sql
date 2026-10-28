@@ -1,5 +1,6 @@
 -- Liga do Saber - três logins: responsável, criança e professor.
--- Execute depois das migrations anteriores no Supabase SQL Editor.
+-- Execute depois das migrations anteriores no Supabase SQL Editor
+-- (precisa da 0010 e da 0012, que criam os chefões e as denúncias).
 --
 -- O que este arquivo faz:
 --   1) a criança ganha um login próprio (usuário e senha criados pelo
@@ -63,12 +64,181 @@ on public.badges_criancas for select
 to authenticated
 using (perfil_crianca_id = public.perfil_da_crianca_logada());
 
--- A criança joga a Revanche da prova (lê as provas), mas não apaga.
-drop policy if exists "provas_treino_crianca_select" on public.provas_treino;
-create policy "provas_treino_crianca_select"
-on public.provas_treino for select
+drop policy if exists "chefoes_vencidos_crianca_select" on public.chefoes_vencidos;
+create policy "chefoes_vencidos_crianca_select"
+on public.chefoes_vencidos for select
 to authenticated
 using (perfil_crianca_id = public.perfil_da_crianca_logada());
+
+-- O botão "Avisar um problema" (migration 0012) também funciona no login
+-- da criança.
+drop policy if exists "denuncias_ia_crianca_insert" on public.denuncias_ia;
+create policy "denuncias_ia_crianca_insert"
+on public.denuncias_ia for insert
+to authenticated
+with check (
+  resolvida = false
+  and perfil_crianca_id = public.perfil_da_crianca_logada()
+);
+
+drop policy if exists "denuncias_ia_crianca_select" on public.denuncias_ia;
+create policy "denuncias_ia_crianca_select"
+on public.denuncias_ia for select
+to authenticated
+using (perfil_crianca_id = public.perfil_da_crianca_logada());
+
+-- `correcoes_ia` e `provas_treino` guardam as respostas certas, então a
+-- criança não lê essas tabelas: as duas funções abaixo devolvem só o que
+-- os jogos e o progresso por matéria mostram.
+create or replace function public.provas_da_crianca()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'id', t.id,
+      'tipo', t.tipo,
+      'titulo', t.titulo,
+      'materia', t.materia,
+      'personagem', t.personagem,
+      'conteudos', t.conteudos,
+      'resumo_responsavel', t.resumo_responsavel,
+      'total_questoes', t.total_questoes,
+      'questoes_acertadas', t.questoes_acertadas,
+      'estrelas', t.estrelas,
+      'vencida_em', t.vencida_em,
+      'created_at', t.created_at
+    ) order by t.created_at desc), '[]'::jsonb)
+  from (
+    select * from public.provas_treino
+    where perfil_crianca_id = public.perfil_da_crianca_logada()
+    order by created_at desc
+    limit 30
+  ) t;
+$$;
+
+revoke all on function public.provas_da_crianca() from public, anon;
+grant execute on function public.provas_da_crianca() to authenticated;
+
+-- Atividades abertas (com a matéria) e as provas com os ids das questões,
+-- no mesmo formato que o app lê para o progresso por matéria.
+create or replace function public.atividades_da_crianca()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'atividades', coalesce((
+      select jsonb_agg(jsonb_build_object(
+          'id', c.id,
+          'tipo', c.tipo,
+          'created_at', c.created_at,
+          'materia', c.resposta_json->>'materia',
+          'jogo', c.resposta_json->>'jogo'
+        ) order by c.created_at)
+      from public.correcoes_ia c
+      where c.perfil_crianca_id = public.perfil_da_crianca_logada()
+        and c.tipo in ('leitura', 'matematica', 'expedicao', 'arquivo',
+                       'atelie', 'minijogo', 'foto')
+    ), '[]'::jsonb),
+    'provas', coalesce((
+      select jsonb_agg(jsonb_build_object(
+          'id', t.id,
+          'materia', t.materia,
+          'questoes', (
+            select coalesce(jsonb_agg(jsonb_build_object('id', q->'id')), '[]'::jsonb)
+            from jsonb_array_elements(t.questoes) q
+          )
+        ))
+      from public.provas_treino t
+      where t.perfil_crianca_id = public.perfil_da_crianca_logada()
+    ), '[]'::jsonb)
+  );
+$$;
+
+revoke all on function public.atividades_da_crianca() from public, anon;
+grant execute on function public.atividades_da_crianca() to authenticated;
+
+-- Chefões (migration 0010): a própria criança registra a vitória. Mesmo
+-- corpo da 0010, aceitando também o login da criança.
+create or replace function public.registrar_chefao(
+  p_perfil uuid,
+  p_ilha text,
+  p_estrelas int
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_origens text[];
+  v_fases int;
+  v_estrelas int;
+  v_progresso jsonb;
+begin
+  if not exists (
+    select 1
+    from public.perfis_criancas p
+    join public.responsaveis r on r.id = p.responsavel_id
+    where p.id = p_perfil
+      and r.auth_user_id = auth.uid()
+  ) and p_perfil is distinct from public.perfil_da_crianca_logada() then
+    raise exception 'Perfil não encontrado';
+  end if;
+
+  -- Mesmas origens das ilhas em lib/features/world/world_islands.dart.
+  v_origens := case p_ilha
+    when 'nico' then array['matematica']
+    when 'luma' then array['leitura', 'texto', 'texto_reescrita']
+    when 'teo' then array['expedicao']
+    when 'mila' then array['arquivo']
+    when 'zuri' then array['atelie', 'projeto']
+  end;
+  if v_origens is null then
+    raise exception 'Ilha desconhecida';
+  end if;
+
+  select count(*) into v_fases
+  from public.eventos_xp
+  where perfil_crianca_id = p_perfil
+    and origem = any (v_origens);
+  if v_fases < 9 then
+    raise exception 'Vença as fases da ilha antes do chefão.';
+  end if;
+
+  v_estrelas := least(greatest(coalesce(p_estrelas, 1), 1), 3);
+
+  insert into public.chefoes_vencidos (perfil_crianca_id, ilha, estrelas)
+  values (p_perfil, p_ilha, v_estrelas)
+  on conflict (perfil_crianca_id, ilha) do update
+    set estrelas = greatest(public.chefoes_vencidos.estrelas, excluded.estrelas),
+        vitorias = public.chefoes_vencidos.vitorias + 1,
+        ultima_vitoria_em = now();
+
+  v_progresso := public.conceder_xp(
+    p_perfil,
+    50,
+    'chefao',
+    md5(p_perfil::text || ':chefao:' || p_ilha)::uuid
+  );
+
+  return jsonb_build_object(
+    'estrelas', (
+      select estrelas from public.chefoes_vencidos
+      where perfil_crianca_id = p_perfil and ilha = p_ilha
+    ),
+    'progresso', v_progresso
+  );
+end;
+$$;
+
+revoke all on function public.registrar_chefao(uuid, text, int) from public, anon;
+grant execute on function public.registrar_chefao(uuid, text, int) to authenticated;
 
 -- O que o app da criança precisa saber do responsável: só se a IA está
 -- liberada (sem nome nem e-mail do adulto).
