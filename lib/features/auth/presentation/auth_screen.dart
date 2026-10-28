@@ -4,14 +4,19 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/services/app_repository.dart';
-import '../../child_profile/presentation/child_profile_screen.dart';
 import '../../legal/presentation/legal_document_screen.dart';
-import '../../shell/presentation/main_shell.dart';
+import 'auth_routing.dart';
+import 'liga_text_field.dart';
 
+/// Conta por e-mail e senha: do responsável ou, com [forTeacher], do
+/// professor.
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+  const AuthScreen({super.key, this.forTeacher = false});
 
   static const routeName = '/auth';
+  static const teacherRouteName = '/auth-professor';
+
+  final bool forTeacher;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -41,12 +46,19 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       final repository = AppRepository.instance;
       outcome = _isCreateAccount
-          ? await repository.signUp(
-              name: _nameController.text,
-              email: _emailController.text,
-              password: _passwordController.text,
-              acceptedTermsVersion: LegalDocument.version,
-            )
+          ? await (widget.forTeacher
+                ? repository.signUpTeacher(
+                    name: _nameController.text,
+                    email: _emailController.text,
+                    password: _passwordController.text,
+                    acceptedTermsVersion: LegalDocument.version,
+                  )
+                : repository.signUp(
+                    name: _nameController.text,
+                    email: _emailController.text,
+                    password: _passwordController.text,
+                    acceptedTermsVersion: LegalDocument.version,
+                  ))
           : await repository.signIn(
               email: _emailController.text,
               password: _passwordController.text,
@@ -60,22 +72,15 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!mounted) return;
     setState(() => _isSaving = false);
 
-    switch (outcome) {
-      case AuthOutcome.readyWithProfile:
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil(MainShell.routeName, (route) => false);
-      case AuthOutcome.needsChildProfile:
-        Navigator.of(context).pushNamed(ChildProfileScreen.routeName);
-      case AuthOutcome.needsEmailConfirmation:
-        setState(() => _isCreateAccount = false);
-        _showMessage(
-          'Conta criada! Enviamos um link de confirmação para o seu e-mail. '
-          'Depois de confirmar, entre com a mesma senha.',
-        );
-      case AuthOutcome.signedOut:
-        break;
+    if (outcome == AuthOutcome.needsEmailConfirmation) {
+      setState(() => _isCreateAccount = false);
+      _showMessage(
+        'Conta criada! Enviamos um link de confirmação para o seu e-mail. '
+        'Depois de confirmar, entre com a mesma senha.',
+      );
+      return;
     }
+    await openHomeFor(context, outcome);
   }
 
   void _showMessage(String message) {
@@ -84,9 +89,11 @@ class _AuthScreenState extends State<AuthScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  static String? _validateName(String? value) {
+  String? _validateName(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Informe o nome do responsável.';
+      return widget.forTeacher
+          ? 'Informe o seu nome.'
+          : 'Informe o nome do responsável.';
     }
     return null;
   }
@@ -106,8 +113,19 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final teacher = widget.forTeacher;
+    final String greeting;
+    if (teacher) {
+      greeting = _isCreateAccount
+          ? 'Olá, professor! Com a sua conta, você acompanha os alunos que as famílias liberarem.'
+          : 'Bem-vindo de volta! Vamos ver como a turma está indo?';
+    } else {
+      greeting = _isCreateAccount
+          ? 'Oi! Primeiro, um adulto cria a conta. Depois é a sua vez!'
+          : 'Que bom te ver de novo! Vamos continuar a missão?';
+    }
     return Scaffold(
-      appBar: AppBar(title: const Text('Responsável')),
+      appBar: AppBar(title: Text(teacher ? 'Professor' : 'Responsável')),
       body: LigaBackground(
         child: SafeArea(
           top: false,
@@ -117,13 +135,16 @@ class _AuthScreenState extends State<AuthScreen> {
               PopIn(
                 child: Row(
                   children: [
-                    const LigaMascot(character: LigaCharacter.nico, size: 84),
+                    LigaMascot(
+                      character: teacher
+                          ? LigaCharacter.mila
+                          : LigaCharacter.nico,
+                      size: 84,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: LigaSpeechBubble(
-                        text: _isCreateAccount
-                            ? 'Oi! Primeiro, um adulto cria a conta. Depois é a sua vez!'
-                            : 'Que bom te ver de novo! Vamos continuar a missão?',
+                        text: greeting,
                         color: LigaColors.primaryBlue.withValues(alpha: 0.4),
                       ),
                     ),
@@ -137,7 +158,11 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'A conta principal é sempre do responsável. O perfil da criança vem no próximo passo.',
+                teacher
+                    ? 'Você só vê o desempenho das crianças que os responsáveis '
+                          'liberarem para o seu e-mail.'
+                    : 'A conta principal é sempre do responsável. O perfil e o '
+                          'login da criança vêm nos próximos passos.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 18),
@@ -158,15 +183,15 @@ class _AuthScreenState extends State<AuthScreen> {
                   child: Column(
                     children: [
                       if (_isCreateAccount) ...[
-                        _LigaTextField(
+                        LigaTextField(
                           controller: _nameController,
-                          label: 'Nome do responsável',
+                          label: teacher ? 'Seu nome' : 'Nome do responsável',
                           icon: Icons.person_outline,
                           validator: _validateName,
                         ),
                         const SizedBox(height: 12),
                       ],
-                      _LigaTextField(
+                      LigaTextField(
                         controller: _emailController,
                         label: 'E-mail',
                         icon: Icons.mail_outline,
@@ -174,7 +199,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         validator: _validateEmail,
                       ),
                       const SizedBox(height: 12),
-                      _LigaTextField(
+                      LigaTextField(
                         controller: _passwordController,
                         label: 'Senha',
                         icon: Icons.lock_outline,
@@ -183,7 +208,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       if (_isCreateAccount) ...[
                         const SizedBox(height: 12),
-                        const _ParentalConsentField(),
+                        _ConsentField(forTeacher: teacher),
                       ],
                       const SizedBox(height: 16),
                       Row(
@@ -197,7 +222,13 @@ class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Seus dados ficam protegidos na sua conta. Só você acessa os perfis das crianças.',
+                              teacher
+                                  ? 'Você vê só um resumo do desempenho. Textos, '
+                                        'fotos e provas das crianças continuam '
+                                        'só com a família.'
+                                  : 'Seus dados ficam protegidos na sua conta. '
+                                        'Só você e os professores que você '
+                                        'liberar veem o desempenho das crianças.',
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ),
@@ -226,47 +257,13 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 
-class _LigaTextField extends StatelessWidget {
-  const _LigaTextField({
-    required this.controller,
-    required this.label,
-    required this.icon,
-    this.keyboardType,
-    this.obscureText = false,
-    this.validator,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final IconData icon;
-  final TextInputType? keyboardType;
-  final bool obscureText;
-  final FormFieldValidator<String>? validator;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      obscureText: obscureText,
-      validator: validator,
-      style: const TextStyle(
-        color: LigaColors.ink,
-        fontWeight: FontWeight.w800,
-        fontSize: 16,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: LigaColors.primaryBlue),
-      ),
-    );
-  }
-}
-
 /// Consentimento específico e em destaque do responsável (LGPD art. 14,
-/// § 1º): sem marcar, a conta não é criada.
-class _ParentalConsentField extends StatelessWidget {
-  const _ParentalConsentField();
+/// § 1º): sem marcar, a conta não é criada. O professor aceita os termos e
+/// se compromete a usar os dados só para acompanhar o aprendizado.
+class _ConsentField extends StatelessWidget {
+  const _ConsentField({required this.forTeacher});
+
+  final bool forTeacher;
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +272,9 @@ class _ParentalConsentField extends StatelessWidget {
       initialValue: false,
       validator: (value) => value == true
           ? null
-          : 'Para criar a conta, confirme que você é o responsável.',
+          : (forTeacher
+                ? 'Para criar a conta, aceite os termos.'
+                : 'Para criar a conta, confirme que você é o responsável.'),
       builder: (field) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,10 +293,16 @@ class _ParentalConsentField extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
-                        'Tenho 18 anos ou mais, sou pai, mãe ou responsável '
-                        'legal pela criança e autorizo o uso dos dados dela '
-                        'como descrito na Política de Privacidade. Li e '
-                        'aceito os Termos de Uso.',
+                        forTeacher
+                            ? 'Sou professor(a), vou usar o desempenho das '
+                                  'crianças só para acompanhar o aprendizado '
+                                  'delas e não vou compartilhar com outras '
+                                  'pessoas. Li e aceito os Termos de Uso e a '
+                                  'Política de Privacidade.'
+                            : 'Tenho 18 anos ou mais, sou pai, mãe ou '
+                                  'responsável legal pela criança e autorizo o '
+                                  'uso dos dados dela como descrito na Política '
+                                  'de Privacidade. Li e aceito os Termos de Uso.',
                         style: textTheme.bodyMedium,
                       ),
                     ),

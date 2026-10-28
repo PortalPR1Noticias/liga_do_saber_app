@@ -8,9 +8,13 @@ import 'package:liga_do_saber_app/app/theme.dart';
 import 'package:liga_do_saber_app/shared/design_system/liga_sound.dart';
 import 'package:liga_do_saber_app/shared/design_system/liga_victory.dart';
 import 'package:liga_do_saber_app/features/auth/presentation/auth_screen.dart';
+import 'package:liga_do_saber_app/features/auth/presentation/child_login_screen.dart';
+import 'package:liga_do_saber_app/features/auth/presentation/login_choice_screen.dart';
 import 'package:liga_do_saber_app/features/math_arena/presentation/math_arena_screen.dart';
 import 'package:liga_do_saber_app/features/mila_archive/presentation/mila_archive_screen.dart';
 import 'package:liga_do_saber_app/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:liga_do_saber_app/features/parent_area/presentation/child_login_setup_screen.dart';
+import 'package:liga_do_saber_app/features/parent_area/presentation/parent_home_screen.dart';
 import 'package:liga_do_saber_app/features/photo_solver/presentation/photo_solver_flow_screen.dart';
 import 'package:liga_do_saber_app/features/practice_exam/presentation/revanche_screen.dart';
 import 'package:liga_do_saber_app/features/reading_detective/presentation/reading_detective_screen.dart';
@@ -71,10 +75,10 @@ void main() {
     expect(find.byKey(LigaLogo.imageKey), findsOneWidget);
     expect(find.text('Aprender vira missão'), findsOneWidget);
 
-    // Sem sessão salva, o JOGAR leva para a conta do responsável.
+    // Sem sessão salva, o JOGAR pergunta quem vai entrar.
     await tester.tap(find.text('JOGAR'));
     await tester.pumpAndSettle();
-    expect(find.byType(AuthScreen), findsOneWidget);
+    expect(find.byType(LoginChoiceScreen), findsOneWidget);
   });
 
   testWidgets('title screen fits on a small screen', (tester) async {
@@ -660,6 +664,8 @@ void main() {
 
     await tester.tap(find.text('JOGAR'));
     await tester.pumpAndSettle();
+    await scrollAndTap(tester, find.byKey(const Key('loginParent')));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(0), 'Giovany');
     await tester.enterText(
       find.byType(TextFormField).at(1),
@@ -678,8 +684,33 @@ void main() {
     await scrollAndTap(tester, find.text('Entrar para a Liga'));
     await tester.pumpAndSettle();
 
+    // O responsável cria o login da criança e cai no painel dele.
+    expect(find.byType(ChildLoginSetupScreen), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('childPassword')), 'bia123');
+    await scrollAndTap(tester, find.text('Criar login'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ParentHomeScreen), findsOneWidget);
     expect(find.text('Bia'), findsOneWidget);
+    expect(find.text('Login: bia'), findsOneWidget);
     expect(find.byKey(const ValueKey('avatar-criadora')), findsOneWidget);
+
+    // Passa o aparelho para a criança, que entra com o login dela e só vê
+    // os jogos.
+    await scrollAndTap(tester, find.text('Passar para a criança'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Passar'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChildLoginScreen), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField).at(1), 'bia123');
+    await scrollAndTap(tester, find.widgetWithText(LigaActionButton, 'Entrar'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MainShell), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('tab-Perfil')));
+    await tester.pumpAndSettle();
+    expect(find.text('Bia'), findsWidgets);
+    expect(find.text('Área dos responsáveis'), findsNothing);
   });
 
   testWidgets('auth error from the server is shown to the user', (

@@ -9,12 +9,11 @@ import '../../../shared/design_system/liga_sound.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/league_progress.dart';
 import '../../../shared/services/app_repository.dart';
-import '../../onboarding/presentation/onboarding_screen.dart';
+import '../../auth/presentation/login_choice_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
 import '../../mila_archive/presentation/mila_archive_screen.dart';
 import '../../minigames/presentation/minigames_hub_screen.dart';
-import '../../parent_area/presentation/parent_area_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../practice_exam/presentation/revanche_screen.dart';
 import '../../progress/presentation/subject_progress_section.dart';
@@ -527,21 +526,16 @@ class _ProfileScreen extends StatelessWidget {
           ),
         ),
         LigaActionButton(
-          label: 'Área dos responsáveis',
-          icon: Icons.lock_rounded,
-          color: LigaColors.adventurePurple,
-          onPressed: () => ParentAreaScreen.open(context),
-        ),
-        LigaActionButton(
           label: 'Sair da conta',
           icon: Icons.logout_rounded,
           color: LigaColors.actionCoral,
           onPressed: () async {
             await AppRepository.instance.signOut();
             if (!context.mounted) return;
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil(OnboardingScreen.routeName, (_) => false);
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              LoginChoiceScreen.routeName,
+              (_) => false,
+            );
           },
         ),
       ],

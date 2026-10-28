@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/ai_report.dart';
+import '../models/account_role.dart';
 import '../models/archive_case.dart';
 import '../models/atelier.dart';
 import '../models/child_profile.dart';
@@ -12,6 +13,7 @@ import '../models/learning_report.dart';
 import '../models/expedition.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
+import '../models/performance_report.dart';
 import '../models/photo_explanation.dart';
 import '../models/practice_exam.dart';
 import '../models/progress_update.dart';
@@ -32,10 +34,32 @@ class SupabaseAppRepository extends AppRepository {
 
   final SupabaseClient _client;
 
+  /// Domínio do e-mail interno do login da criança (Edge Function
+  /// `contas-liga`): a criança só digita o usuário.
+  static const childEmailDomain = 'crianca.ligadosaber.app';
+
+  AccountRole _role = AccountRole.responsible;
   String? _responsibleId;
   String? _childProfileId;
   ResponsibleAccount? _responsible;
   ChildProfile? _childProfile;
+  List<ChildProfile> _children = const [];
+  TeacherAccount? _teacher;
+
+  @override
+  AccountRole get role => _role;
+
+  @override
+  List<ChildProfile> get children => _children;
+
+  @override
+  TeacherAccount get teacher {
+    return _teacher ??
+        TeacherAccount(
+          name: 'Professor',
+          email: _client.auth.currentUser?.email ?? '',
+        );
+  }
 
   @override
   ResponsibleAccount get responsible {
@@ -100,13 +124,168 @@ class SupabaseAppRepository extends AppRepository {
   }
 
   @override
+  Future<AuthOutcome> signInChild({
+    required String username,
+    required String password,
+  }) {
+    return _guard(() async {
+      try {
+        await _client.auth.signInWithPassword(
+          email: '${username.trim().toLowerCase()}@$childEmailDomain',
+          password: password,
+        );
+      } on AuthException catch (error) {
+        if (error.code == 'invalid_credentials') {
+          throw const AppRepositoryException('Usuário ou senha incorretos.');
+        }
+        rethrow;
+      }
+      return _loadAccount();
+    });
+  }
+
+  @override
+  Future<AuthOutcome> signUpTeacher({
+    required String name,
+    required String email,
+    required String password,
+    required String acceptedTermsVersion,
+  }) {
+    return _guard(() async {
+      final response = await _client.auth.signUp(
+        email: email.trim(),
+        password: password,
+        data: {
+          'nome': name.trim(),
+          'papel': 'professor',
+          'termos_versao': acceptedTermsVersion,
+        },
+      );
+      if (response.session == null) return AuthOutcome.needsEmailConfirmation;
+      return _loadAccount();
+    });
+  }
+
+  @override
   Future<void> signOut() async {
     await _client.auth.signOut();
+    _clearAccount();
+    notifyListeners();
+  }
+
+  void _clearAccount() {
+    _role = AccountRole.responsible;
     _responsibleId = null;
     _childProfileId = null;
     _responsible = null;
     _childProfile = null;
+    _children = const [];
+    _teacher = null;
+  }
+
+  @override
+  void selectChild(String? profileId) {
+    final child = profileId == null
+        ? null
+        : _children.where((c) => c.id == profileId).firstOrNull;
+    _childProfileId = child?.id;
+    _childProfile = child;
     notifyListeners();
+  }
+
+  @override
+  Future<void> createChildLogin({
+    required String username,
+    required String password,
+  }) async {
+    final data = await _invoke('contas-liga', {
+      'acao': 'criar_login_crianca',
+      'usuario': username.trim().toLowerCase(),
+      'senha': password,
+    }, notReady: 'O login da criança ainda não foi publicado no Supabase.');
+    _updateChild(_childProfile!.copyWith(username: data['usuario'] as String));
+  }
+
+  @override
+  Future<void> changeChildPassword(String password) async {
+    await _invoke('contas-liga', {
+      'acao': 'trocar_senha_crianca',
+      'senha': password,
+    }, notReady: 'O login da criança ainda não foi publicado no Supabase.');
+  }
+
+  @override
+  Future<List<TeacherLink>> loadTeacherLinks() {
+    return _guard(() async {
+      if (_childProfileId == null) return const [];
+      final rows = await _client
+          .from('professores_criancas')
+          .select()
+          .eq('perfil_crianca_id', _childProfileId!)
+          .order('autorizado_em');
+      return [for (final row in rows) TeacherLink.fromJson(row)];
+    });
+  }
+
+  @override
+  Future<void> addTeacherLink({
+    required String teacherEmail,
+    required String childName,
+  }) {
+    return _guard(() async {
+      if (_childProfileId == null) {
+        throw const AppRepositoryException('Escolha a criança primeiro.');
+      }
+      try {
+        await _client.from('professores_criancas').insert({
+          'perfil_crianca_id': _childProfileId,
+          'email_professor': teacherEmail.trim().toLowerCase(),
+          'nome_crianca': childName.trim(),
+        });
+      } on PostgrestException catch (error) {
+        if (error.code == '23505') {
+          throw const AppRepositoryException(
+            'Esse professor já acompanha essa criança.',
+          );
+        }
+        rethrow;
+      }
+    });
+  }
+
+  @override
+  Future<void> removeTeacherLink(String linkId) {
+    return _guard(() async {
+      await _client.from('professores_criancas').delete().eq('id', linkId);
+    });
+  }
+
+  @override
+  Future<PerformanceReport> loadPerformance() {
+    return _guard(() async {
+      if (_childProfileId == null) {
+        throw const AppRepositoryException('Escolha a criança primeiro.');
+      }
+      final data = await _client.rpc(
+        'avaliacao_desempenho',
+        params: {'p_perfil': _childProfileId, 'p_dias': 30},
+      );
+      return PerformanceReport.fromJson(Map<String, dynamic>.from(data as Map));
+    });
+  }
+
+  @override
+  Future<List<TeacherStudent>> loadTeacherPanel() {
+    return _guard(() async {
+      final data = await _client.rpc(
+        'painel_professor',
+        params: {'p_dias': 30},
+      );
+      return [
+        for (final row in data as List)
+          TeacherStudent.fromJson(Map<String, dynamic>.from(row as Map)),
+      ];
+    });
   }
 
   @override
@@ -129,6 +308,7 @@ class SupabaseAppRepository extends AppRepository {
             .insert({...values, 'responsavel_id': responsibleId})
             .select()
             .single();
+        _children = [..._children, _childFromRow(row)];
       } else {
         row = await _client
             .from('perfis_criancas')
@@ -210,6 +390,14 @@ class SupabaseAppRepository extends AppRepository {
   Future<List<PracticeExamSummary>> loadPracticeExams() {
     return _guard(() async {
       if (_childProfileId == null) return const [];
+      // No login da criança, a função devolve as provas sem as respostas.
+      if (_role == AccountRole.child) {
+        final data = await _client.rpc('provas_da_crianca');
+        return [
+          for (final row in data as List)
+            PracticeExamSummary.fromJson(Map<String, dynamic>.from(row as Map)),
+        ];
+      }
       final rows = await _client
           .from('provas_treino')
           .select(_practiceColumns)
@@ -703,21 +891,84 @@ class SupabaseAppRepository extends AppRepository {
     return 'image/jpeg';
   }
 
-  /// Carrega (ou cria) o responsável e o primeiro perfil de criança dele.
+  /// Descobre quem entrou e carrega a conta: a criança (login criado pela
+  /// Edge Function `contas-liga`, com `app_metadata.papel`), o professor
+  /// (tabela `professores`) ou o responsável e as crianças dele.
   Future<AuthOutcome> _loadAccount() async {
+    final user = _client.auth.currentUser;
+    if (user == null) {
+      throw const AppRepositoryException('Sua sessão expirou. Entre de novo.');
+    }
+    _clearAccount();
+    if (user.appMetadata['papel'] == 'crianca') return _loadChildAccount();
+
+    Map<String, dynamic>? teacher;
+    try {
+      teacher = await _client
+          .from('professores')
+          .select()
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+    } on PostgrestException catch (error) {
+      // Sem a migration 0014 ainda não existem professores: o responsável
+      // continua entrando normalmente.
+      if (!_missingInDatabase.contains(error.code)) rethrow;
+    }
+    if (teacher == null && user.userMetadata?['papel'] == 'professor') {
+      teacher = await _client
+          .from('professores')
+          .insert({
+            'auth_user_id': user.id,
+            'nome': (user.userMetadata?['nome'] as String?) ?? 'Professor',
+            'email': user.email ?? '',
+            'termos_versao': user.userMetadata?['termos_versao'] as String?,
+          })
+          .select()
+          .single();
+    }
+    if (teacher != null) {
+      _role = AccountRole.teacher;
+      _teacher = TeacherAccount(
+        name: teacher['nome'] as String,
+        email: teacher['email'] as String,
+        emailConfirmed: user.emailConfirmedAt != null,
+      );
+      notifyListeners();
+      return AuthOutcome.readyAsTeacher;
+    }
+
     final responsibleId = await _ensureResponsible();
     final rows = await _client
         .from('perfis_criancas')
         .select()
         .eq('responsavel_id', responsibleId)
-        .order('created_at')
-        .limit(1);
+        .order('created_at');
+    _children = [for (final row in rows) _childFromRow(row)];
     if (rows.isEmpty) {
       _childProfileId = null;
       _childProfile = null;
       return AuthOutcome.needsChildProfile;
     }
     _setChildProfile(rows.first);
+    return AuthOutcome.readyAsParent;
+  }
+
+  Future<AuthOutcome> _loadChildAccount() async {
+    final data = await _client.rpc('minha_conta_crianca');
+    if (data is! Map) {
+      // O responsável apagou o perfil: o login não serve mais.
+      await _client.auth.signOut(scope: SignOutScope.local);
+      throw const AppRepositoryException(
+        'Esse login não está mais ligado a uma criança. Fale com o responsável.',
+      );
+    }
+    _role = AccountRole.child;
+    _responsible = ResponsibleAccount(
+      name: 'Responsável',
+      email: '',
+      aiConsent: data['autoriza_ia'] as bool? ?? false,
+    );
+    _setChildProfile(Map<String, dynamic>.from(data['perfil'] as Map));
     return AuthOutcome.readyWithProfile;
   }
 
@@ -755,6 +1006,19 @@ class SupabaseAppRepository extends AppRepository {
   }
 
   void _setChildProfile(Map<String, dynamic> row) {
+    final child = _childFromRow(row);
+    _childProfileId = child.id;
+    _updateChild(child);
+  }
+
+  /// Troca a criança escolhida e a mesma criança na lista do responsável.
+  void _updateChild(ChildProfile child) {
+    _childProfile = child;
+    _children = [for (final c in _children) c.id == child.id ? child : c];
+    notifyListeners();
+  }
+
+  ChildProfile _childFromRow(Map<String, dynamic> row) {
     // A sequência só continua valendo se a última atividade foi hoje ou
     // ontem; senão o banco ainda guarda o número antigo.
     final lastActivity = DateTime.tryParse(
@@ -774,8 +1038,9 @@ class SupabaseAppRepository extends AppRepository {
           );
     final streakAlive = lastDay != null && !lastDay.isBefore(yesterday);
 
-    _childProfileId = row['id'] as String;
-    _childProfile = ChildProfile(
+    return ChildProfile(
+      id: row['id'] as String,
+      username: row['usuario'] as String?,
       nickname: row['apelido'] as String,
       schoolYear: row['ano_escolar'] as int,
       focusAreas: List<String>.from(row['areas_foco'] as List? ?? const []),
@@ -784,7 +1049,6 @@ class SupabaseAppRepository extends AppRepository {
       totalXp: row['xp_total'] as int,
       streakDays: streakAlive ? row['sequencia_dias'] as int : 0,
     );
-    notifyListeners();
   }
 
   @override
@@ -834,26 +1098,39 @@ class SupabaseAppRepository extends AppRepository {
       // Atividades abertas com a matéria de cada uma. Jogos, expedições e
       // fotos guardam a matéria no JSON; o Desafio Relâmpago é sempre
       // Matemática.
-      final activities = await _allRows(
-        (from, to) => _client
-            .from('correcoes_ia')
-            .select(
-              'id, tipo, created_at, materia:resposta_json->>materia, '
-              'jogo:resposta_json->>jogo',
+      // No login da criança, as respostas certas não saem do servidor: a
+      // função `atividades_da_crianca` (migration 0014) manda só a matéria
+      // das atividades e os ids das questões das provas.
+      final childData = _role == AccountRole.child
+          ? Map<String, dynamic>.from(
+              await _client.rpc('atividades_da_crianca') as Map,
             )
-            .eq('perfil_crianca_id', childId)
-            .inFilter('tipo', const [
-              'leitura',
-              'matematica',
-              'expedicao',
-              'arquivo',
-              'atelie',
-              'minijogo',
-              'foto',
-            ])
-            .order('created_at')
-            .range(from, to),
-      );
+          : null;
+      final activities = childData != null
+          ? [
+              for (final row in childData['atividades'] as List)
+                Map<String, dynamic>.from(row as Map),
+            ]
+          : await _allRows(
+              (from, to) => _client
+                  .from('correcoes_ia')
+                  .select(
+                    'id, tipo, created_at, materia:resposta_json->>materia, '
+                    'jogo:resposta_json->>jogo',
+                  )
+                  .eq('perfil_crianca_id', childId)
+                  .inFilter('tipo', const [
+                    'leitura',
+                    'matematica',
+                    'expedicao',
+                    'arquivo',
+                    'atelie',
+                    'minijogo',
+                    'foto',
+                  ])
+                  .order('created_at')
+                  .range(from, to),
+            );
       final areaOf = <String, LearningArea>{};
       final attempts = <LearningAttempt>[];
       for (final row in activities) {
@@ -877,10 +1154,15 @@ class SupabaseAppRepository extends AppRepository {
 
       // Revanche da prova: o XP de cada questão aponta para a questão, e o
       // da prova vencida, para a prova.
-      final exams = await _client
-          .from('provas_treino')
-          .select('id, materia, questoes')
-          .eq('perfil_crianca_id', childId);
+      final exams = childData != null
+          ? [
+              for (final row in childData['provas'] as List)
+                Map<String, dynamic>.from(row as Map),
+            ]
+          : await _client
+                .from('provas_treino')
+                .select('id, materia, questoes')
+                .eq('perfil_crianca_id', childId);
       for (final exam in exams) {
         final area = LearningArea.fromKey(exam['materia'] as String?);
         if (area == null) continue;
@@ -1035,12 +1317,18 @@ class SupabaseAppRepository extends AppRepository {
       } on Exception {
         // A sessão local some de qualquer jeito.
       }
-      _responsibleId = null;
-      _childProfileId = null;
-      _responsible = null;
-      _childProfile = null;
+      _clearAccount();
     });
   }
+
+  /// Tabela, coluna ou função que ainda não existe no banco.
+  static const _missingInDatabase = {
+    '42P01',
+    '42703',
+    'PGRST202',
+    'PGRST204',
+    'PGRST205',
+  };
 
   /// Converte erros do Supabase em mensagens em português.
   Future<T> _guard<T>(Future<T> Function() action) async {
@@ -1051,9 +1339,7 @@ class SupabaseAppRepository extends AppRepository {
     } on AuthException catch (error) {
       throw AppRepositoryException(_authMessage(error));
     } on PostgrestException catch (error) {
-      // Tabela, coluna ou função que ainda não existe no banco.
-      const missing = {'42P01', '42703', 'PGRST202', 'PGRST204', 'PGRST205'};
-      if (missing.contains(error.code)) {
+      if (_missingInDatabase.contains(error.code)) {
         throw const AppRepositoryException(
           'O banco está desatualizado. '
           'Rode as migrations de supabase/migrations no Supabase.',

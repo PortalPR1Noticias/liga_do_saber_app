@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/ai_report.dart';
+import '../models/account_role.dart';
 import '../models/atelier.dart';
 import '../models/archive_case.dart';
 import '../models/child_profile.dart';
@@ -9,6 +10,7 @@ import '../models/league_progress.dart';
 import '../models/learning_report.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
+import '../models/performance_report.dart';
 import '../models/photo_explanation.dart';
 import '../models/progress_update.dart';
 import '../models/practice_exam.dart';
@@ -20,10 +22,16 @@ import 'mock_app_repository.dart';
 
 /// Resultado do login ou da restauração de sessão.
 enum AuthOutcome {
-  /// Logado e com perfil de criança: pode ir direto para a Liga.
+  /// A criança entrou com o login dela: vai direto para os jogos.
   readyWithProfile,
 
-  /// Logado, mas ainda sem perfil de criança cadastrado.
+  /// O responsável entrou e já tem criança cadastrada: painel do responsável.
+  readyAsParent,
+
+  /// O professor entrou: painel do professor.
+  readyAsTeacher,
+
+  /// Responsável logado, mas ainda sem perfil de criança cadastrado.
   needsChildProfile,
 
   /// Conta criada, mas o Supabase pediu confirmação do e-mail antes do login.
@@ -51,12 +59,66 @@ class AppRepositoryException implements Exception {
 abstract class AppRepository extends ChangeNotifier {
   static AppRepository instance = MockAppRepository();
 
+  /// Quem está logado (responsável, criança ou professor).
+  AccountRole get role;
+
   ResponsibleAccount get responsible;
 
+  /// A criança logada ou, no painel do responsável, a criança escolhida.
   ChildProfile get childProfile;
+
+  /// Todas as crianças do responsável (vazio para criança e professor).
+  List<ChildProfile> get children;
+
+  TeacherAccount get teacher;
 
   /// Verifica se já existe uma sessão salva no aparelho.
   Future<AuthOutcome> restoreSession();
+
+  /// Login da criança, com o usuário e a senha que o responsável criou.
+  Future<AuthOutcome> signInChild({
+    required String username,
+    required String password,
+  });
+
+  /// Conta do professor.
+  Future<AuthOutcome> signUpTeacher({
+    required String name,
+    required String email,
+    required String password,
+    required String acceptedTermsVersion,
+  });
+
+  /// O responsável escolhe com qual criança vai mexer; `null` prepara uma
+  /// criança nova (o próximo [saveChildProfile] cria outro perfil).
+  void selectChild(String? profileId);
+
+  /// O responsável cria o usuário e a senha da criança escolhida.
+  Future<void> createChildLogin({
+    required String username,
+    required String password,
+  });
+
+  /// O responsável troca a senha da criança escolhida.
+  Future<void> changeChildPassword(String password);
+
+  /// Professores que o responsável liberou para a criança escolhida.
+  Future<List<TeacherLink>> loadTeacherLinks();
+
+  /// Libera um professor (pelo e-mail dele) para ver o desempenho da criança
+  /// escolhida, com o nome que vai aparecer para ele.
+  Future<void> addTeacherLink({
+    required String teacherEmail,
+    required String childName,
+  });
+
+  Future<void> removeTeacherLink(String linkId);
+
+  /// Avaliação de desempenho da criança escolhida (painel do responsável).
+  Future<PerformanceReport> loadPerformance();
+
+  /// Painel do professor: crianças liberadas, com o desempenho de cada uma.
+  Future<List<TeacherStudent>> loadTeacherPanel();
 
   Future<AuthOutcome> signUp({
     required String name,

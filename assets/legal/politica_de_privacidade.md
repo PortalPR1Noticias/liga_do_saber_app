@@ -1,6 +1,6 @@
 # Política de Privacidade da Liga do Saber
 
-Versão 2026-10-27. Última atualização: 27 de outubro de 2026.
+Versão 2026-10-28. Última atualização: 28 de outubro de 2026.
 
 A Liga do Saber é um aplicativo de reforço escolar para crianças do ensino fundamental. Esta política explica, em linguagem simples, quais dados usamos, para quê, com quem compartilhamos e como você exerce seus direitos, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018, a LGPD) e o Estatuto da Criança e do Adolescente.
 
@@ -12,20 +12,25 @@ Encarregado pelo tratamento de dados (DPO): [NOME DO ENCARREGADO], e-mail [E-MAI
 
 ## A conta é sempre de um adulto
 
-Só um adulto com 18 anos ou mais, pai, mãe ou responsável legal pela criança, pode criar a conta. Ao criar a conta, o responsável dá o consentimento específico e em destaque exigido pelo artigo 14 da LGPD para o uso dos dados da criança descritos aqui. A criança usa o app dentro da conta do responsável e nunca precisa informar dados pessoais.
+Só um adulto com 18 anos ou mais, pai, mãe ou responsável legal pela criança, pode criar a conta. Ao criar a conta, o responsável dá o consentimento específico e em destaque exigido pelo artigo 14 da LGPD para o uso dos dados da criança descritos aqui. O responsável cria o perfil e o login de cada criança (um usuário e uma senha, sem e-mail). Com esse login, a criança só vê os jogos: as autorizações, os dados e o painel de desempenho ficam na conta do responsável. A criança nunca precisa informar dados pessoais.
 
 ## Quais dados coletamos
 
 Do responsável:
 - nome, e-mail e senha (a senha é guardada de forma criptografada pelo serviço de login);
-- registro dos consentimentos dados, com data e versão dos documentos aceitos.
+- registro dos consentimentos dados, com data e versão dos documentos aceitos;
+- os e-mails dos professores que ele liberou para acompanhar cada criança e o nome com que a criança aparece para eles.
 
 Da criança:
 - um apelido (recomendamos não usar o nome completo), o ano escolar, as áreas de foco escolhidas e o avatar;
+- o usuário e a senha do login dela, criados pelo responsável (a senha é guardada de forma criptografada pelo serviço de login);
 - o progresso no app: missões, XP, nível, sequência de dias e conquistas;
 - os textos escritos na Oficina de Texto e as respostas dadas nas atividades;
 - as explicações geradas pela Foto + IA;
 - as questões de treino criadas a partir das provas e tarefas enviadas pelo responsável (Revanche da prova) e as respostas da criança.
+
+Do professor:
+- nome, e-mail e senha da conta dele e a versão dos documentos aceitos.
 
 Não coletamos localização, contatos, identificadores de publicidade, nome completo, foto do rosto, CPF ou endereço da criança. O app não tem anúncios, não tem chat entre usuários e não tem ranking público.
 
@@ -61,13 +66,17 @@ Não usamos os dados da criança para publicidade, para traçar perfil de consum
 
 Os dados da criança são tratados com o consentimento específico do responsável (art. 14, § 1º, da LGPD). Os dados do responsável são tratados para executar o contrato de uso do app (art. 7º, V) e cumprir obrigações legais (art. 7º, II).
 
+## Professores
+
+O responsável pode liberar, criança por criança, professores que acompanham o desempenho dela, informando o e-mail do professor e o nome com que a criança vai aparecer para ele. Cada liberação é um consentimento específico do responsável (art. 14, § 1º, da LGPD) e pode ser removida a qualquer momento no painel do responsável. O professor entra com a conta dele, com o e-mail confirmado, e vê só um resumo: nível, XP, dias de prática, aproveitamento por matéria e os acertos nas questões de treino da Revanche da prova. O professor não vê os textos, as fotos, as provas, o apelido nem o e-mail do responsável.
+
 ## Com quem compartilhamos
 
 Usamos fornecedores que tratam dados em nosso nome, só para fazer o app funcionar:
 - Supabase: hospedagem do banco de dados, login e servidores do app;
 - OpenAI: modelo de inteligência artificial da Foto + IA e das devolutivas, somente quando autorizado.
 
-Esses fornecedores ficam fora do Brasil (principalmente nos Estados Unidos). A transferência internacional é feita com base no consentimento do responsável e em cláusulas contratuais de proteção de dados desses fornecedores (art. 33 da LGPD). Não compartilhamos dados com anunciantes nem com outras empresas.
+Esses fornecedores ficam fora do Brasil (principalmente nos Estados Unidos). A transferência internacional é feita com base no consentimento do responsável e em cláusulas contratuais de proteção de dados desses fornecedores (art. 33 da LGPD). Além dos professores que o responsável liberar, não compartilhamos dados com anunciantes nem com outras empresas.
 
 ## Por quanto tempo guardamos
 
@@ -82,17 +91,18 @@ Esses fornecedores ficam fora do Brasil (principalmente nos Estados Unidos). A t
 ## Seus direitos
 
 O responsável pode, a qualquer momento e de graça (art. 18 da LGPD):
-- ver e baixar uma cópia de todos os dados, em "Área dos responsáveis > Baixar cópia dos dados";
+- ver e baixar uma cópia de todos os dados, em "Painel do responsável > Autorizações, dados e privacidade > Baixar cópia dos dados";
 - corrigir o perfil da criança;
 - retirar a autorização da Foto + IA;
-- excluir a conta e todos os dados, em "Área dos responsáveis > Excluir conta e dados";
+- ver e remover os professores liberados, em "Painel do responsável > Professores";
+- excluir a conta e todos os dados, inclusive os logins das crianças, em "Painel do responsável > Autorizações, dados e privacidade > Excluir conta e dados";
 - pedir informações sobre o uso dos dados ou fazer qualquer outro pedido pelo e-mail [E-MAIL DE PRIVACIDADE]. Respondemos em até 15 dias.
 
 Também é possível reclamar à Autoridade Nacional de Proteção de Dados (ANPD), em www.gov.br/anpd.
 
 ## Segurança
 
-Os dados trafegam criptografados (HTTPS). Cada responsável só acessa os próprios dados, por regras de segurança aplicadas no banco de dados. As chaves da inteligência artificial ficam só no servidor, nunca no aparelho. Se acontecer um incidente de segurança que possa causar risco, avisaremos os responsáveis e a ANPD.
+Os dados trafegam criptografados (HTTPS). Cada responsável só acessa os próprios dados, cada criança só os próprios jogos e cada professor só o resumo das crianças liberadas para ele, por regras de segurança aplicadas no banco de dados. As chaves da inteligência artificial ficam só no servidor, nunca no aparelho. Se acontecer um incidente de segurança que possa causar risco, avisaremos os responsáveis e a ANPD.
 
 ## Mudanças nesta política
 

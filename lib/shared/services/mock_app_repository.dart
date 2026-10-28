@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../models/ai_report.dart';
+import '../models/account_role.dart';
 import '../models/archive_case.dart';
 import '../models/atelier.dart';
 import '../models/child_profile.dart';
@@ -9,6 +10,7 @@ import '../models/league_progress.dart';
 import '../models/learning_report.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
+import '../models/performance_report.dart';
 import '../models/photo_explanation.dart';
 import '../models/practice_exam.dart';
 import '../models/progress_update.dart';
@@ -21,8 +23,17 @@ import 'app_repository.dart';
 /// Repositório em memória, usado nos testes e como padrão sem Supabase.
 /// Os módulos devolvem sempre o mesmo conteúdo e o XP é somado aqui mesmo.
 class MockAppRepository extends AppRepository {
+  /// Os testes que abrem as telas de jogo direto jogam como a criança.
+  AccountRole _role = AccountRole.child;
   ResponsibleAccount? _responsible;
   ChildProfile? _childProfile;
+  List<ChildProfile> _children = [];
+  TeacherAccount? _teacher;
+  int _nextId = 1;
+
+  /// Logins de criança criados nesta sessão (usuário → senha).
+  final childLogins = <String, String>{};
+  final _teacherLinks = <String, List<TeacherLink>>{};
   final _missionsDone = <String>{};
   final _badges = <String>{};
   int _mathAttempts = 0;
@@ -60,6 +71,18 @@ class MockAppRepository extends AppRepository {
   final learningAttempts = <LearningAttempt>[];
 
   @override
+  AccountRole get role => _role;
+
+  @override
+  List<ChildProfile> get children => List.unmodifiable(_children);
+
+  @override
+  TeacherAccount get teacher {
+    return _teacher ??
+        const TeacherAccount(name: 'Professor', email: 'professor@escola.br');
+  }
+
+  @override
   ResponsibleAccount get responsible {
     return _responsible ??
         const ResponsibleAccount(
@@ -92,12 +115,15 @@ class MockAppRepository extends AppRepository {
     required String password,
     required String acceptedTermsVersion,
   }) async {
+    _role = AccountRole.responsible;
     _responsible = ResponsibleAccount(
       name: name.trim().isEmpty ? 'Responsável' : name.trim(),
       email: email.trim().isEmpty
           ? 'responsavel@ligadosaber.app'
           : email.trim(),
     );
+    _children = [];
+    _childProfile = null;
     return AuthOutcome.needsChildProfile;
   }
 
@@ -106,15 +132,55 @@ class MockAppRepository extends AppRepository {
     required String email,
     required String password,
   }) async {
+    _role = AccountRole.responsible;
+    if (_children.isEmpty) {
+      _childProfile = childProfile.copyWith(id: 'perfil-${_nextId++}');
+      _children = [_childProfile!];
+    }
+    return AuthOutcome.readyAsParent;
+  }
+
+  @override
+  Future<AuthOutcome> signInChild({
+    required String username,
+    required String password,
+  }) async {
+    final key = username.trim().toLowerCase();
+    if (childLogins[key] != password) {
+      throw const AppRepositoryException('Usuário ou senha incorretos.');
+    }
+    _role = AccountRole.child;
+    _childProfile = _children.firstWhere((c) => c.username == key);
     return AuthOutcome.readyWithProfile;
   }
 
   @override
+  Future<AuthOutcome> signUpTeacher({
+    required String name,
+    required String email,
+    required String password,
+    required String acceptedTermsVersion,
+  }) async {
+    _role = AccountRole.teacher;
+    _teacher = TeacherAccount(name: name.trim(), email: email.trim());
+    return AuthOutcome.readyAsTeacher;
+  }
+
+  @override
   Future<void> signOut() async {
-    _responsible = null;
-    _childProfile = null;
+    // Como no Supabase, as crianças e os logins continuam na conta; só a
+    // sessão do aparelho acaba.
+    _role = AccountRole.responsible;
     _missionsDone.clear();
     _badges.clear();
+  }
+
+  @override
+  void selectChild(String? profileId) {
+    _childProfile = profileId == null
+        ? null
+        : _children.firstWhere((c) => c.id == profileId);
+    notifyListeners();
   }
 
   @override
@@ -123,19 +189,170 @@ class MockAppRepository extends AppRepository {
     required int schoolYear,
     required List<String> focusAreas,
   }) async {
-    final current = childProfile;
+    final isNew = _childProfile == null;
+    final current = isNew
+        ? ChildProfile(
+            id: 'perfil-${_nextId++}',
+            nickname: '',
+            schoolYear: 5,
+            focusAreas: const [],
+            avatarId: 'estrategista',
+          )
+        : childProfile;
     _childProfile = current.copyWith(
       nickname: nickname.trim().isEmpty ? 'Alex G' : nickname.trim(),
       schoolYear: schoolYear,
       focusAreas: focusAreas,
     );
-    notifyListeners();
+    _saveChild();
   }
 
   @override
   Future<void> saveAvatar(String avatarId) async {
     _childProfile = childProfile.copyWith(avatarId: avatarId);
+    _saveChild();
+  }
+
+  void _saveChild() {
+    final child = _childProfile!;
+    final index = _children.indexWhere((c) => c.id == child.id);
+    if (index < 0) {
+      if (child.id != null) _children.add(child);
+    } else {
+      _children[index] = child;
+    }
     notifyListeners();
+  }
+
+  @override
+  Future<void> createChildLogin({
+    required String username,
+    required String password,
+  }) async {
+    final key = username.trim().toLowerCase();
+    if (!RegExp(r'^[a-z0-9][a-z0-9._]{2,23}$').hasMatch(key)) {
+      throw const AppRepositoryException(
+        'O usuário precisa ter de 3 a 24 letras sem acento, números, ponto ou _.',
+      );
+    }
+    if (childLogins.containsKey(key)) {
+      throw const AppRepositoryException(
+        'Esse usuário já existe. Escolha outro.',
+      );
+    }
+    childLogins[key] = password;
+    _childProfile = childProfile.copyWith(username: key);
+    _saveChild();
+  }
+
+  @override
+  Future<void> changeChildPassword(String password) async {
+    childLogins[childProfile.username!] = password;
+  }
+
+  @override
+  Future<List<TeacherLink>> loadTeacherLinks() async {
+    return List.of(_teacherLinks[childProfile.id] ?? const []);
+  }
+
+  @override
+  Future<void> addTeacherLink({
+    required String teacherEmail,
+    required String childName,
+  }) async {
+    final links = _teacherLinks.putIfAbsent(childProfile.id ?? '', () => []);
+    final email = teacherEmail.trim().toLowerCase();
+    if (links.any((link) => link.teacherEmail == email)) {
+      throw const AppRepositoryException(
+        'Esse professor já acompanha essa criança.',
+      );
+    }
+    links.add(
+      TeacherLink(
+        id: 'vinculo-${_nextId++}',
+        teacherEmail: email,
+        childName: childName.trim(),
+        authorizedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  @override
+  Future<void> removeTeacherLink(String linkId) async {
+    for (final links in _teacherLinks.values) {
+      links.removeWhere((link) => link.id == linkId);
+    }
+  }
+
+  /// Desempenho de exemplo: forte em Matemática, reforço em Português.
+  static PerformanceReport sampleReport(ChildProfile child) {
+    return PerformanceReport(
+      periodDays: 30,
+      level: child.level,
+      totalXp: child.totalXp,
+      streakDays: child.streakDays,
+      activeDays: 12,
+      activeDaysWeek: 4,
+      xpWeek: 240,
+      areas: const [
+        AreaPerformance(
+          key: 'matematica',
+          name: 'Matemática',
+          completed: 9,
+          completedWeek: 3,
+          opened: 10,
+          xp: 180,
+        ),
+        AreaPerformance(
+          key: 'portugues',
+          name: 'Português',
+          completed: 2,
+          completedWeek: 1,
+          opened: 6,
+          xp: 40,
+        ),
+        AreaPerformance(
+          key: 'historia',
+          name: 'História',
+          completed: 0,
+          completedWeek: 0,
+          opened: 0,
+          xp: 0,
+        ),
+      ],
+      exams: const [
+        ExamPerformance(
+          title: 'Prova de frações',
+          subject: 'matematica',
+          totalQuestions: 8,
+          rightAnswers: 6,
+          stars: 2,
+          won: false,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<PerformanceReport> loadPerformance() async {
+    return sampleReport(childProfile);
+  }
+
+  @override
+  Future<List<TeacherStudent>> loadTeacherPanel() async {
+    final email = teacher.email.toLowerCase();
+    return [
+      for (final child in _children)
+        for (final link in _teacherLinks[child.id] ?? const <TeacherLink>[])
+          if (link.teacherEmail == email)
+            TeacherStudent(
+              linkId: link.id,
+              name: link.childName,
+              schoolYear: child.schoolYear,
+              avatarId: child.avatarId,
+              report: sampleReport(child),
+            ),
+    ];
   }
 
   @override
@@ -1479,5 +1696,12 @@ class MockAppRepository extends AppRepository {
   }
 
   @override
-  Future<void> deleteAccount() => signOut();
+  Future<void> deleteAccount() async {
+    _children = [];
+    _childProfile = null;
+    _responsible = null;
+    childLogins.clear();
+    _teacherLinks.clear();
+    await signOut();
+  }
 }

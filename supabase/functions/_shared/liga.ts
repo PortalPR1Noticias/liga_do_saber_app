@@ -92,32 +92,59 @@ export function servir(
   });
 }
 
-/// Perfil da criança, só se ele for do responsável logado. Com
-/// `exigirAutorizacaoIA`, o módulo manda dados da criança (como o texto que
-/// ela escreveu) para a OpenAI e precisa da autorização do responsável
+/// Perfil da criança, só se quem chamou for o responsável dela ou a própria
+/// criança, com o login dela (migration 0014). Com `somenteResponsavel`, a
+/// ação é do adulto (como mandar fotos de provas) e a criança não pode.
+/// Com `exigirAutorizacaoIA`, o módulo manda dados da criança (como o texto
+/// que ela escreveu) para a OpenAI e precisa da autorização do responsável
 /// (`responsaveis.autoriza_ia`, migration 0004, LGPD art. 14).
 export async function carregarPerfil(
   ctx: Contexto,
-  opcoes: { exigirAutorizacaoIA?: string } = {},
+  opcoes: { exigirAutorizacaoIA?: string; somenteResponsavel?: boolean } = {},
 ): Promise<Perfil> {
   const perfilId = ctx.corpo.perfil_id;
   if (typeof perfilId !== "string") {
     throw new ErroDaLiga(400, "Faltou o perfil da criança.");
   }
-  const { data: perfil } = await ctx.servico
-    .from("perfis_criancas")
-    .select("id, ano_escolar, responsaveis!inner(auth_user_id, autoriza_ia)")
-    .eq("id", perfilId)
-    .eq("responsaveis.auth_user_id", ctx.usuarioId)
-    .maybeSingle();
+  const perfil = await buscarPerfilPermitido(ctx.servico, perfilId, ctx.usuarioId);
   if (!perfil) throw new ErroDaLiga(403, "Perfil da criança não encontrado.");
-  const responsavel = perfil.responsaveis as unknown as {
-    autoriza_ia?: boolean;
-  };
-  if (opcoes.exigirAutorizacaoIA && !responsavel?.autoriza_ia) {
+  if (opcoes.somenteResponsavel && !perfil.doResponsavel) {
+    throw new ErroDaLiga(403, "Peça para um adulto fazer isso na conta dele.");
+  }
+  if (opcoes.exigirAutorizacaoIA && !perfil.autorizaIA) {
     throw new ErroDaLiga(403, opcoes.exigirAutorizacaoIA);
   }
   return { id: perfil.id, ano_escolar: perfil.ano_escolar };
+}
+
+/// Busca o perfil e diz se quem chamou é o responsável (`doResponsavel`) ou a
+/// própria criança. Devolve nulo para qualquer outra pessoa.
+export async function buscarPerfilPermitido(
+  servico: SupabaseClient,
+  perfilId: string,
+  usuarioId: string,
+): Promise<
+  | (Perfil & { doResponsavel: boolean; autorizaIA: boolean })
+  | null
+> {
+  const { data: perfil } = await servico
+    .from("perfis_criancas")
+    .select("id, ano_escolar, auth_user_id, responsaveis!inner(auth_user_id, autoriza_ia)")
+    .eq("id", perfilId)
+    .maybeSingle();
+  if (!perfil) return null;
+  const responsavel = perfil.responsaveis as unknown as {
+    auth_user_id?: string;
+    autoriza_ia?: boolean;
+  };
+  const doResponsavel = responsavel?.auth_user_id === usuarioId;
+  if (!doResponsavel && perfil.auth_user_id !== usuarioId) return null;
+  return {
+    id: perfil.id,
+    ano_escolar: perfil.ano_escolar,
+    doResponsavel,
+    autorizaIA: responsavel?.autoriza_ia === true,
+  };
 }
 
 /// Limita quantas vezes por dia a criança usa a IA num módulo (protege o

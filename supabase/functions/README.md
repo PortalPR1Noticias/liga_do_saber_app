@@ -120,3 +120,37 @@ para a OpenAI, então ela exige a autorização de IA do responsável
 ```bash
 npx supabase functions deploy revanche-prova --no-verify-jwt
 ```
+
+## contas-liga (logins de responsável, criança e professor)
+
+Precisa da migration `supabase/migrations/0014_logins_crianca_professor.sql`.
+O responsável cria o login de cada criança (usuário e senha, sem e-mail) no
+painel dele; a função usa a service role para criar o usuário no Supabase
+Auth com o e-mail interno `<usuario>@crianca.ligadosaber.app` (nunca recebe
+e-mail) e `app_metadata.papel = "crianca"`, e liga o login ao perfil. Também
+troca a senha da criança. Só o responsável da criança consegue chamar.
+
+Com a migration 0014, todas as funções dos módulos aceitam o login da
+própria criança, além do responsável. Por isso, depois de rodar a migration,
+publique de novo as funções (o `_shared/liga.ts` e a `explicar-foto`
+mudaram), junto com a nova:
+
+```bash
+npx supabase functions deploy contas-liga --no-verify-jwt
+npx supabase functions deploy detetive-leitura --no-verify-jwt
+npx supabase functions deploy desafio-matematica --no-verify-jwt
+npx supabase functions deploy oficina-texto --no-verify-jwt
+npx supabase functions deploy expedicao-teo --no-verify-jwt
+npx supabase functions deploy arquivo-mila --no-verify-jwt
+npx supabase functions deploy atelie-zuri --no-verify-jwt
+npx supabase functions deploy minijogo --no-verify-jwt
+npx supabase functions deploy explicar-foto --no-verify-jwt
+npx supabase functions deploy revanche-prova --no-verify-jwt
+```
+
+O professor cria a conta dele no app (Sou professor) e precisa confirmar o
+e-mail: o painel dele só mostra as crianças que os responsáveis liberaram
+para esse e-mail confirmado (`painel_professor` e `avaliacao_desempenho`,
+migration 0014). Ele vê só o resumo de desempenho, nunca textos, fotos ou
+provas. A Revanche da prova continua com o envio de fotos só pelo
+responsável; a criança treina.
