@@ -669,7 +669,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(0), 'Giovany');
     await tester.enterText(
       find.byType(TextFormField).at(1),
-      'responsavel@ligadosaber.app',
+      'responsavel@gpmkt.art.br',
     );
     await tester.enterText(find.byType(TextFormField).at(2), '123456');
     await scrollAndTap(tester, find.byKey(const Key('parentalConsent')));
@@ -724,7 +724,7 @@ void main() {
     await tester.pump();
     await tester.enterText(
       find.byType(TextFormField).at(0),
-      'responsavel@ligadosaber.app',
+      'responsavel@gpmkt.art.br',
     );
     await tester.enterText(find.byType(TextFormField).at(1), 'senha-errada');
     await scrollAndTap(tester, find.widgetWithText(LigaActionButton, 'Entrar'));

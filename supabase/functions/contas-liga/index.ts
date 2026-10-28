@@ -2,7 +2,7 @@
 //
 // O responsável cria (ou troca a senha d)o login da criança: um usuário e
 // uma senha que a criança usa na tela "Sou criança". Por baixo, é um
-// usuário do Supabase Auth com e-mail interno `<usuario>@crianca.ligadosaber.app`
+// usuário do Supabase Auth com e-mail interno `<usuario>@crianca.gpmkt.art.br`
 // (nunca recebe e-mail) e `app_metadata.papel = "crianca"`. Precisa da
 // migration 0014. Só a service role cria usuários, por isso fica aqui.
 //
@@ -20,7 +20,7 @@ import {
   servir,
 } from "../_shared/liga.ts";
 
-export const DOMINIO_CRIANCA = "crianca.ligadosaber.app";
+export const DOMINIO_CRIANCA = "crianca.gpmkt.art.br";
 const USUARIO_VALIDO = /^[a-z0-9][a-z0-9._]{2,23}$/;
 
 servir("as contas da Liga", async (ctx) => {

@@ -126,7 +126,7 @@ npx supabase functions deploy revanche-prova --no-verify-jwt
 Precisa da migration `supabase/migrations/0014_logins_crianca_professor.sql`.
 O responsável cria o login de cada criança (usuário e senha, sem e-mail) no
 painel dele; a função usa a service role para criar o usuário no Supabase
-Auth com o e-mail interno `<usuario>@crianca.ligadosaber.app` (nunca recebe
+Auth com o e-mail interno `<usuario>@crianca.gpmkt.art.br` (nunca recebe
 e-mail) e `app_metadata.papel = "crianca"`, e liga o login ao perfil. Também
 troca a senha da criança. Só o responsável da criança consegue chamar.
 
@@ -192,8 +192,9 @@ Fora do código, confira no painel:
 2. **Supabase > Authentication > Sign In / Providers > Email:** "Confirm
    email" ligado. Sem isso, qualquer pessoa cria uma conta com o e-mail de
    um professor antes dele e vê o painel das crianças liberadas para ele.
-3. **Domínio `ligadosaber.app`:** os logins das crianças usam e-mails
-   `@crianca.ligadosaber.app`. Quem for dono desse domínio pode pedir
-   "esqueci a senha" e receber o link de troca de senha da criança. Registre
-   o domínio no nome da GPLABS (ou troque `DOMINIO_CRIANCA` em
-   `contas-liga` por um domínio que já seja seu antes de criar logins).
+3. **Domínio dos logins das crianças:** os logins usam e-mails
+   `@crianca.gpmkt.art.br` (subdomínio do domínio da GPLABS; nunca recebem
+   e-mail). Mantenha o `gpmkt.art.br` renovado: quem for dono do domínio
+   poderia pedir "esqueci a senha" e receber o link de troca de senha da
+   criança. Logins criados antes com `@crianca.ligadosaber.app` passam para
+   o domínio novo com a migration 0017.

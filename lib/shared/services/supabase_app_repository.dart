@@ -38,7 +38,7 @@ class SupabaseAppRepository extends AppRepository {
 
   /// Domínio do e-mail interno do login da criança (Edge Function
   /// `contas-liga`): a criança só digita o usuário.
-  static const childEmailDomain = 'crianca.ligadosaber.app';
+  static const childEmailDomain = 'crianca.gpmkt.art.br';
 
   AccountRole _role = AccountRole.responsible;
   String? _responsibleId;
