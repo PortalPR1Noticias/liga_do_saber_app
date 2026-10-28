@@ -935,6 +935,44 @@ class SupabaseAppRepository extends AppRepository {
   }
 
   @override
+  Future<Map<String, int>> loadBossWins() {
+    return _guard(() async {
+      if (_childProfileId == null) return <String, int>{};
+      final rows = await _client
+          .from('chefoes_vencidos')
+          .select('ilha, estrelas')
+          .eq('perfil_crianca_id', _childProfileId!);
+      return {
+        for (final row in rows) row['ilha'] as String: row['estrelas'] as int,
+      };
+    });
+  }
+
+  @override
+  Future<ProgressUpdate?> registerBossWin(String island, int stars) {
+    return _guard(() async {
+      if (_childProfileId == null) {
+        throw const AppRepositoryException(
+          'Cadastre o perfil da criança primeiro.',
+        );
+      }
+      final data = await _client.rpc(
+        'registrar_chefao',
+        params: {
+          'p_perfil': _childProfileId,
+          'p_ilha': island,
+          'p_estrelas': stars,
+        },
+      );
+      final progress = ProgressUpdate.fromJson(
+        data is Map ? data['progresso'] : null,
+      );
+      _applyProgress(progress);
+      return progress;
+    });
+  }
+
+  @override
   Future<void> setAiConsent(bool allowed) {
     return _guard(() async {
       final responsibleId = _responsibleId ?? await _ensureResponsible();

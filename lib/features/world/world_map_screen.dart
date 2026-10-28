@@ -8,6 +8,7 @@ import '../../shared/design_system/liga_game.dart';
 import '../../shared/design_system/liga_mascots.dart';
 import '../../shared/design_system/liga_widgets.dart';
 import '../../shared/services/app_repository.dart';
+import 'boss/boss_battle_screen.dart';
 import 'world_islands.dart';
 
 /// Mundo da Liga: uma ilha por herói, cada uma com uma trilha de fases que
@@ -22,25 +23,42 @@ class WorldMapScreen extends StatefulWidget {
 
 class _WorldMapScreenState extends State<WorldMapScreen> {
   Map<String, int>? _counts;
+  Map<String, int> _bosses = const {};
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    AppRepository.instance
-        .loadActivityCounts()
-        .then((counts) {
-          if (mounted) setState(() => _counts = counts);
-        })
-        .catchError((Object error) {
-          if (!mounted) return;
-          setState(() {
-            _counts = const {};
-            _error = error is AppRepositoryException
-                ? error.message
-                : 'Não consegui carregar o seu progresso agora.';
-          });
-        });
+    _load();
+  }
+
+  Future<void> _load() async {
+    final repository = AppRepository.instance;
+    try {
+      final results = await Future.wait([
+        repository.loadActivityCounts(),
+        repository.loadBossWins(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _counts = results[0];
+        _bosses = results[1];
+        _error = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _counts ??= const {};
+        _error = error is AppRepositoryException
+            ? error.message
+            : 'Não consegui carregar o seu progresso agora.';
+      });
+    }
+  }
+
+  Future<void> _fightBoss(LigaIsland island) async {
+    await BossBattleScreen.open(context, island);
+    await _load();
   }
 
   @override
@@ -80,7 +98,9 @@ class _WorldMapScreenState extends State<WorldMapScreen> {
                       child: _IslandCard(
                         island: LigaIsland.all[i],
                         counts: counts,
+                        bossStars: _bosses[LigaIsland.all[i].id],
                         player: avatar.character,
+                        onBoss: () => _fightBoss(LigaIsland.all[i]),
                       ),
                     ),
                   ],
@@ -95,17 +115,23 @@ class _IslandCard extends StatelessWidget {
   const _IslandCard({
     required this.island,
     required this.counts,
+    required this.bossStars,
     required this.player,
+    required this.onBoss,
   });
 
   final LigaIsland island;
   final Map<String, int> counts;
+
+  /// Estrelas do chefão vencido, ou null se ainda não foi vencido.
+  final int? bossStars;
   final LigaCharacter player;
+  final VoidCallback onBoss;
 
   @override
   Widget build(BuildContext context) {
     final character = island.character;
-    final cleared = island.clearedPhases(counts);
+    final cleared = island.clearedPhases(counts) + (bossStars != null ? 1 : 0);
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: DecoratedBox(
@@ -171,7 +197,13 @@ class _IslandCard extends StatelessWidget {
                 ],
               ),
             ),
-            _Trail(island: island, counts: counts, player: player),
+            _Trail(
+              island: island,
+              counts: counts,
+              bossStars: bossStars,
+              player: player,
+              onBoss: onBoss,
+            ),
           ],
         ),
       ),
@@ -184,12 +216,16 @@ class _Trail extends StatelessWidget {
   const _Trail({
     required this.island,
     required this.counts,
+    required this.bossStars,
     required this.player,
+    required this.onBoss,
   });
 
   final LigaIsland island;
   final Map<String, int> counts;
+  final int? bossStars;
   final LigaCharacter player;
+  final VoidCallback onBoss;
 
   static const _step = 84.0;
   static const _top = 56.0;
@@ -200,12 +236,15 @@ class _Trail extends StatelessWidget {
   void _open(BuildContext context, int phase) {
     final current = island.currentPhase(counts);
     if (phase == LigaIsland.phases) {
-      _say(
-        context,
-        island.isComplete(counts)
-            ? 'O chefão chega na próxima atualização. Continue treinando as fases!'
-            : 'O chefão espera no fim da trilha. Vença as fases antes dele!',
-      );
+      if (island.bossReady(counts)) {
+        onBoss();
+      } else {
+        _say(
+          context,
+          'O ${island.boss} espera no fim da trilha. '
+          'Vença as fases antes dele!',
+        );
+      }
       return;
     }
     if (phase > current) {
@@ -249,17 +288,23 @@ class _Trail extends StatelessWidget {
                     key: ValueKey('fase-${island.character.id}-${i + 1}'),
                     phase: i + 1,
                     state: i + 1 == LigaIsland.phases
-                        ? _PhaseState.boss
+                        ? (bossStars != null
+                              ? _PhaseState.bossBeaten
+                              : island.bossReady(counts)
+                              ? _PhaseState.boss
+                              : _PhaseState.bossLocked)
                         : i + 1 < current
                         ? _PhaseState.done
                         : i + 1 == current
                         ? _PhaseState.current
                         : _PhaseState.locked,
                     color: island.character.color,
+                    bossIcon: island.bossIcon,
+                    stars: bossStars ?? 0,
                     onTap: () => _open(context, i + 1),
                   ),
                 ),
-              if (current < LigaIsland.phases)
+              if (bossStars == null)
                 Positioned(
                   left: at(current - 1).dx - 22,
                   top: at(current - 1).dy - 78,
@@ -338,7 +383,7 @@ class _TrailPainter extends CustomPainter {
       old.cleared != cleared || old.points != points;
 }
 
-enum _PhaseState { done, current, locked, boss }
+enum _PhaseState { done, current, locked, boss, bossLocked, bossBeaten }
 
 class _PhaseNode extends StatelessWidget {
   const _PhaseNode({
@@ -346,12 +391,18 @@ class _PhaseNode extends StatelessWidget {
     required this.phase,
     required this.state,
     required this.color,
+    required this.bossIcon,
+    required this.stars,
     required this.onTap,
   });
 
   final int phase;
   final _PhaseState state;
   final Color color;
+  final IconData bossIcon;
+
+  /// Estrelas do chefão vencido.
+  final int stars;
   final VoidCallback onTap;
 
   @override
@@ -394,38 +445,46 @@ class _PhaseNode extends StatelessWidget {
           size: 22,
         ),
       ),
-      _PhaseState.boss => Container(
-        width: 72,
-        height: 66,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: LigaColors.ink, width: 3.5),
-          boxShadow: const [
-            BoxShadow(color: LigaColors.ink, offset: Offset(0, 5)),
-          ],
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFFF8A9F), Color(0xFFFF4757)],
+      _PhaseState.boss => LigaLoop(
+        duration: const Duration(milliseconds: 1100),
+        builder: (context, t, child) => DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF4757).withValues(alpha: 0.8 * (1 - t)),
+                spreadRadius: 14 * t,
+              ),
+            ],
           ),
+          child: child,
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.whatshot_rounded,
-              color: Colors.white,
-              size: 26,
-              shadows: ligaOutline(1.2),
-            ),
-            Text('CHEFÃO', style: _number(Colors.white, 12)),
-          ],
+        child: _bossBox(
+          colors: const [Color(0xFFFF8A9F), Color(0xFFFF4757)],
+          icon: bossIcon,
+          label: 'LUTAR!',
         ),
+      ),
+      _PhaseState.bossLocked => _bossBox(
+        colors: const [Color(0xFF8A6A7A), Color(0xFF6A4B5C)],
+        icon: Icons.lock_rounded,
+        label: 'CHEFÃO',
+      ),
+      _PhaseState.bossBeaten => _bossBox(
+        colors: const [Color(0xFFFFE680), LigaColors.achievementYellow],
+        icon: Icons.emoji_events_rounded,
+        label: '★' * stars + '☆' * (3 - stars),
+        dark: true,
       ),
     };
     return Semantics(
       button: true,
-      label: state == _PhaseState.boss ? 'Chefão' : 'Fase $phase',
+      label: switch (state) {
+        _PhaseState.boss => 'Chefão: lutar',
+        _PhaseState.bossLocked => 'Chefão bloqueado',
+        _PhaseState.bossBeaten => 'Chefão vencido, $stars estrelas',
+        _ => 'Fase $phase',
+      },
       child: LigaPressable(onTap: onTap, child: node),
     );
   }
@@ -438,6 +497,43 @@ class _PhaseNode extends StatelessWidget {
     color: color,
     shadows: color == Colors.white ? ligaOutline(1.2) : null,
   );
+
+  Widget _bossBox({
+    required List<Color> colors,
+    required IconData icon,
+    required String label,
+    bool dark = false,
+  }) {
+    final ink = dark ? LigaColors.ink : Colors.white;
+    return Container(
+      width: 72,
+      height: 66,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: LigaColors.ink, width: 3.5),
+        boxShadow: const [
+          BoxShadow(color: LigaColors.ink, offset: Offset(0, 5)),
+        ],
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: colors,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: ink,
+            size: 26,
+            shadows: dark ? null : ligaOutline(1.2),
+          ),
+          Text(label, style: _number(ink, 12)),
+        ],
+      ),
+    );
+  }
 
   Widget _disc({
     required double size,
