@@ -18,6 +18,11 @@ const MODELO = Deno.env.get("OPENAI_MODEL") ?? "gpt-6-sol";
 /// Quantas fotos cada criança pode enviar por dia (protege o custo da IA).
 const LIMITE_DIARIO = Number(Deno.env.get("LIMITE_FOTOS_POR_DIA") ?? "30");
 
+/// Chamadas à IA por família e no app todo, a cada 24 horas (os mesmos
+/// secrets de _shared/liga.ts).
+const LIMITE_FAMILIA = Number(Deno.env.get("LIMITE_IA_FAMILIA_POR_DIA") ?? "300");
+const LIMITE_GLOBAL = Number(Deno.env.get("LIMITE_IA_GLOBAL_POR_DIA") ?? "3000");
+
 /// Base64 de uma imagem de ~4,5 MB. O app já reduz a foto antes de enviar.
 const TAMANHO_MAXIMO_BASE64 = 6_000_000;
 
@@ -184,18 +189,34 @@ Deno.serve(async (req) => {
     );
   }
 
-  const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count } = await servico
-    .from("correcoes_ia")
-    .select("id", { count: "exact", head: true })
-    .eq("perfil_crianca_id", perfil.id)
-    .eq("tipo", "foto")
-    .gte("created_at", desde);
-  if ((count ?? 0) >= LIMITE_DIARIO) {
+  // Reserva a vaga antes de chamar a OpenAI (migration 0016): confere o
+  // limite da criança, da família e do app todo, sem brecha para pedidos ao
+  // mesmo tempo. Mesma conta de conferirLimiteDiario em _shared/liga.ts.
+  const { data: reserva, error: erroDaReserva } = await servico.rpc(
+    "reservar_uso_ia",
+    {
+      p_perfil: perfil.id,
+      p_tipo: "foto",
+      p_limite_perfil: LIMITE_DIARIO,
+      p_limite_familia: LIMITE_FAMILIA,
+      p_limite_global: LIMITE_GLOBAL,
+    },
+  );
+  if (erroDaReserva) {
+    console.error("Falha ao reservar uso da IA", erroDaReserva.message);
+    return erro(503, "A Foto + IA ainda está sendo preparada. Tente mais tarde.");
+  }
+  if (reserva === "perfil") {
     return erro(
       429,
       "Você já mandou muitas fotos hoje. Amanhã tem mais missão!",
     );
+  }
+  if (reserva === "familia") {
+    return erro(429, "Sua família já usou muito a IA hoje. Volte amanhã!");
+  }
+  if (reserva === "global") {
+    return erro(503, "A Liga está muito movimentada agora. Tente mais tarde.");
   }
 
   const openai = new OpenAI({ apiKey: chaveOpenAI });
