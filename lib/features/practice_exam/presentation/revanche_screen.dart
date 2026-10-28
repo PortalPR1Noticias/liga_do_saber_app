@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/models/practice_exam.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
@@ -347,7 +348,15 @@ class _RevancheBattleScreenState extends State<RevancheBattleScreen> {
     final finished = _won && (question == null || hit);
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.exam.title)),
+      appBar: AppBar(
+        title: Text(widget.exam.title),
+        actions: [
+          LigaReportAiButton(
+            module: 'revanche',
+            reference: () => widget.exam.id,
+          ),
+        ],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,

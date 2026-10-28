@@ -7,6 +7,7 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/models/photo_explanation.dart';
 import '../../../shared/services/app_repository.dart';
 
@@ -83,7 +84,10 @@ class _PhotoSolverFlowScreenState extends State<PhotoSolverFlowScreen> {
   Widget build(BuildContext context) {
     final result = _result;
     return Scaffold(
-      appBar: AppBar(title: const Text('Enviar atividade')),
+      appBar: AppBar(
+        title: const Text('Enviar atividade'),
+        actions: [const LigaReportAiButton(module: 'foto')],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,

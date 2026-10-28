@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/ai_report.dart';
 import '../models/atelier.dart';
 import '../models/archive_case.dart';
 import '../models/child_profile.dart';
@@ -205,6 +206,10 @@ abstract class AppRepository extends ChangeNotifier {
   /// Quantas atividades já valeram XP em cada origem (`matematica`,
   /// `leitura`, `arquivo`...). É o que avança as fases do Mundo da Liga.
   Future<Map<String, int>> loadActivityCounts();
+
+  /// Botão "Avisar um problema": guarda a denúncia de uma resposta da IA
+  /// para a equipe revisar (exigência do Google Play para conteúdo de IA).
+  Future<void> reportAiContent(AiReport report);
 
   /// Liga ou desliga a autorização do responsável para a Foto + IA.
   Future<void> setAiConsent(bool allowed);

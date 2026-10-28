@@ -70,7 +70,7 @@ Configurar o app (Painel > Configurar o app):
 - [ ] **Segurança dos dados**: tabela em `docs/lgpd/README.md`. Também marcar "dados criptografados em trânsito" e informar o link de exclusão de conta do item 3.
 - [ ] **Exclusão de conta**: link de `excluir-conta.html`.
 - [ ] **Apps governamentais / Recursos financeiros / Saúde**: Não.
-- [ ] **Conteúdo gerado por IA**: declarar que o app gera conteúdo com IA (explicações, casos de leitura, desafios e devolutivas).
+- [ ] **Conteúdo gerado por IA**: declarar que o app gera conteúdo com IA (explicações, casos de leitura, desafios e devolutivas) e que o usuário denuncia respostas impróprias pela bandeira "Avisar um problema" no topo de cada tela com IA.
 - [ ] **Categoria e contato**: Educação, e-mail de contato, site.
 - [ ] **Página principal da loja**: textos e imagens da ficha, mais as capturas de tela.
 
@@ -83,5 +83,5 @@ Enviar:
 
 - [ ] Dados da GPLABS nos textos legais e na página de exclusão: `[RAZÃO SOCIAL]`, `[CNPJ]`, `[ENDEREÇO]`, `[NOME DO ENCARREGADO]`, `[E-MAIL DE PRIVACIDADE]`, `[E-MAIL DE CONTATO]` em `assets/legal/*.md`, `site/excluir_conta.md` e `site/index.md`.
 - [ ] Migrations 0003, 0004 e 0005 aplicadas no Supabase e as Edge Functions publicadas com o secret `OPENAI_API_KEY` (ver `supabase/functions/README.md`). Sem isso a revisão do Google encontra telas com erro.
-- [ ] **Denúncia de conteúdo da IA**: a política de conteúdo gerado por IA do Google Play pede um jeito de o usuário sinalizar uma resposta imprópria dentro do app. Ainda não existe; falta um botão "Avisar um problema" nas telas com IA.
+- [ ] **Denúncia de conteúdo da IA**: o botão já existe (bandeira "Avisar um problema" no topo das telas com IA) e grava em `denuncias_ia`. Falta rodar a migration `0012_denuncias_ia.sql` e olhar as denúncias de tempos em tempos: `select * from public.denuncias_ia order by created_at desc;`.
 - [ ] Testar o `.aab` num celular real (cadastro, Foto + IA, exclusão de conta) antes de mandar para produção.
