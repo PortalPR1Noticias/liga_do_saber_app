@@ -8,6 +8,7 @@ import '../models/archive_case.dart';
 import '../models/atelier.dart';
 import '../models/child_profile.dart';
 import '../models/league_progress.dart';
+import '../models/learning_report.dart';
 import '../models/expedition.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
@@ -508,6 +509,35 @@ class SupabaseAppRepository extends AppRepository {
   }
 
   @override
+  Future<CrosswordGame> newCrossword(MinigameSubject subject) async {
+    return CrosswordGame.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'novo',
+        'jogo': 'cruzadas',
+        'materia': subject.name,
+      }),
+    );
+  }
+
+  @override
+  Future<CrosswordCheck> checkCrossword(
+    String gameId,
+    int index,
+    String answer,
+  ) async {
+    final result = CrosswordCheck.fromJson(
+      await _invoke('minijogo', {
+        'acao': 'conferir_cruzada',
+        'jogo_id': gameId,
+        'indice': index,
+        'resposta': answer,
+      }),
+    );
+    _applyProgress(result.progress);
+    return result;
+  }
+
+  @override
   Future<WritingFeedback> requestWritingFeedback({
     required String theme,
     required WritingPlan plan,
@@ -773,6 +803,113 @@ class SupabaseAppRepository extends AppRepository {
         counts.update(origin, (n) => n + 1, ifAbsent: () => 1);
       }
       return counts;
+    });
+  }
+
+  /// Lê todas as páginas de uma consulta (o Supabase devolve no máximo
+  /// 1000 linhas por vez).
+  Future<List<Map<String, dynamic>>> _allRows(
+    PostgrestTransformBuilder<List<Map<String, dynamic>>> Function(
+      int from,
+      int to,
+    )
+    page,
+  ) async {
+    const size = 1000;
+    final rows = <Map<String, dynamic>>[];
+    for (var from = 0; ; from += size) {
+      final chunk = await page(from, from + size - 1);
+      rows.addAll(chunk);
+      if (chunk.length < size) return rows;
+    }
+  }
+
+  @override
+  Future<LearningLog> loadLearningLog() {
+    return _guard(() async {
+      final childId = _childProfileId;
+      if (childId == null) return const LearningLog();
+
+      // Atividades abertas com a matéria de cada uma. Jogos, expedições e
+      // fotos guardam a matéria no JSON; o Desafio Relâmpago é sempre
+      // Matemática.
+      final activities = await _allRows(
+        (from, to) => _client
+            .from('correcoes_ia')
+            .select(
+              'id, tipo, created_at, materia:resposta_json->>materia, '
+              'jogo:resposta_json->>jogo',
+            )
+            .eq('perfil_crianca_id', childId)
+            .inFilter('tipo', const [
+              'leitura',
+              'matematica',
+              'expedicao',
+              'arquivo',
+              'atelie',
+              'minijogo',
+              'foto',
+            ])
+            .order('created_at')
+            .range(from, to),
+      );
+      final areaOf = <String, LearningArea>{};
+      final attempts = <LearningAttempt>[];
+      for (final row in activities) {
+        final type = row['tipo'] as String;
+        final area = row['jogo'] == 'relampago'
+            ? LearningArea.matematica
+            : LearningArea.fromOrigin(type) ??
+                  LearningArea.fromKey(row['materia'] as String?);
+        if (area == null) continue;
+        areaOf[row['id'] as String] = area;
+        // A foto é ajuda com a lição, não um desafio: não conta como tentativa.
+        if (type != 'foto') {
+          attempts.add(
+            LearningAttempt(
+              area: area,
+              at: DateTime.parse(row['created_at'] as String).toLocal(),
+            ),
+          );
+        }
+      }
+
+      // Revanche da prova: o XP de cada questão aponta para a questão, e o
+      // da prova vencida, para a prova.
+      final exams = await _client
+          .from('provas_treino')
+          .select('id, materia, questoes')
+          .eq('perfil_crianca_id', childId);
+      for (final exam in exams) {
+        final area = LearningArea.fromKey(exam['materia'] as String?);
+        if (area == null) continue;
+        areaOf[exam['id'] as String] = area;
+        for (final question in exam['questoes'] as List? ?? const []) {
+          final id = (question as Map)['id'];
+          if (id is String) areaOf[id] = area;
+        }
+      }
+
+      final xpRows = await _allRows(
+        (from, to) => _client
+            .from('eventos_xp')
+            .select('origem, referencia_id, xp, created_at')
+            .eq('perfil_crianca_id', childId)
+            .order('created_at')
+            .range(from, to),
+      );
+      final events = [
+        for (final row in xpRows)
+          LearningEvent(
+            origin: row['origem'] as String,
+            xp: row['xp'] as int,
+            at: DateTime.parse(row['created_at'] as String).toLocal(),
+            area:
+                LearningArea.fromOrigin(row['origem'] as String) ??
+                areaOf[row['referencia_id']],
+          ),
+      ];
+      return LearningLog(events: events, attempts: attempts);
     });
   }
 

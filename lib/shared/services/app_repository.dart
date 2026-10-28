@@ -6,6 +6,7 @@ import '../models/archive_case.dart';
 import '../models/child_profile.dart';
 import '../models/expedition.dart';
 import '../models/league_progress.dart';
+import '../models/learning_report.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
@@ -197,6 +198,16 @@ abstract class AppRepository extends ChangeNotifier {
     List<int> answers,
   );
 
+  /// Cruzadas da Liga: palavras cruzadas com palavras do tema escolhido.
+  Future<CrosswordGame> newCrossword(MinigameSubject subject);
+
+  /// Confere a palavra digitada para a pista [index] de [CrosswordGame.clues].
+  Future<CrosswordCheck> checkCrossword(
+    String gameId,
+    int index,
+    String answer,
+  );
+
   /// Missões do dia, com as que já foram concluídas hoje.
   Future<List<DailyMission>> loadDailyMissions();
 
@@ -206,6 +217,10 @@ abstract class AppRepository extends ChangeNotifier {
   /// Quantas atividades já valeram XP em cada origem (`matematica`,
   /// `leitura`, `arquivo`...). É o que avança as fases do Mundo da Liga.
   Future<Map<String, int>> loadActivityCounts();
+
+  /// Histórico de atividades com a matéria de cada uma: base do progresso
+  /// por matéria e do relatório semanal dos responsáveis.
+  Future<LearningLog> loadLearningLog();
 
   /// Botão "Avisar um problema": guarda a denúncia de uma resposta da IA
   /// para a equipe revisar (exigência do Google Play para conteúdo de IA).

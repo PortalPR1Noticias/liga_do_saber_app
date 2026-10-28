@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/minigame.dart';
+import 'crossword_screen.dart';
 import 'lightning_challenge_screen.dart';
 import 'order_puzzle_screen.dart';
 import 'word_search_screen.dart';
@@ -98,6 +99,12 @@ class MinigameShortcuts extends StatelessWidget {
               icon: Icons.grid_on_rounded,
               color: subject.color,
               onTap: () => open(WordSearchScreen(subject: subject)),
+            ),
+            _ShortcutChip(
+              label: 'Cruzadas',
+              icon: Icons.border_all_rounded,
+              color: subject.color,
+              onTap: () => open(CrosswordScreen(subject: subject)),
             ),
             _ShortcutChip(
               label: 'Quebra-cabeça',

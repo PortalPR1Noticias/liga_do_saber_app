@@ -6,6 +6,7 @@ import '../models/atelier.dart';
 import '../models/child_profile.dart';
 import '../models/expedition.dart';
 import '../models/league_progress.dart';
+import '../models/learning_report.dart';
 import '../models/math_challenge.dart';
 import '../models/minigame.dart';
 import '../models/photo_explanation.dart';
@@ -44,6 +45,18 @@ class MockAppRepository extends AppRepository {
   ArchiveMode _archiveMode = ArchiveMode.documento;
   final _wordsFound = <int>{};
   int _puzzleAttempts = 0;
+  final _crosswordErrors = <int, int>{};
+  final _crosswordSolved = <int>{};
+  bool _crosswordHinted = false;
+
+  /// Matéria do último Jogo da Liga aberto (vai para o progresso por área).
+  LearningArea _minigameArea = LearningArea.portugues;
+  LearningArea _expeditionArea = LearningArea.ciencias;
+
+  /// Histórico do progresso por matéria. Os testes podem pôr atividades
+  /// antigas aqui para conferir o relatório semanal.
+  final learningEvents = <LearningEvent>[];
+  final learningAttempts = <LearningAttempt>[];
 
   @override
   ResponsibleAccount get responsible {
@@ -390,6 +403,18 @@ class MockAppRepository extends AppRepository {
   /// Mesma regra da função SQL `conceder_xp`, em versão simplificada.
   ProgressUpdate _grantXp(int xp, String origin) {
     _activityCounts.update(origin, (n) => n + 1, ifAbsent: () => 1);
+    final now = DateTime.now();
+    final area = switch (origin) {
+      'minijogo' => _minigameArea,
+      'expedicao' => _expeditionArea,
+      _ => LearningArea.fromOrigin(origin),
+    };
+    learningEvents.add(
+      LearningEvent(origin: origin, xp: xp, at: now, area: area),
+    );
+    if (area != null) {
+      learningAttempts.add(LearningAttempt(area: area, at: now));
+    }
     final current = childProfile;
     var bonus = 0;
     String? missionTitle;
@@ -407,6 +432,9 @@ class MockAppRepository extends AppRepository {
           icon: 'rocket',
         ),
     ];
+    if (bonus > 0) {
+      learningEvents.add(LearningEvent(origin: 'missao', xp: bonus, at: now));
+    }
     final total = current.totalXp + xp + bonus;
     var level = current.level;
     while (ChildProfile.levelStartXp(level + 1) <= total) {
@@ -542,6 +570,8 @@ class MockAppRepository extends AppRepository {
   Future<Expedition> newExpedition(ExpeditionSubject subject) async {
     _expeditionAttempts = 0;
     _expeditionRevealed = false;
+    _expeditionArea =
+        LearningArea.fromKey(subject.name) ?? LearningArea.ciencias;
     return Expedition(
       id: 'expedicao-1',
       subject: subject,
@@ -614,6 +644,7 @@ class MockAppRepository extends AppRepository {
   @override
   Future<WordSearchGame> newWordSearch(MinigameSubject subject) async {
     _wordsFound.clear();
+    _minigameArea = LearningArea.fromKey(subject.name)!;
     return WordSearchGame(
       id: 'caca-1',
       subject: subject,
@@ -672,6 +703,7 @@ class MockAppRepository extends AppRepository {
   @override
   Future<OrderPuzzle> newOrderPuzzle(MinigameSubject subject) async {
     _puzzleAttempts = 0;
+    _minigameArea = LearningArea.fromKey(subject.name)!;
     return OrderPuzzle(
       id: 'quebra-1',
       subject: subject,
@@ -712,6 +744,7 @@ class MockAppRepository extends AppRepository {
 
   @override
   Future<LightningRound> newLightningRound(LightningTopic topic) async {
+    _minigameArea = LearningArea.matematica;
     return LightningRound(
       id: 'relampago-1',
       questions: [
@@ -1245,6 +1278,87 @@ class MockAppRepository extends AppRepository {
   @override
   Future<void> reportAiContent(AiReport report) async {
     aiReports.add(report);
+  }
+
+  @override
+  Future<LearningLog> loadLearningLog() async => LearningLog(
+    events: List.of(learningEvents),
+    attempts: List.of(learningAttempts),
+  );
+
+  /// Cruzadas fixas (4 x 5): VERBO na linha 0, FRASE na linha 3 e RIMA
+  /// descendo da coluna 2.
+  static const _crosswordWords = ['VERBO', 'FRASE', 'RIMA'];
+
+  @override
+  Future<CrosswordGame> newCrossword(MinigameSubject subject) async {
+    _crosswordErrors.clear();
+    _crosswordSolved.clear();
+    _crosswordHinted = false;
+    _minigameArea = LearningArea.fromKey(subject.name)!;
+    return CrosswordGame(
+      id: 'cruzadas-1',
+      subject: subject,
+      title: 'Cruzadas da Luma',
+      rows: 4,
+      cols: 5,
+      clues: const [
+        CrosswordClue(
+          number: 1,
+          direction: CrosswordDirection.across,
+          row: 0,
+          col: 0,
+          length: 5,
+          clue: 'Palavra que indica ação, como correr.',
+        ),
+        CrosswordClue(
+          number: 3,
+          direction: CrosswordDirection.across,
+          row: 3,
+          col: 0,
+          length: 5,
+          clue: 'Conjunto de palavras com sentido completo.',
+        ),
+        CrosswordClue(
+          number: 2,
+          direction: CrosswordDirection.down,
+          row: 0,
+          col: 2,
+          length: 4,
+          clue: 'Som igual no fim dos versos de um poema.',
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<CrosswordCheck> checkCrossword(
+    String gameId,
+    int index,
+    String answer,
+  ) async {
+    final word = _crosswordWords[index];
+    if (crosswordLetters(answer) != word) {
+      final errors = (_crosswordErrors[index] ?? 0) + 1;
+      _crosswordErrors[index] = errors;
+      final hint = errors < 2
+          ? ''
+          : 'Começa com ${word.substring(0, (errors - 1).clamp(1, word.length ~/ 2))}...';
+      if (hint.isNotEmpty) _crosswordHinted = true;
+      return CrosswordCheck(correct: false, index: index, hint: hint);
+    }
+    final firstTime = _crosswordSolved.add(index);
+    final finished = _crosswordSolved.length == _crosswordWords.length;
+    final xp = finished && firstTime ? (_crosswordHinted ? 10 : 20) : 0;
+    return CrosswordCheck(
+      correct: true,
+      index: index,
+      word: word,
+      letters: word,
+      finished: finished,
+      xp: xp,
+      progress: xp > 0 ? _grantXp(xp, 'minijogo') : null,
+    );
   }
 
   @override

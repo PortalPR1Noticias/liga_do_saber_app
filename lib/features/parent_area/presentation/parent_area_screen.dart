@@ -10,6 +10,7 @@ import '../../../shared/services/app_repository.dart';
 import '../../legal/presentation/legal_document_screen.dart';
 import '../../onboarding/presentation/onboarding_screen.dart';
 import '../../practice_exam/presentation/parent_exams_screen.dart';
+import 'weekly_report_screen.dart';
 
 /// Pergunta de adulto antes da Área dos responsáveis, para a criança não
 /// mexer sozinha em autorizações e na exclusão da conta (pedido da política
@@ -172,6 +173,20 @@ class _ParentAreaScreenState extends State<ParentAreaScreen> {
                       Text(responsible.email, style: textTheme.bodyMedium),
                     ],
                   ),
+                ),
+                const SizedBox(height: 18),
+                LigaActionButton(
+                  key: const Key('weeklyReportButton'),
+                  label: 'Relatório da semana',
+                  icon: Icons.insights_rounded,
+                  color: LigaColors.progressGreen,
+                  onPressed: _busy
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const WeeklyReportScreen(),
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 18),
                 LigaPanel(
