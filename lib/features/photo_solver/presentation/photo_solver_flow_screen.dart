@@ -8,6 +8,7 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/design_system/liga_report_button.dart';
+import '../../../shared/design_system/liga_voice.dart';
 import '../../../shared/models/photo_explanation.dart';
 import '../../../shared/services/app_repository.dart';
 
@@ -211,6 +212,13 @@ class _PhotoSolverFlowScreenState extends State<PhotoSolverFlowScreen> {
       ),
       if (result.readable) ...[
         const SizedBox(height: 18),
+        LigaHeroVoice(
+          character: character,
+          lines: [
+            for (final step in result.steps) ...[step.title, step.explanation],
+            result.tip,
+          ],
+        ),
         for (var i = 0; i < result.steps.length; i++)
           PopIn(
             delay: Duration(milliseconds: 90 * i),

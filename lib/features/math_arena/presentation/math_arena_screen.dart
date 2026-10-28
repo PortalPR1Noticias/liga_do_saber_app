@@ -5,6 +5,7 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/design_system/liga_report_button.dart';
+import '../../../shared/design_system/liga_voice.dart';
 import '../../../shared/models/math_challenge.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
@@ -219,12 +220,14 @@ class _MathArenaScreenState extends State<MathArenaScreen> {
                   color: LigaColors.primaryBlue,
                   onPressed: _loading ? null : _showSteps,
                 ),
-              if (_steps.isNotEmpty)
+              if (_steps.isNotEmpty) ...[
+                LigaHeroVoice(character: LigaCharacter.nico, lines: _steps),
                 for (var i = 0; i < _steps.length; i++)
                   PopIn(
                     delay: Duration(milliseconds: 90 * i),
                     child: LigaStepBubble(number: i + 1, text: _steps[i]),
                   ),
+              ],
               const SizedBox(height: 12),
               LigaActionButton(
                 label: challenge == null ? 'Começar desafio' : 'Novo desafio',

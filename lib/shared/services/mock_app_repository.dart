@@ -385,6 +385,19 @@ class MockAppRepository extends AppRepository {
     ];
   }
 
+  /// Quantas falas os heróis já geraram (os testes conferem o cache).
+  int heroVoiceRequests = 0;
+
+  @override
+  Future<Uint8List> heroVoice({
+    required String characterId,
+    required String text,
+  }) async {
+    heroVoiceRequests++;
+    // Cabeçalho de um MP3 vazio: os testes não tocam áudio.
+    return Uint8List.fromList(const [0x49, 0x44, 0x33, 0x04, 0, 0, 0, 0, 0, 0]);
+  }
+
   @override
   Future<PhotoExplanation> explainPhoto(Uint8List imageBytes) async {
     return PhotoExplanation(
@@ -452,10 +465,16 @@ class MockAppRepository extends AppRepository {
 
   @override
   Future<PracticeExamSummary> uploadPracticeExam({
-    required List<Uint8List> photos,
+    List<Uint8List> photos = const [],
+    PracticeExamPdf? pdf,
     required PracticeExamKind kind,
     String note = '',
   }) async {
+    if (photos.isEmpty && pdf == null) {
+      throw const AppRepositoryException(
+        'Mande pelo menos uma foto ou um PDF.',
+      );
+    }
     if (!responsible.aiConsent) {
       throw const AppRepositoryException(
         'Ligue a autorização de IA acima para enviar provas e tarefas.',

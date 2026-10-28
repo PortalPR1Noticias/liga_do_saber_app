@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -10,19 +11,52 @@ import '../../../shared/models/practice_exam.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 
+/// Escolhe várias fotos da galeria de uma vez (até `limit`).
+typedef GalleryPicker = Future<List<Uint8List>> Function(int limit);
+
+/// Escolhe um PDF do aparelho.
+typedef PdfPicker = Future<PracticeExamPdf?> Function();
+
+Future<List<Uint8List>> pickGalleryWithImagePicker(int limit) async {
+  // Mesmo tamanho da Foto + IA: a letra da prova continua legível.
+  final files = await ImagePicker().pickMultiImage(
+    maxWidth: 1600,
+    maxHeight: 1600,
+    imageQuality: 80,
+    limit: limit < 2 ? null : limit,
+  );
+  return [for (final file in files.take(limit)) await file.readAsBytes()];
+}
+
+Future<PracticeExamPdf?> pickPdfWithFilePicker() async {
+  final file = await FilePicker.pickFile(
+    type: FileType.custom,
+    allowedExtensions: const ['pdf'],
+  );
+  if (file == null) return null;
+  return PracticeExamPdf(name: file.name, bytes: await file.readAsBytes());
+}
+
 /// Área dos responsáveis > Provas e tarefas para treinar. O adulto manda
-/// fotos de uma prova ou tarefa que a criança já fez; a IA cria as questões
-/// da Revanche da prova (Edge Function `revanche-prova`).
+/// fotos ou o PDF de uma prova ou tarefa que a criança já fez; a IA cria as
+/// questões da Revanche da prova (Edge Function `revanche-prova`).
 class ParentExamsScreen extends StatefulWidget {
   const ParentExamsScreen({
     super.key,
     this.pickPhoto = pickPhotoWithImagePicker,
+    this.pickGallery = pickGalleryWithImagePicker,
+    this.pickPdf = pickPdfWithFilePicker,
   });
 
   /// Uma prova costuma ter mais de uma folha.
-  static const maxPhotos = 4;
+  static const maxPhotos = 10;
+
+  /// O servidor aceita PDF de até 6 MB e 10 páginas.
+  static const maxPdfBytes = 6 * 1024 * 1024;
 
   final PhotoPicker pickPhoto;
+  final GalleryPicker pickGallery;
+  final PdfPicker pickPdf;
 
   @override
   State<ParentExamsScreen> createState() => _ParentExamsScreenState();
@@ -30,6 +64,7 @@ class ParentExamsScreen extends StatefulWidget {
 
 class _ParentExamsScreenState extends State<ParentExamsScreen> {
   final _photos = <Uint8List>[];
+  PracticeExamPdf? _pdf;
   final _note = TextEditingController();
   PracticeExamKind _kind = PracticeExamKind.prova;
   List<PracticeExamSummary> _exams = const [];
@@ -63,9 +98,15 @@ class _ParentExamsScreenState extends State<ParentExamsScreen> {
   }
 
   Future<void> _addPhoto(ImageSource source) async {
-    final Uint8List? photo;
+    final free = ParentExamsScreen.maxPhotos - _photos.length;
+    final List<Uint8List> photos;
     try {
-      photo = await widget.pickPhoto(source);
+      if (source == ImageSource.camera) {
+        final photo = await widget.pickPhoto(source);
+        photos = [?photo];
+      } else {
+        photos = await widget.pickGallery(free);
+      }
     } on Exception {
       setState(() {
         _error = source == ImageSource.camera
@@ -74,10 +115,41 @@ class _ParentExamsScreenState extends State<ParentExamsScreen> {
       });
       return;
     }
-    if (photo == null || !mounted) return;
+    if (photos.isEmpty || !mounted) return;
     setState(() {
-      _photos.add(photo!);
-      _error = null;
+      _photos.addAll(photos.take(free));
+      _error = photos.length > free
+          ? 'Cabem só ${ParentExamsScreen.maxPhotos} fotos por envio. '
+                'Fiquei com as primeiras.'
+          : null;
+    });
+  }
+
+  Future<void> _addPdf() async {
+    final PracticeExamPdf? pdf;
+    try {
+      pdf = await widget.pickPdf();
+    } on Exception {
+      setState(() {
+        _error = 'Não consegui abrir os arquivos. Confira a permissão do app.';
+      });
+      return;
+    }
+    if (pdf == null || !mounted) return;
+    final isPdf =
+        pdf.bytes.length > 4 &&
+        String.fromCharCodes(pdf.bytes.sublist(0, 5)) == '%PDF-';
+    setState(() {
+      if (!isPdf) {
+        _error = 'Esse arquivo não é um PDF.';
+      } else if (pdf!.bytes.length > ParentExamsScreen.maxPdfBytes) {
+        _error =
+            'O PDF passou de 6 MB. Mande só as páginas da prova ou '
+            'fotografe as folhas.';
+      } else {
+        _pdf = pdf;
+        _error = null;
+      }
     });
   }
 
@@ -90,6 +162,7 @@ class _ParentExamsScreenState extends State<ParentExamsScreen> {
     try {
       final exam = await AppRepository.instance.uploadPracticeExam(
         photos: List.of(_photos),
+        pdf: _pdf,
         kind: _kind,
         note: _note.text.trim(),
       );
@@ -98,6 +171,7 @@ class _ParentExamsScreenState extends State<ParentExamsScreen> {
         _justSent = exam;
         _exams = [exam, ..._exams];
         _photos.clear();
+        _pdf = null;
         _note.clear();
       });
     } on AppRepositoryException catch (error) {
@@ -168,8 +242,9 @@ class _ParentExamsScreenState extends State<ParentExamsScreen> {
                     Text('Revanche da prova', style: textTheme.titleLarge),
                     const SizedBox(height: 6),
                     Text(
-                      'Fotografe uma prova ou tarefa que já voltou da escola '
-                      '(de preferência corrigida). A IA monta questões de '
+                      'Fotografe (até ${ParentExamsScreen.maxPhotos} fotos) ou '
+                      'mande o PDF de uma prova ou tarefa que já voltou da '
+                      'escola (de preferência corrigida). A IA monta questões de '
                       'treino iguais e parecidas, começando pelas que a '
                       'criança errou, e elas viram uma missão no app.',
                       style: textTheme.bodyMedium,
@@ -178,8 +253,9 @@ class _ParentExamsScreenState extends State<ParentExamsScreen> {
                       const SizedBox(height: 10),
                       Text(
                         'Para enviar, ligue antes a autorização de IA na '
-                        'Área dos responsáveis: as fotos vão para a OpenAI '
-                        '(EUA) só para criar o treino e não ficam guardadas.',
+                        'Área dos responsáveis: as fotos e o PDF vão para a '
+                        'OpenAI (EUA) só para criar o treino e não ficam '
+                        'guardados.',
                         key: const Key('practiceNoConsent'),
                         style: textTheme.bodyMedium?.copyWith(
                           color: LigaColors.shade(LigaColors.actionCoral, 0.1),
@@ -227,6 +303,15 @@ class _ParentExamsScreenState extends State<ParentExamsScreen> {
                       ],
                     ),
                     if (_photos.isNotEmpty) const SizedBox(height: 10),
+                    if (_pdf != null) ...[
+                      _PdfChip(
+                        pdf: _pdf!,
+                        onRemove: _sending
+                            ? null
+                            : () => setState(() => _pdf = null),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                     Row(
                       children: [
                         Expanded(
@@ -252,6 +337,18 @@ class _ParentExamsScreenState extends State<ParentExamsScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      key: const Key('practicePdf'),
+                      onPressed: _sending ? null : _addPdf,
+                      icon: const Icon(Icons.picture_as_pdf_rounded),
+                      label: Text(_pdf == null ? 'Anexar PDF' : 'Trocar o PDF'),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Um PDF por envio, de até 10 páginas e 6 MB.',
+                      style: textTheme.bodySmall,
+                    ),
                     const SizedBox(height: 12),
                     TextField(
                       key: const Key('practiceNote'),
@@ -273,7 +370,8 @@ class _ParentExamsScreenState extends State<ParentExamsScreen> {
                 label: 'Criar treino',
                 icon: Icons.auto_awesome_rounded,
                 color: LigaColors.sunsetOrange,
-                onPressed: _sending || _photos.isEmpty || !consent
+                onPressed:
+                    _sending || (_photos.isEmpty && _pdf == null) || !consent
                     ? null
                     : _send,
               ),
@@ -383,6 +481,49 @@ class _Thumb extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PdfChip extends StatelessWidget {
+  const _PdfChip({required this.pdf, required this.onRemove});
+
+  final PracticeExamPdf pdf;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = pdf.bytes.length / (1024 * 1024);
+    return Container(
+      key: const Key('practicePdfChip'),
+      padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: LigaColors.ink, width: 3),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.picture_as_pdf_rounded,
+            color: LigaColors.actionCoral,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${pdf.name} (${size.toStringAsFixed(1)} MB)',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          IconButton(
+            tooltip: 'Remover PDF',
+            onPressed: onRemove,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -47,12 +47,20 @@ O responsável pode retirar a autorização a qualquer momento na Área dos resp
 
 ## Revanche da prova
 
-Com a mesma autorização, o responsável pode fotografar, na Área dos responsáveis, uma prova ou tarefa que a criança já fez, para ela treinar o conteúdo:
-- as fotos são enviadas para a OpenAI apenas para ler as questões e criar questões de treino parecidas;
-- as fotos não são guardadas pela Liga do Saber;
+Com a mesma autorização, o responsável pode fotografar (até 10 fotos) ou enviar o PDF, na Área dos responsáveis, de uma prova ou tarefa que a criança já fez, para ela treinar o conteúdo:
+- as fotos e o PDF são enviados para a OpenAI apenas para ler as questões e criar questões de treino parecidas;
+- as fotos e o PDF não são guardados pela Liga do Saber;
 - guardamos as questões de treino, um resumo do que caiu na prova e o progresso da criança no treino;
 - pedimos à IA que ignore nomes, escola, turma, professor e outros dados pessoais que apareçam na folha;
 - o responsável pode apagar cada treino em "Área dos responsáveis > Provas para treinar".
+
+## Voz dos heróis
+
+Quando a criança toca em "Ouvir" (ou liga "Heróis leem em voz alta" em Acessibilidade), o texto da explicação que já está na tela é enviado à OpenAI para virar áudio com a voz do herói. Vai só o texto da explicação, escrito pela própria IA ou pelo app, sem foto, nome ou outro dado da criança. O áudio é criado por inteligência artificial (o app avisa "Voz criada por IA"), toca na hora e não é guardado; o texto continua sempre visível.
+
+## Acessibilidade
+
+As opções de acessibilidade (tamanho do texto, leitura em voz alta, menos movimento, sons e vibração) ficam salvas só no aparelho.
 
 ## Para que usamos os dados
 
@@ -79,7 +87,7 @@ O ranking (do dia, da semana, do mês e geral) conta o XP dos acertos. A crianç
 
 Usamos fornecedores que tratam dados em nosso nome, só para fazer o app funcionar:
 - Supabase: hospedagem do banco de dados, login e servidores do app;
-- OpenAI: modelo de inteligência artificial da Foto + IA e das devolutivas, somente quando autorizado.
+- OpenAI: modelo de inteligência artificial da Foto + IA e das devolutivas, somente quando autorizado, e geração da voz dos heróis a partir do texto das explicações.
 
 Esses fornecedores ficam fora do Brasil (principalmente nos Estados Unidos). A transferência internacional é feita com base no consentimento do responsável e em cláusulas contratuais de proteção de dados desses fornecedores (art. 33 da LGPD). Além dos professores que o responsável liberar, não compartilhamos dados com anunciantes nem com outras empresas.
 
@@ -87,7 +95,8 @@ Esses fornecedores ficam fora do Brasil (principalmente nos Estados Unidos). A t
 
 - Fotos da Foto + IA: não são guardadas.
 - Explicações da Foto + IA: apagadas automaticamente depois de 12 meses.
-- Fotos de provas e tarefas: não são guardadas.
+- Fotos e PDFs de provas e tarefas: não são guardados.
+- Áudios da voz dos heróis: não são guardados.
 - Treinos da Revanche da prova: apagados automaticamente depois de 12 meses.
 - Conta, perfil e progresso: enquanto a conta existir.
 - Contas sem nenhum acesso por 24 meses: excluídas por inteiro, automaticamente.

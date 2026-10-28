@@ -5,6 +5,7 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/design_system/liga_report_button.dart';
+import '../../../shared/design_system/liga_voice.dart';
 import '../../../shared/models/reading_case.dart';
 import '../../../shared/models/minigame.dart';
 import '../../../shared/services/app_repository.dart';
@@ -276,6 +277,12 @@ class _QuestionCard extends StatelessWidget {
               if (f.explanation.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(f.explanation, style: textTheme.bodyMedium),
+                const SizedBox(height: 8),
+                LigaHeroVoice(
+                  character: LigaCharacter.luma,
+                  label: 'Ouvir a Luma',
+                  lines: [f.explanation],
+                ),
               ],
             ],
           ],

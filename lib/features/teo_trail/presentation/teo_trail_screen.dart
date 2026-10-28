@@ -5,6 +5,7 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/design_system/liga_report_button.dart';
+import '../../../shared/design_system/liga_voice.dart';
 import '../../../shared/models/expedition.dart';
 import '../../../shared/models/minigame.dart';
 import '../../../shared/models/progress_update.dart';
@@ -274,6 +275,10 @@ class _TeoTrailScreenState extends State<TeoTrailScreen> {
                   onPressed: _loading ? null : _reveal,
                 ),
               if (discovery != null) ...[
+                LigaHeroVoice(
+                  character: LigaCharacter.teo,
+                  lines: [...discovery.steps, discovery.funFact],
+                ),
                 for (var i = 0; i < discovery.steps.length; i++)
                   PopIn(
                     delay: Duration(milliseconds: 90 * i),

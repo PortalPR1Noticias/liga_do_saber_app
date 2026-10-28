@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/accessibility/accessibility_screen.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/auth/presentation/child_login_screen.dart';
 import '../features/auth/presentation/login_choice_screen.dart';
@@ -24,6 +25,7 @@ import '../features/avatar/avatar_editor_screen.dart';
 import '../features/avatar/profile_editor_screen.dart';
 import '../features/ranking/ranking_screen.dart';
 import '../features/shop/shop_screen.dart';
+import '../shared/design_system/liga_accessibility.dart';
 import 'theme.dart';
 
 class LigaDoSaberApp extends StatelessWidget {
@@ -35,6 +37,7 @@ class LigaDoSaberApp extends StatelessWidget {
       title: 'Liga do Saber',
       debugShowCheckedModeBanner: false,
       theme: LigaTheme.light(),
+      builder: LigaAccessibility.apply,
       initialRoute: SplashScreen.routeName,
       routes: {
         SplashScreen.routeName: (_) => const SplashScreen(),
@@ -62,6 +65,7 @@ class LigaDoSaberApp extends StatelessWidget {
         AvatarEditorScreen.routeName: (_) => const AvatarEditorScreen(),
         ProfileEditorScreen.routeName: (_) => const ProfileEditorScreen(),
         RankingScreen.routeName: (_) => const RankingScreen(),
+        AccessibilityScreen.routeName: (_) => const AccessibilityScreen(),
       },
     );
   }

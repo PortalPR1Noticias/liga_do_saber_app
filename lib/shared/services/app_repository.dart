@@ -148,13 +148,21 @@ abstract class AppRepository extends ChangeNotifier {
   /// Manda a foto da atividade para a IA e devolve a explicação passo a passo.
   Future<PhotoExplanation> explainPhoto(Uint8List imageBytes);
 
-  /// Revanche da prova: o responsável manda fotos (até 4) de uma prova ou
-  /// tarefa já feita e a IA cria questões de treino. As fotos vão para a
-  /// OpenAI, então precisa da autorização do responsável.
+  /// Revanche da prova: o responsável manda fotos (até 10) e/ou um PDF de
+  /// uma prova ou tarefa já feita e a IA cria questões de treino. Os
+  /// arquivos vão para a OpenAI, então precisa da autorização do responsável.
   Future<PracticeExamSummary> uploadPracticeExam({
-    required List<Uint8List> photos,
+    List<Uint8List> photos = const [],
+    PracticeExamPdf? pdf,
     required PracticeExamKind kind,
     String note = '',
+  });
+
+  /// Áudio em MP3 da explicação com a voz do herói (Edge Function
+  /// `voz-heroi`). Só o texto da explicação vai para a OpenAI.
+  Future<Uint8List> heroVoice({
+    required String characterId,
+    required String text,
   });
 
   /// Provas e tarefas enviadas para a criança treinar, das mais novas.

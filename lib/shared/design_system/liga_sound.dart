@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'liga_accessibility.dart';
+
 /// Efeitos sonoros do jogo (arquivos em assets/sounds, gerados pela GPLABS).
 enum LigaSfx {
   toque('toque.wav'),
@@ -55,6 +57,18 @@ class LigaSound {
   /// Toca o efeito e dá uma vibração curta combinando com ele.
   static void play(LigaSfx sfx) {
     if (!enabled) return;
+    if (LigaAccessibility.settings.value.vibration) _vibrate(sfx);
+    if (muted.value) return;
+    final player = _players.putIfAbsent(sfx, () {
+      return AudioPlayer()..setPlayerMode(PlayerMode.lowLatency);
+    });
+    player
+        .stop()
+        .then((_) => player.play(AssetSource('sounds/${sfx.file}')))
+        .catchError((Object _) {});
+  }
+
+  static void _vibrate(LigaSfx sfx) {
     switch (sfx) {
       case LigaSfx.acerto || LigaSfx.jogar:
         HapticFeedback.lightImpact();
@@ -65,13 +79,5 @@ class LigaSound {
       case LigaSfx.toque:
         HapticFeedback.selectionClick();
     }
-    if (muted.value) return;
-    final player = _players.putIfAbsent(sfx, () {
-      return AudioPlayer()..setPlayerMode(PlayerMode.lowLatency);
-    });
-    player
-        .stop()
-        .then((_) => player.play(AssetSource('sounds/${sfx.file}')))
-        .catchError((Object _) {});
   }
 }

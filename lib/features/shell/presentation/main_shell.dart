@@ -10,6 +10,7 @@ import '../../../shared/design_system/liga_sound.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/league_progress.dart';
 import '../../../shared/services/app_repository.dart';
+import '../../accessibility/accessibility_screen.dart';
 import '../../auth/presentation/login_choice_screen.dart';
 import '../../avatar/avatar_editor_screen.dart';
 import '../../avatar/profile_editor_screen.dart';
@@ -584,6 +585,14 @@ class _ProfileScreen extends StatelessWidget {
           color: LigaColors.achievementYellow,
           onPressed: () =>
               Navigator.of(context).pushNamed(RankingScreen.routeName),
+        ),
+        LigaActionButton(
+          key: const Key('acessibilidade'),
+          label: 'Acessibilidade',
+          icon: Icons.accessibility_new_rounded,
+          color: LigaColors.progressGreen,
+          onPressed: () =>
+              Navigator.of(context).pushNamed(AccessibilityScreen.routeName),
         ),
         LigaActionButton(
           label: 'Sair da conta',

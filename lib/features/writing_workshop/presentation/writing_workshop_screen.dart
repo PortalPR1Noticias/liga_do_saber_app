@@ -5,6 +5,7 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/design_system/liga_report_button.dart';
+import '../../../shared/design_system/liga_voice.dart';
 import '../../../shared/models/writing_feedback.dart';
 import '../../../shared/models/minigame.dart';
 import '../../../shared/services/app_repository.dart';
@@ -458,6 +459,15 @@ class _FeedbackCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          LigaHeroVoice(
+            character: LigaCharacter.luma,
+            label: 'Ouvir a Luma',
+            lines: [
+              ...feedback.strengths,
+              ...feedback.suggestions,
+              feedback.message,
+            ],
+          ),
           _CriteriaList(feedback.criteria),
           _Bullets(
             title: 'Pontos fortes',
@@ -504,6 +514,15 @@ class _RewriteCard extends StatelessWidget {
             color: LigaColors.progressGreen,
           ),
           const SizedBox(height: 12),
+          LigaHeroVoice(
+            character: LigaCharacter.luma,
+            label: 'Ouvir a Luma',
+            lines: [
+              ...feedback.improvements,
+              feedback.nextStep,
+              feedback.message,
+            ],
+          ),
           _CriteriaList(feedback.criteria),
           _Bullets(
             title: 'O que melhorou',
