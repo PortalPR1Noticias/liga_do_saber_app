@@ -46,7 +46,7 @@ medalhas) que todas as funções usam, inclusive a `explicar-foto`.
 | `expedicao-teo` | Trilha do Teo (Ciências e Geografia) | Cria uma investigação do ano escolar (cena, pistas e pergunta) e corrige: 20 XP de primeira, 10 depois de errar, 0 depois de revelar a descoberta. |
 | `atelie-zuri` | Oficina do Zuri (projetos e mapas mentais) | Minijogos do ano escolar: caça-palavras (grade montada no servidor), monte o mapa mental e quebra-cabeça das etapas de um projeto. 20 XP de primeira, 10 depois de errar, 0 depois de ver a solução. Em "Meu projeto", o tema escrito pela criança vira mapa mental e etapas (15 XP). XP só nos 15 primeiros jogos e 3 primeiros projetos do dia. |
 | `arquivo-mila` | Arquivo da Mila (História) | Minijogos do ano escolar: caça-palavras (grade montada no servidor; achar todas vale 20 XP), linha do tempo (4 fichas para ordenar) e enigma do documento (foto, carta ou objeto antigo). 20 XP de primeira, 10 depois de errar, 0 depois de revelar. |
-| `revanche-prova` | Revanche da prova (Área dos responsáveis + Missões) | O responsável manda até 4 fotos de uma prova ou tarefa já feita; a IA cria de 6 a 10 questões de treino (as da prova e outras parecidas, começando pelas que a criança errou). 10 XP de primeira, 5 depois de errar; no segundo erro o herói explica e a questão volta no fim da fila, sem XP. Acertar todas vence a revanche: +30 XP e de 1 a 3 estrelas pelos acertos de primeira. |
+| `revanche-prova` | Revanche da prova (Área dos responsáveis + Missões) | O responsável manda até 10 fotos e/ou um PDF (até 6 MB e 10 páginas) de uma prova ou tarefa já feita; a IA cria de 6 a 10 questões de treino (as da prova e outras parecidas, começando pelas que a criança errou). 10 XP de primeira, 5 depois de errar; no segundo erro o herói explica e a questão volta no fim da fila, sem XP. Acertar todas vence a revanche: +30 XP e de 1 a 3 estrelas pelos acertos de primeira. |
 | `minijogo` | Jogos da Liga (caça-palavras, quebra-cabeça, Desafio Relâmpago) | Caça-palavras e quebra-cabeça criados pela IA para o ano escolar e a matéria (a grade e a ordem certa ficam no servidor); o Relâmpago gera 40 contas sem IA. Caça-palavras completo: 20 XP; quebra-cabeça: 20 de primeira, 10 depois; Relâmpago: 5 + 2 por acerto, até 25. |
 
 Todas usam o código comum de `_shared/liga.ts`, o mesmo secret
@@ -112,13 +112,38 @@ de comando (o editor do painel não leva a pasta `_shared` junto). O
 A `revanche-prova` precisa da migration
 `supabase/migrations/0009_revanche_da_prova.sql` (tabela `provas_treino`,
 missão do dia "Treinar na Revanche da prova", medalha Virada de Jogo e a
-cópia dos dados e a retenção de 12 meses incluindo os treinos). As fotos vão
-para a OpenAI, então ela exige a autorização de IA do responsável
-(`responsaveis.autoriza_ia`) e não guarda as fotos. Secret opcional:
+cópia dos dados e a retenção de 12 meses incluindo os treinos). As fotos e o
+PDF vão para a OpenAI, então ela exige a autorização de IA do responsável
+(`responsaveis.autoriza_ia`) e não guarda os arquivos. Secret opcional:
 `LIMITE_PROVAS_POR_DIA` (padrão 10 envios por criança a cada 24 horas).
 
 ```bash
 npx supabase functions deploy revanche-prova --no-verify-jwt
+```
+
+## voz-heroi (heróis falando)
+
+Transforma as explicações dos heróis em áudio MP3 com a voz de cada um
+(text-to-speech da OpenAI, modelo padrão `gpt-4o-mini-tts`; troque pelo
+secret `OPENAI_TTS_MODEL`). O app mostra um botão "Ouvir" com o retrato do
+herói ao lado de cada explicação (Foto + IA, chefões, Revanche, Arena, Trilha,
+Arquivo, Oficinas e Detetive). O texto continua sempre na tela, e o áudio
+avisa "Voz criada por IA".
+
+- Vozes: Nico `echo`, Luma `coral`, Teo `verse`, Mila `sage`, Zuri `fable`,
+  cada um com instruções de jeito de falar em português do Brasil.
+- Só vai para a OpenAI o texto da explicação (até 1.200 caracteres), que a
+  própria IA ou o app escreveram. Nada de foto, nome ou dado da criança, e o
+  áudio não é guardado. O app guarda os últimos 30 áudios na memória, então
+  ouvir de novo não gera custo.
+- Limites próprios, separados da cota da IA de texto (migration
+  `0020_voz_dos_herois.sql`, função `reservar_uso_voz`):
+  `LIMITE_VOZ_POR_DIA` (60 por criança), `LIMITE_VOZ_FAMILIA_POR_DIA` (200) e
+  `LIMITE_VOZ_GLOBAL_POR_DIA` (5000), a cada 24 horas. Um áudio de 30
+  segundos custa por volta de 1 centavo de dólar.
+
+```bash
+npx supabase functions deploy voz-heroi --no-verify-jwt
 ```
 
 ## contas-liga (logins de responsável, criança e professor)
@@ -183,6 +208,7 @@ npx supabase functions deploy minijogo --no-verify-jwt
 npx supabase functions deploy explicar-foto --no-verify-jwt
 npx supabase functions deploy revanche-prova --no-verify-jwt
 npx supabase functions deploy contas-liga --no-verify-jwt
+npx supabase functions deploy voz-heroi --no-verify-jwt
 ```
 
 Fora do código, confira no painel:

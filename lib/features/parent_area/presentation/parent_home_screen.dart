@@ -5,6 +5,7 @@ import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/child_profile.dart';
 import '../../../shared/services/app_repository.dart';
+import '../../accessibility/accessibility_screen.dart';
 import '../../auth/presentation/child_login_screen.dart';
 import '../../auth/presentation/login_choice_screen.dart';
 import '../../child_profile/presentation/child_profile_screen.dart';
@@ -231,6 +232,15 @@ class _ChildCard extends StatelessWidget {
                 label: const Text('Provas para treinar'),
                 onPressed: () =>
                     _open(context, (_) => const ParentExamsScreen()),
+              ),
+              FilledButton.tonalIcon(
+                icon: const Icon(Icons.accessibility_new_rounded),
+                label: const Text('Acessibilidade'),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AccessibilityScreen(),
+                  ),
+                ),
               ),
               FilledButton.icon(
                 key: ValueKey('handOver-${child.id}'),

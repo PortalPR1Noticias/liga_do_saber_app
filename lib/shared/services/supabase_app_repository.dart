@@ -365,7 +365,8 @@ class SupabaseAppRepository extends AppRepository {
 
   @override
   Future<PracticeExamSummary> uploadPracticeExam({
-    required List<Uint8List> photos,
+    List<Uint8List> photos = const [],
+    PracticeExamPdf? pdf,
     required PracticeExamKind kind,
     String note = '',
   }) async {
@@ -380,12 +381,25 @@ class SupabaseAppRepository extends AppRepository {
             for (final photo in photos)
               {'base64': base64Encode(photo), 'tipo': _imageType(photo)},
           ],
+          if (pdf != null) 'pdf': {'base64': base64Encode(pdf.bytes)},
         },
         notReady: 'A Revanche da prova ainda não foi publicada no Supabase.',
         noConsent:
             'Ligue a autorização de IA acima para enviar provas e tarefas.',
       ),
     );
+  }
+
+  @override
+  Future<Uint8List> heroVoice({
+    required String characterId,
+    required String text,
+  }) async {
+    final data = await _invoke('voz-heroi', {
+      'personagem': characterId,
+      'texto': text,
+    }, notReady: 'A voz dos heróis ainda não foi publicada. Leia na tela!');
+    return base64Decode(data['audio'] as String);
   }
 
   @override

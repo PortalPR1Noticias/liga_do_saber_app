@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,14 +50,20 @@ void main() {
   testWidgets('parent needs the AI consent to send an exam', (tester) async {
     _usePhoneScreen(tester);
     await tester.pumpWidget(
-      MaterialApp(home: ParentExamsScreen(pickPhoto: (_) async => _tinyPng)),
+      MaterialApp(
+        home: ParentExamsScreen(
+          pickPhoto: (_) async => _tinyPng,
+          pickGallery: (limit) async => [_tinyPng],
+          pickPdf: () async => null,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('practiceNoConsent')), findsOneWidget);
     await tester.tap(find.byKey(const Key('practiceCamera')));
     await tester.pumpAndSettle();
-    expect(find.text('Fotos (1 de 4)'), findsOneWidget);
+    expect(find.text('Fotos (1 de 10)'), findsOneWidget);
 
     await _scrollTo(tester, find.byKey(const Key('practiceSend')));
     final send = tester.widget<LigaActionButton>(
@@ -69,21 +76,98 @@ void main() {
     _usePhoneScreen(tester);
     await AppRepository.instance.setAiConsent(true);
     await tester.pumpWidget(
-      MaterialApp(home: ParentExamsScreen(pickPhoto: (_) async => _tinyPng)),
+      MaterialApp(
+        home: ParentExamsScreen(
+          pickPhoto: (_) async => _tinyPng,
+          pickGallery: (limit) async => [_tinyPng],
+          pickPdf: () async => null,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Nenhuma prova enviada ainda.'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('practiceGallery')));
+    await _scrollTo(tester, find.text('Nenhuma prova enviada ainda.'));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('practiceGallery')),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('practiceGallery')));
     await tester.pumpAndSettle();
-    expect(find.text('Fotos (2 de 4)'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('practiceGallery')));
+    await tester.pumpAndSettle();
+    expect(find.text('Fotos (2 de 10)'), findsOneWidget);
 
     await _scrollAndTap(tester, find.text('Criar treino'));
     await _scrollTo(tester, find.text('Treino pronto: Prova de frações'));
-    expect(find.text('Fotos (0 de 4)'), findsOneWidget);
+    expect(find.text('Fotos (0 de 10)'), findsOneWidget);
     await _scrollTo(tester, find.textContaining('0 de 3 questões'));
+  });
+
+  testWidgets('parent picks many photos at once, up to 10', (tester) async {
+    _usePhoneScreen(tester);
+    final limits = <int>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ParentExamsScreen(
+          pickPhoto: (_) async => _tinyPng,
+          pickGallery: (limit) async {
+            limits.add(limit);
+            return List.filled(7, _tinyPng);
+          },
+          pickPdf: () async => null,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('practiceGallery')));
+    await tester.pumpAndSettle();
+    expect(find.text('Fotos (7 de 10)'), findsOneWidget);
+    await _scrollAndTap(tester, find.byKey(const Key('practiceGallery')));
+    expect(limits, [10, 3]);
+    expect(find.text('Fotos (10 de 10)'), findsOneWidget);
+    expect(find.textContaining('Cabem só 10 fotos'), findsOneWidget);
+    final gallery = tester.widget<OutlinedButton>(
+      find.byKey(const Key('practiceGallery')),
+    );
+    expect(gallery.onPressed, isNull);
+  });
+
+  testWidgets('parent sends only a PDF', (tester) async {
+    _usePhoneScreen(tester);
+    await AppRepository.instance.setAiConsent(true);
+    var pdf = PracticeExamPdf(
+      name: 'nao-e-pdf.pdf',
+      bytes: Uint8List.fromList(utf8.encode('oi, tudo bem?')),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ParentExamsScreen(
+          pickPhoto: (_) async => null,
+          pickGallery: (_) async => const [],
+          pickPdf: () async => pdf,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _scrollAndTap(tester, find.byKey(const Key('practicePdf')));
+    await _scrollTo(tester, find.text('Esse arquivo não é um PDF.'));
+    expect(find.byKey(const Key('practicePdfChip')), findsNothing);
+
+    pdf = PracticeExamPdf(
+      name: 'prova-fracoes.pdf',
+      bytes: Uint8List.fromList(utf8.encode('%PDF-1.4 prova')),
+    );
+    await _scrollAndTap(tester, find.byKey(const Key('practicePdf')));
+    expect(find.textContaining('prova-fracoes.pdf'), findsOneWidget);
+    expect(find.text('Trocar o PDF'), findsOneWidget);
+
+    await _scrollAndTap(tester, find.text('Criar treino'));
+    await _scrollTo(tester, find.text('Treino pronto: Prova de frações'));
+    expect(find.byKey(const Key('practicePdfChip')), findsNothing);
   });
 
   testWidgets('child sees an empty revanche without exams', (tester) async {
@@ -132,7 +216,11 @@ void main() {
     expect(find.textContaining('3/4 ou 1/4'), findsOneWidget);
     await _scrollAndTap(tester, find.text('3/4'));
     await _scrollTo(tester, find.byKey(const Key('revancheWon')));
-    expect(find.text('3 de 3 acertadas'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('3 de 3 acertadas'),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
     final stars = await repository.loadPracticeExams();
     expect(stars.single.won, isTrue);
     expect(stars.single.stars, 2);

@@ -5,6 +5,7 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/design_system/liga_report_button.dart';
+import '../../../shared/design_system/liga_voice.dart';
 import '../../../shared/models/archive_case.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
@@ -320,6 +321,10 @@ class _MilaArchiveScreenState extends State<MilaArchiveScreen> {
                   onPressed: _loading ? null : _reveal,
                 ),
               if (solution != null) ...[
+                LigaHeroVoice(
+                  character: LigaCharacter.mila,
+                  lines: [...solution.steps, solution.funFact],
+                ),
                 for (var i = 0; i < solution.steps.length; i++)
                   PopIn(
                     delay: Duration(milliseconds: 90 * i),

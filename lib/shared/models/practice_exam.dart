@@ -1,4 +1,15 @@
+import 'dart:typed_data';
+
 import 'progress_update.dart';
+
+/// PDF de uma prova ou tarefa (por exemplo, a que a escola mandou pelo
+/// aplicativo dela). Vai para a IA junto com as fotos e não fica guardado.
+class PracticeExamPdf {
+  const PracticeExamPdf({required this.name, required this.bytes});
+
+  final String name;
+  final Uint8List bytes;
+}
 
 /// Prova ou tarefa (o que o responsável escolheu ao enviar).
 enum PracticeExamKind {

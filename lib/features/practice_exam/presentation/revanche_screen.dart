@@ -5,6 +5,7 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/design_system/liga_report_button.dart';
+import '../../../shared/design_system/liga_voice.dart';
 import '../../../shared/models/practice_exam.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
@@ -495,6 +496,7 @@ class _RevancheBattleScreenState extends State<RevancheBattleScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                LigaHeroVoice(character: hero, lines: _explanation),
                 for (var i = 0; i < _explanation.length; i++)
                   PopIn(
                     delay: Duration(milliseconds: 90 * i),

@@ -1,10 +1,10 @@
 // Liga do Saber - Edge Function "revanche-prova" (Revanche da prova).
 //
-// acao "enviar" (Área dos responsáveis): recebe até 4 fotos de uma prova ou
-//   tarefa que a criança já fez. A OpenAI lê as fotos e cria questões de
+// acao "enviar" (Área dos responsáveis): recebe até 10 fotos e/ou um PDF de
+//   uma prova ou tarefa que a criança já fez. A OpenAI lê e cria questões de
 //   treino de múltipla escolha: as da própria prova e outras parecidas,
 //   começando pelas que a criança errou. Tudo fica em `provas_treino`
-//   (migration 0009). As fotos não são guardadas e só vão para a OpenAI com
+//   (migration 0009). Fotos e PDF não são guardados e só vão para a OpenAI com
 //   a autorização do responsável (responsaveis.autoriza_ia).
 // acao "abrir": devolve as questões sem a resposta certa.
 // acao "responder": confere uma questão. Acertar de primeira vale 10 XP;
@@ -31,11 +31,17 @@ import {
 /// Quantas provas cada criança pode receber por dia (protege o custo da IA).
 const LIMITE_DIARIO = Number(Deno.env.get("LIMITE_PROVAS_POR_DIA") ?? "10");
 
-const MAXIMO_DE_FOTOS = 4;
+const MAXIMO_DE_FOTOS = 10;
 
 /// Base64 de uma imagem de ~4,5 MB. O app já reduz as fotos antes de enviar.
 const TAMANHO_MAXIMO_BASE64 = 6_000_000;
-const TAMANHO_MAXIMO_TOTAL = 14_000_000;
+/// Base64 de um PDF de ~6 MB.
+const TAMANHO_MAXIMO_PDF = 8_200_000;
+const TAMANHO_MAXIMO_TOTAL = 16_000_000;
+
+/// Cada página do PDF vira texto e imagem para a IA: o mesmo teto das fotos
+/// protege o custo.
+const MAXIMO_DE_PAGINAS_PDF = 10;
 
 const TIPOS_DE_IMAGEM = ["image/jpeg", "image/png", "image/webp"];
 
@@ -73,7 +79,7 @@ const ESQUEMA_DA_PROVA = {
     legivel: {
       type: "boolean",
       description:
-        "false se as fotos não mostram uma prova ou tarefa escolar, ou não dá para ler.",
+        "false se as fotos ou o PDF não mostram uma prova ou tarefa escolar, ou não dá para ler.",
     },
     titulo: {
       type: "string",
@@ -136,10 +142,10 @@ const ESQUEMA_DA_PROVA = {
 
 function instrucoes(anoEscolar: number, material: string): string {
   const nome = material === "tarefa" ? "tarefa" : "prova";
-  return `Você é a equipe de tutores do app Liga do Saber. O responsável de uma criança do ${anoEscolar}º ano do ensino fundamental mandou fotos de uma ${nome} que ela já fez na escola, para ela treinar na "Revanche da prova".
+  return `Você é a equipe de tutores do app Liga do Saber. O responsável de uma criança do ${anoEscolar}º ano do ensino fundamental mandou fotos ou um PDF de uma ${nome} que ela já fez na escola, para ela treinar na "Revanche da prova".
 
 Seu trabalho:
-1. Ler as fotos, descobrir a matéria e os conteúdos que caíram.
+1. Ler as fotos e o PDF (o que vier), descobrir a matéria e os conteúdos que caíram.
 2. Criar de 6 a 10 questões de treino de múltipla escolha:
    - Primeiro, as questões da própria ${nome} (origem "da_prova"), reescritas como múltipla escolha quando forem abertas. Se der para ver correção do professor, resposta errada ou em branco, marque errou_na_prova=true.
    - Depois, questões parecidas (origem "parecida"), com os mesmos conteúdos e outros números ou exemplos, para a criança treinar de verdade. Faça mais questões parecidas para os conteúdos que ela errou.
@@ -157,9 +163,9 @@ Vozes dos personagens, por matéria:
 
 Resolva cada questão com cuidado e confira duas vezes: a opção marcada como certa precisa estar correta.
 
-Se as fotos não mostrarem uma prova ou tarefa escolar, estiverem ilegíveis ou tiverem conteúdo impróprio para crianças, use legivel=false e questoes vazio, e explique o motivo em resumo_responsavel.
+Se as fotos ou o PDF não mostrarem uma prova ou tarefa escolar, estiverem ilegíveis ou tiverem conteúdo impróprio para crianças, use legivel=false e questoes vazio, e explique o motivo em resumo_responsavel.
 
-Não copie nomes de pessoas, escola, turma, professor ou outros dados pessoais que apareçam nas fotos.
+Não copie nomes de pessoas, escola, turma, professor ou outros dados pessoais que apareçam nas fotos ou no PDF.
 
 ${REGRAS_DE_SEGURANCA}`;
 }
@@ -241,9 +247,10 @@ async function enviar(ctx: Contexto): Promise<Response> {
   const observacao = typeof ctx.corpo.observacao === "string"
     ? ctx.corpo.observacao.trim().slice(0, 300)
     : "";
-  const imagens = ctx.corpo.imagens;
-  if (!Array.isArray(imagens) || imagens.length === 0) {
-    throw new ErroDaLiga(400, "Mande pelo menos uma foto.");
+  const imagens = Array.isArray(ctx.corpo.imagens) ? ctx.corpo.imagens : [];
+  const pdf = lerPdf(ctx.corpo.pdf);
+  if (imagens.length === 0 && !pdf) {
+    throw new ErroDaLiga(400, "Mande pelo menos uma foto ou um PDF.");
   }
   if (imagens.length > MAXIMO_DE_FOTOS) {
     throw new ErroDaLiga(400, `Mande no máximo ${MAXIMO_DE_FOTOS} fotos.`);
@@ -261,8 +268,9 @@ async function enviar(ctx: Contexto): Promise<Response> {
     }
     total += imagem.base64.length;
   }
+  total += pdf?.base64.length ?? 0;
   if (total > TAMANHO_MAXIMO_TOTAL) {
-    throw new ErroDaLiga(413, "As fotos ficaram grandes demais. Mande menos fotos.");
+    throw new ErroDaLiga(413, "Os arquivos ficaram grandes demais. Mande menos fotos.");
   }
 
   await conferirLimiteDiario(
@@ -287,6 +295,13 @@ async function enviar(ctx: Contexto): Promise<Response> {
             image_url: `data:${imagem.tipo};base64,${imagem.base64}`,
             detail: "high" as const,
           })),
+          ...(pdf
+            ? [{
+              type: "input_file" as const,
+              filename: "prova.pdf",
+              file_data: `data:application/pdf;base64,${pdf.base64}`,
+            }]
+            : []),
           { type: "input_text" as const, text: pedido },
         ],
       },
@@ -321,7 +336,7 @@ async function enviar(ctx: Contexto): Promise<Response> {
     const motivo = String(dados.resumo_responsavel ?? "").trim();
     throw new ErroDaLiga(
       422,
-      `Não consegui montar o treino com essas fotos. ${
+      `Não consegui montar o treino com esses arquivos. ${
         motivo || "Tente fotos mais nítidas, com a folha inteira e boa luz."
       }`,
     );
@@ -350,6 +365,49 @@ async function enviar(ctx: Contexto): Promise<Response> {
   if (error) throw error;
 
   return resposta(200, linha);
+}
+
+/// Confere o PDF (opcional): tamanho, assinatura e número de páginas.
+function lerPdf(valor: unknown): { base64: string } | null {
+  if (valor === undefined || valor === null) return null;
+  const base64 = (valor as { base64?: unknown })?.base64;
+  if (typeof base64 !== "string" || base64.length === 0) {
+    throw new ErroDaLiga(400, "Não consegui ler o PDF.");
+  }
+  if (base64.length > TAMANHO_MAXIMO_PDF) {
+    throw new ErroDaLiga(413, "O PDF ficou grande demais (até 6 MB).");
+  }
+  let conteudo: string;
+  try {
+    conteudo = atob(base64);
+  } catch {
+    throw new ErroDaLiga(400, "Não consegui ler o PDF.");
+  }
+  if (!conteudo.startsWith("%PDF-")) {
+    throw new ErroDaLiga(400, "Esse arquivo não é um PDF.");
+  }
+  if (contarPaginas(conteudo) > MAXIMO_DE_PAGINAS_PDF) {
+    throw new ErroDaLiga(
+      413,
+      `Mande um PDF de até ${MAXIMO_DE_PAGINAS_PDF} páginas, só com a prova.`,
+    );
+  }
+  return { base64 };
+}
+
+/// Conta as páginas pelo maior "/Count" da árvore de páginas ou, se não
+/// achar, pelos objetos "/Type /Page". Em PDFs compactados pode não achar
+/// nenhum: aí vale só o limite de tamanho.
+function contarPaginas(conteudo: string): number {
+  let maior = 0;
+  for (const m of conteudo.matchAll(/\/Type\s*\/Pages\b[^>]*?\/Count\s+(\d+)/g)) {
+    maior = Math.max(maior, Number(m[1]));
+  }
+  for (const m of conteudo.matchAll(/\/Count\s+(\d+)[^>]*?\/Type\s*\/Pages\b/g)) {
+    maior = Math.max(maior, Number(m[1]));
+  }
+  if (maior > 0) return maior;
+  return [...conteudo.matchAll(/\/Type\s*\/Page(?![a-zA-Z])/g)].length;
 }
 
 async function carregarProva(ctx: Contexto) {

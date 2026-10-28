@@ -9,6 +9,7 @@ import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_sound.dart';
 import '../../../shared/design_system/liga_victory.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_voice.dart';
 import '../../../shared/services/app_repository.dart';
 import '../world_islands.dart';
 import 'boss_sources.dart';
@@ -552,6 +553,8 @@ class _BossBattleScreenState extends State<BossBattleScreen> {
           text: _hint,
           title: 'Dica d${_article(_hero)} ${_hero.displayName}',
         ),
+        const SizedBox(height: 8),
+        LigaHeroVoice(character: _hero, lines: [_hint], label: 'Ouvir a dica'),
       ],
       const SizedBox(height: 14),
       for (var o = 0; o < attack.options.length; o++)

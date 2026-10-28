@@ -5,6 +5,7 @@ import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/design_system/liga_report_button.dart';
+import '../../../shared/design_system/liga_voice.dart';
 import '../../../shared/models/atelier.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
@@ -357,6 +358,7 @@ class _ZuriAtelierScreenState extends State<ZuriAtelierScreen> {
 
   List<Widget> _explanation(BuildContext context, AtelierSolution solution) {
     return [
+      LigaHeroVoice(character: LigaCharacter.zuri, lines: solution.explanation),
       for (var i = 0; i < solution.explanation.length; i++)
         PopIn(
           delay: Duration(milliseconds: 90 * i),
