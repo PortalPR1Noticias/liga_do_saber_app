@@ -149,7 +149,7 @@ npx supabase functions deploy revanche-prova --no-verify-jwt
 ```
 
 O professor cria a conta dele no app (Sou professor). Cada liberação que o
-responsável faz gera um código de 6 letras (migration 0018); o responsável
+responsável faz gera um código de 6 letras (migration 0020); o responsável
 manda o código ao professor, que digita no painel dele. Só quem usou o
 código vê a criança (`usar_codigo_professor`, `painel_professor` e
 `avaliacao_desempenho`). Ele vê só o resumo de desempenho, nunca textos,
@@ -192,9 +192,9 @@ Fora do código, confira no painel:
    última barreira se algo escapar dos limites acima.
 2. **Supabase > Authentication > Sign In / Providers > Email:** "Confirm
    email" desligado, para o cadastro entrar direto sem mandar e-mail. Rode
-   a migration 0018 antes: sem ela, o professor é reconhecido pelo e-mail e,
+   a migration 0020 antes: sem ela, o professor é reconhecido pelo e-mail e,
    sem confirmação, qualquer pessoa criaria uma conta com o e-mail de um
-   professor e veria as crianças liberadas para ele. Com a 0018, o acesso é
+   professor e veria as crianças liberadas para ele. Com a 0020, o acesso é
    pelo código que o responsável manda.
 3. **Domínio dos logins das crianças:** os logins usam e-mails
    `@crianca.gpmkt.art.br` (subdomínio do domínio da GPLABS; nunca recebem

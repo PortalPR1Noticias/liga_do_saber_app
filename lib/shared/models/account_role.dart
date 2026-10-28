@@ -19,7 +19,7 @@ class TeacherAccount {
 }
 
 /// Professor que o responsável liberou para acompanhar uma criança
-/// (migration 0018: o professor entra com o código da liberação).
+/// (migration 0020: o professor entra com o código da liberação).
 class TeacherLink {
   const TeacherLink({
     required this.id,

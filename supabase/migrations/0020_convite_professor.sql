@@ -1,5 +1,5 @@
 -- Liga do Saber - professor entra pelo código de convite.
--- Execute depois da 0017 no Supabase SQL Editor. Pode rodar mais de uma vez.
+-- Execute depois da 0019 no Supabase SQL Editor. Pode rodar mais de uma vez.
 --
 -- Até a 0017 o professor via a criança se o e-mail confirmado dele fosse o
 -- mesmo que o responsável cadastrou. Sem a confirmação de e-mail (desligada
