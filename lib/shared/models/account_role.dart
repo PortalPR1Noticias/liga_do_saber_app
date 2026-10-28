@@ -12,26 +12,21 @@ enum AccountRole {
 
 /// Conta do professor.
 class TeacherAccount {
-  const TeacherAccount({
-    required this.name,
-    required this.email,
-    this.emailConfirmed = true,
-  });
+  const TeacherAccount({required this.name, required this.email});
 
   final String name;
   final String email;
-
-  /// Sem o e-mail confirmado, o painel não mostra nenhuma criança (senão
-  /// qualquer um poderia se cadastrar com o e-mail de outro professor).
-  final bool emailConfirmed;
 }
 
-/// Professor que o responsável liberou para acompanhar uma criança.
+/// Professor que o responsável liberou para acompanhar uma criança
+/// (migration 0018: o professor entra com o código da liberação).
 class TeacherLink {
   const TeacherLink({
     required this.id,
     required this.teacherEmail,
     required this.childName,
+    required this.code,
+    this.connected = false,
     this.authorizedAt,
   });
 
@@ -40,6 +35,8 @@ class TeacherLink {
       id: json['id'] as String,
       teacherEmail: json['email_professor'] as String,
       childName: json['nome_crianca'] as String,
+      code: json['codigo'] as String? ?? '',
+      connected: json['professor_auth_user_id'] != null,
       authorizedAt: DateTime.tryParse(json['autorizado_em'] as String? ?? ''),
     );
   }
@@ -49,5 +46,12 @@ class TeacherLink {
 
   /// Nome com que a criança aparece para o professor.
   final String childName;
+
+  /// Código que o responsável manda ao professor. Sem a confirmação de
+  /// e-mail, é ele que prova que o professor é quem o responsável escolheu.
+  final String code;
+
+  /// O professor já usou o código.
+  final bool connected;
   final DateTime? authorizedAt;
 }

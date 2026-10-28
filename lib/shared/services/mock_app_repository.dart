@@ -36,6 +36,9 @@ class MockAppRepository extends AppRepository {
   /// Logins de criança criados nesta sessão (usuário → senha).
   final childLogins = <String, String>{};
   final _teacherLinks = <String, List<TeacherLink>>{};
+
+  /// Liberação -> e-mail do professor que usou o código dela.
+  final _teacherCodes = <String, String>{};
   final _missionsDone = <String>{};
   final _badges = <String>{};
   int _mathAttempts = 0;
@@ -121,9 +124,7 @@ class MockAppRepository extends AppRepository {
     _role = AccountRole.responsible;
     _responsible = ResponsibleAccount(
       name: name.trim().isEmpty ? 'Responsável' : name.trim(),
-      email: email.trim().isEmpty
-          ? 'responsavel@gpmkt.art.br'
-          : email.trim(),
+      email: email.trim().isEmpty ? 'responsavel@gpmkt.art.br' : email.trim(),
     );
     _children = [];
     _childProfile = null;
@@ -270,13 +271,40 @@ class MockAppRepository extends AppRepository {
         'Esse professor já acompanha essa criança.',
       );
     }
+    final id = _nextId++;
     links.add(
       TeacherLink(
-        id: 'vinculo-${_nextId++}',
+        id: 'vinculo-$id',
         teacherEmail: email,
         childName: childName.trim(),
+        code: 'PROF${id.toString().padLeft(2, '0')}',
         authorizedAt: DateTime.now(),
       ),
+    );
+  }
+
+  @override
+  Future<String> redeemTeacherCode(String code) async {
+    final typed = code.replaceAll(RegExp('[^A-Za-z0-9]'), '').toUpperCase();
+    for (final links in _teacherLinks.values) {
+      for (var i = 0; i < links.length; i++) {
+        final link = links[i];
+        if (link.code != typed) continue;
+        if (link.connected && _teacherCodes[link.id] != teacher.email) break;
+        _teacherCodes[link.id] = teacher.email;
+        links[i] = TeacherLink(
+          id: link.id,
+          teacherEmail: link.teacherEmail,
+          childName: link.childName,
+          code: link.code,
+          connected: true,
+          authorizedAt: link.authorizedAt,
+        );
+        return link.childName;
+      }
+    }
+    throw const AppRepositoryException(
+      'Código inválido ou já usado. Confira com o responsável.',
     );
   }
 
@@ -343,11 +371,10 @@ class MockAppRepository extends AppRepository {
 
   @override
   Future<List<TeacherStudent>> loadTeacherPanel() async {
-    final email = teacher.email.toLowerCase();
     return [
       for (final child in _children)
         for (final link in _teacherLinks[child.id] ?? const <TeacherLink>[])
-          if (link.teacherEmail == email)
+          if (_teacherCodes[link.id] == teacher.email)
             TeacherStudent(
               linkId: link.id,
               name: link.childName,

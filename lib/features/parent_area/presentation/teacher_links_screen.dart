@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_widgets.dart';
@@ -8,6 +9,8 @@ import '../../auth/presentation/liga_text_field.dart';
 
 /// O responsável escolhe quais professores acompanham a criança escolhida:
 /// pelo e-mail do professor e com o nome que a criança vai ter para ele.
+/// Cada liberação gera um código que o responsável manda ao professor; é o
+/// código, não o e-mail, que dá acesso (o e-mail não é confirmado).
 /// Cada liberação é um consentimento do responsável (LGPD art. 14) e pode
 /// ser removida quando ele quiser.
 class TeacherLinksScreen extends StatefulWidget {
@@ -70,7 +73,20 @@ class _TeacherLinksScreenState extends State<TeacherLinksScreen> {
       );
       _emailController.clear();
       _consent = false;
-    }, 'Professor liberado.');
+    }, 'Professor liberado. Mande o código para ele.');
+  }
+
+  Future<void> _copyCode(TeacherLink link) async {
+    await Clipboard.setData(
+      ClipboardData(
+        text:
+            'Olá! Para acompanhar ${link.childName} na Liga do Saber, entre '
+            'no app em "Sou professor" e digite o código ${link.code}.',
+      ),
+    );
+    _showMessage(
+      'Convite copiado. Cole no WhatsApp ou no e-mail do professor.',
+    );
   }
 
   Future<void> _remove(TeacherLink link) async {
@@ -121,8 +137,9 @@ class _TeacherLinksScreenState extends State<TeacherLinksScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'O professor entra com a conta dele (Sou professor) usando '
-                  'o mesmo e-mail que você cadastrar aqui. Ele vê só o resumo '
+                  'Depois de liberar, mande o código ao professor. Ele entra '
+                  'com a conta dele (Sou professor) e digita o código. Ele vê '
+                  'só o resumo '
                   'de desempenho: nível, dias de prática, aproveitamento por '
                   'matéria e os acertos na Revanche da prova. Textos, fotos e '
                   'provas continuam só com você.',
@@ -181,9 +198,32 @@ class _TeacherLinksScreenState extends State<TeacherLinksScreen> {
                                           'Vê a criança como "${link.childName}"',
                                           style: textTheme.bodyMedium,
                                         ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          link.connected
+                                              ? 'Professor conectado'
+                                              : 'Código: ${link.code}',
+                                          key: ValueKey(
+                                            'teacherCode-${link.id}',
+                                          ),
+                                          style: textTheme.titleSmall?.copyWith(
+                                            color: link.connected
+                                                ? LigaColors.adventurePurple
+                                                : LigaColors.actionCoral,
+                                            letterSpacing: link.connected
+                                                ? 0
+                                                : 2,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
+                                  if (!link.connected)
+                                    IconButton(
+                                      tooltip: 'Copiar convite',
+                                      icon: const Icon(Icons.copy_rounded),
+                                      onPressed: () => _copyCode(link),
+                                    ),
                                   IconButton(
                                     tooltip: 'Remover',
                                     icon: const Icon(Icons.delete_rounded),
