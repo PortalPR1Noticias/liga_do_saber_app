@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../shared/design_system/liga_avatar_3d.dart';
 import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_game.dart';
 import '../../../shared/design_system/liga_mascots.dart';
@@ -9,9 +10,12 @@ import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/league_progress.dart';
 import '../../../shared/models/shop.dart';
 import '../../../shared/services/app_repository.dart';
+import '../../../shared/models/avatar.dart';
+import '../../avatar/avatar_editor_screen.dart';
 import '../../minigames/presentation/minigames_hub_screen.dart';
 import '../../photo_solver/presentation/photo_solver_flow_screen.dart';
 import '../../practice_exam/presentation/revanche_screen.dart';
+import '../../ranking/ranking_screen.dart';
 import '../../shop/shop_screen.dart';
 import '../../world/boss/boss_battle_screen.dart';
 import '../../world/world_islands.dart';
@@ -151,13 +155,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 14),
                             _SideTile(
-                              label: 'Troféus',
-                              icon: Icons.emoji_events_rounded,
-                              color: LigaColors.adventurePurple,
-                              onTap: () => widget.onOpenTab?.call(3),
-                            ),
-                            const SizedBox(height: 14),
-                            _SideTile(
                               label: 'Revanche',
                               icon: Icons.replay_rounded,
                               color: LigaColors.progressGreen,
@@ -165,11 +162,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                 context,
                               ).pushNamed(RevancheScreen.routeName),
                             ),
+                            const SizedBox(height: 14),
+                            // Troféus continuam na aba Conquistas.
+                            _SideTile(
+                              label: 'Ranking',
+                              icon: Icons.leaderboard_rounded,
+                              color: LigaColors.cyanGlow,
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(RankingScreen.routeName),
+                            ),
                           ],
                         ),
                         Expanded(
                           child: _Hero(
                             avatar: avatar,
+                            look: profile.look,
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pushNamed(AvatarEditorScreen.routeName),
                             aura: shop?.equippedIn(VisualSlot.aura),
                             pedestal: shop?.equippedIn(VisualSlot.pedestal),
                             title: shop?.equippedIn(VisualSlot.titulo),
@@ -403,9 +414,21 @@ class _XpBar extends StatelessWidget {
 
 /// O herói da criança no centro da Base, em cima de um pedestal brilhante.
 class _Hero extends StatelessWidget {
-  const _Hero({required this.avatar, this.aura, this.pedestal, this.title});
+  const _Hero({
+    required this.avatar,
+    required this.look,
+    required this.onTap,
+    this.aura,
+    this.pedestal,
+    this.title,
+  });
 
+  /// Herói parceiro, no canto do avatar.
   final LigaAvatar avatar;
+
+  /// Avatar 3D da criança.
+  final AvatarLook look;
+  final VoidCallback onTap;
   final VisualItem? aura;
   final VisualItem? pedestal;
   final VisualItem? title;
@@ -415,21 +438,37 @@ class _Hero extends StatelessWidget {
     final character = avatar.character;
     return Column(
       children: [
-        LigaBob(
-          tilt: 0.04,
-          duration: const Duration(milliseconds: 1500),
-          child: LigaAura(
-            aura: aura,
-            size: 164,
-            child: LigaPortrait(character: character, size: 164),
+        LigaPressable(
+          onTap: onTap,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              LigaAura(
+                aura: aura,
+                size: 164,
+                child: LigaAvatar3D(
+                  key: const Key('baseAvatar'),
+                  look: look,
+                  size: 180,
+                  sway: true,
+                ),
+              ),
+              // O herói parceiro acompanha a criança.
+              Positioned(
+                right: -6,
+                bottom: 4,
+                child: LigaBob(
+                  tilt: 0.06,
+                  duration: const Duration(milliseconds: 1500),
+                  child: LigaPortrait(character: character, size: 54),
+                ),
+              ),
+            ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: LigaPedestal(pedestal: pedestal, fallback: character.color),
-        ),
+        LigaPedestal(pedestal: pedestal, fallback: character.color),
         const SizedBox(height: 4),
-        LigaGameText(character.displayName, size: 26),
+        LigaGameText(character.displayName, size: 20),
         if (title != null)
           LigaTitleTag(item: title!)
         else

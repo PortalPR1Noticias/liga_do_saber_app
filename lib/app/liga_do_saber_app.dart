@@ -20,6 +20,9 @@ import '../features/teacher/presentation/teacher_home_screen.dart';
 import '../features/teo_trail/presentation/teo_trail_screen.dart';
 import '../features/writing_workshop/presentation/writing_workshop_screen.dart';
 import '../features/zuri_atelier/presentation/zuri_atelier_screen.dart';
+import '../features/avatar/avatar_editor_screen.dart';
+import '../features/avatar/profile_editor_screen.dart';
+import '../features/ranking/ranking_screen.dart';
 import '../features/shop/shop_screen.dart';
 import 'theme.dart';
 
@@ -56,6 +59,9 @@ class LigaDoSaberApp extends StatelessWidget {
         MilaArchiveScreen.routeName: (_) => const MilaArchiveScreen(),
         RevancheScreen.routeName: (_) => const RevancheScreen(),
         ShopScreen.routeName: (_) => const ShopScreen(),
+        AvatarEditorScreen.routeName: (_) => const AvatarEditorScreen(),
+        ProfileEditorScreen.routeName: (_) => const ProfileEditorScreen(),
+        RankingScreen.routeName: (_) => const RankingScreen(),
       },
     );
   }

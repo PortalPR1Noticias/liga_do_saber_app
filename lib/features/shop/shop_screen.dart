@@ -6,6 +6,7 @@ import '../../shared/design_system/liga_rewards.dart';
 import '../../shared/design_system/liga_sound.dart';
 import '../../shared/design_system/liga_visuals.dart';
 import '../../shared/design_system/liga_widgets.dart';
+import '../../shared/models/avatar.dart';
 import '../../shared/models/shop.dart';
 import '../../shared/services/app_repository.dart';
 
@@ -31,6 +32,25 @@ class _ShopScreenState extends State<ShopScreen> {
   VisualSlot _slot = VisualSlot.moldura;
 
   String get _avatarId => AppRepository.instance.childProfile.avatarId;
+  AvatarLook get _look => AppRepository.instance.childProfile.look;
+
+  /// Roupas do avatar são vestidas no avatar 3D; os outros visuais vão para
+  /// `visuais_equipados`.
+  bool _using(ShopState shop, VisualItem item) => item.slot == VisualSlot.roupa
+      ? _look.wears(item.id)
+      : shop.equipped[item.slot] == item.id;
+
+  Future<void> _wear(VisualItem item, {required bool on}) async {
+    final part = item.avatarPart!;
+    final look = on ? _look.withPart(part) : _look.without(part.category);
+    if (!on && !part.category.optional) return;
+    try {
+      await AppRepository.instance.saveAvatarLook(look);
+      if (mounted) setState(() {});
+    } on AppRepositoryException catch (error) {
+      if (mounted) _say(error.message);
+    }
+  }
 
   @override
   void initState() {
@@ -73,7 +93,11 @@ class _ShopScreenState extends State<ShopScreen> {
     final shop = _shop!;
     final repository = AppRepository.instance;
     if (shop.owned.contains(item.id)) {
-      final using = shop.equipped[item.slot] == item.id;
+      final using = _using(shop, item);
+      if (item.slot == VisualSlot.roupa) {
+        await _wear(item, on: !using);
+        return;
+      }
       await _run(
         () => repository.equipVisual(item.slot, using ? null : item.id),
       );
@@ -109,7 +133,11 @@ class _ShopScreenState extends State<ShopScreen> {
   ) async {
     if (!await _run(action)) return;
     LigaSound.play(LigaSfx.bau);
-    await _run(() => AppRepository.instance.equipVisual(item.slot, item.id));
+    if (item.slot == VisualSlot.roupa) {
+      await _wear(item, on: true);
+    } else {
+      await _run(() => AppRepository.instance.equipVisual(item.slot, item.id));
+    }
     if (mounted) _say('Novo visual: ${item.name}!');
   }
 
@@ -263,7 +291,7 @@ class _ShopScreenState extends State<ShopScreen> {
         color: LigaNight.glass,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: shop.equipped[item.slot] == item.id
+          color: _using(shop, item)
               ? LigaColors.achievementYellow
               : LigaColors.ink,
           width: 3,
@@ -271,7 +299,12 @@ class _ShopScreenState extends State<ShopScreen> {
       ),
       child: Column(
         children: [
-          LigaVisualPreview(item: item, avatarId: _avatarId, size: 84),
+          LigaVisualPreview(
+            item: item,
+            avatarId: _avatarId,
+            look: _look,
+            size: 84,
+          ),
           const SizedBox(height: 8),
           Text(
             item.name,
@@ -284,7 +317,12 @@ class _ShopScreenState extends State<ShopScreen> {
           ),
           const Spacer(),
           const SizedBox(height: 8),
-          _ItemButton(item: item, shop: shop, onTap: () => _tapItem(item)),
+          _ItemButton(
+            item: item,
+            shop: shop,
+            using: _using(shop, item),
+            onTap: () => _tapItem(item),
+          ),
         ],
       ),
     );
@@ -377,11 +415,13 @@ class _ShopScreenState extends State<ShopScreen> {
             preview: LigaVisualPreview(
               item: item,
               avatarId: _avatarId,
+              look: _look,
               size: 64,
             ),
             button: _ItemButton(
               item: item,
               shop: shop,
+              using: _using(shop, item),
               onTap: () => _tapItem(item),
             ),
           ),
@@ -484,17 +524,18 @@ class _ItemButton extends StatelessWidget {
   const _ItemButton({
     required this.item,
     required this.shop,
+    required this.using,
     required this.onTap,
   });
 
   final VisualItem item;
   final ShopState shop;
+  final bool using;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final owned = shop.owned.contains(item.id);
-    final using = shop.equipped[item.slot] == item.id;
     final level = item.seasonLevel;
     final price = item.price;
     final (String label, Color color, Widget? lead) = using

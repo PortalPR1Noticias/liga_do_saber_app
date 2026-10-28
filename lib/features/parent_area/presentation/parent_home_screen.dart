@@ -147,6 +147,17 @@ class _ChildCard extends StatelessWidget {
       ..pushNamed(ChildLoginScreen.routeName, arguments: username);
   }
 
+  Future<void> _setRanking(BuildContext context, bool visible) async {
+    try {
+      await AppRepository.instance.setRankingVisible(child.id!, visible);
+    } on AppRepositoryException catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -228,6 +239,31 @@ class _ChildCard extends StatelessWidget {
                 onPressed: () => _handOver(context),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          // Material próprio: o cartão branco esconderia o toque do ListTile.
+          Material(
+            type: MaterialType.transparency,
+            child: SwitchListTile(
+              key: ValueKey('ranking-${child.id}'),
+              contentPadding: EdgeInsets.zero,
+              value: child.inRanking,
+              onChanged: child.id == null
+                  ? null
+                  : (v) => _setRanking(context, v),
+              title: Text(
+                'Aparecer no ranking da Liga',
+                style: textTheme.titleMedium,
+              ),
+              subtitle: Text(
+                'As outras crianças veem só o nome da Liga'
+                '${child.leagueName == null ? '' : ' (${child.leagueName})'}, '
+                'o nível e o avatar. Nome, apelido, idade e escola nunca '
+                'aparecem. Desligado, ${child.nickname} vê a própria posição '
+                'só para si.',
+                style: textTheme.bodySmall,
+              ),
+            ),
           ),
         ],
       ),

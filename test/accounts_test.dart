@@ -267,7 +267,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.children.map((c) => c.nickname), ['Bia', 'Leo']);
+    await tester.scrollUntilVisible(
+      find.text('Leo'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Leo'), findsOneWidget);
-    expect(find.text('Ainda sem login próprio'), findsNWidgets(2));
+    expect(
+      find.text('Ainda sem login próprio', skipOffstage: false),
+      findsNWidgets(2),
+    );
   });
 }

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/ai_report.dart';
 import '../models/account_role.dart';
 import '../models/atelier.dart';
+import '../models/avatar.dart';
 import '../models/archive_case.dart';
 import '../models/child_profile.dart';
 import '../models/expedition.dart';
@@ -13,6 +14,7 @@ import '../models/minigame.dart';
 import '../models/performance_report.dart';
 import '../models/photo_explanation.dart';
 import '../models/progress_update.dart';
+import '../models/ranking.dart';
 import '../models/practice_exam.dart';
 import '../models/reading_case.dart';
 import '../models/shop.dart';
@@ -309,6 +311,24 @@ abstract class AppRepository extends ChangeNotifier {
 
   /// Usa um visual que a criança já tem, ou tira o do [slot] (null).
   Future<ShopState> equipVisual(VisualSlot slot, String? itemId);
+
+  /// Salva o visual do avatar 3D. O servidor confere se cada peça já foi
+  /// liberada (nível, Loja ou temporada).
+  Future<void> saveAvatarLook(AvatarLook look);
+
+  /// Editor de perfil: apelido, herói parceiro e nome do ranking. A criança
+  /// pode mudar com o login dela.
+  Future<void> saveGameProfile({
+    required String nickname,
+    required String avatarId,
+    required String leagueName,
+  });
+
+  /// Ranking da Liga no período, pelo XP de acertos.
+  Future<Ranking> loadRanking(RankingPeriod period);
+
+  /// O responsável libera (ou tira) a criança [profileId] do ranking.
+  Future<void> setRankingVisible(String profileId, bool visible);
 
   /// Liga ou desliga a autorização do responsável para a Foto + IA.
   Future<void> setAiConsent(bool allowed);

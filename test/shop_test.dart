@@ -145,9 +145,11 @@ void main() {
     await tapVisible(tester, find.byKey(const ValueKey('item-aura_relampago')));
     expect(find.textContaining('nível 10 da temporada'), findsOneWidget);
 
+    // A trilha ficou mais longa com as roupas do avatar: o prêmio do nível
+    // 5 pode ter rolado para cima da tela.
     await tapVisible(
       tester,
-      find.byKey(const ValueKey('item-titulo_estreante')),
+      find.byKey(const ValueKey('item-titulo_estreante'), skipOffstage: false),
     );
     final shop = await AppRepository.instance.loadShop();
     expect(shop.owned, contains('titulo_estreante'));

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../shared/design_system/liga_avatar_3d.dart';
 import '../../../shared/design_system/liga_avatars.dart';
 import '../../../shared/design_system/liga_game.dart';
 import '../../../shared/design_system/liga_mascots.dart';
@@ -10,6 +11,9 @@ import '../../../shared/design_system/liga_widgets.dart';
 import '../../../shared/models/league_progress.dart';
 import '../../../shared/services/app_repository.dart';
 import '../../auth/presentation/login_choice_screen.dart';
+import '../../avatar/avatar_editor_screen.dart';
+import '../../avatar/profile_editor_screen.dart';
+import '../../ranking/ranking_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../math_arena/presentation/math_arena_screen.dart';
 import '../../mila_archive/presentation/mila_archive_screen.dart';
@@ -323,7 +327,7 @@ class _ProgressScreenState
 
     return _ShellPage(
       title: 'Conquistas',
-      subtitle: 'Sua evolução, no seu ritmo. Sem ranking!',
+      subtitle: 'Sua evolução, no seu ritmo.',
       character: LigaCharacter.mila,
       children: [
         LigaPanel(
@@ -390,6 +394,13 @@ class _ProgressScreenState
               ),
             ],
           ),
+        ),
+        LigaActionButton(
+          label: 'Ranking da Liga',
+          icon: Icons.leaderboard_rounded,
+          color: LigaColors.achievementYellow,
+          onPressed: () =>
+              Navigator.of(context).pushNamed(RankingScreen.routeName),
         ),
         const SubjectProgressSection(),
         const SectionTitle('Medalhas', icon: Icons.emoji_events_rounded),
@@ -492,13 +503,39 @@ class _ProfileScreen extends StatelessWidget {
         LigaPanel(
           child: Column(
             children: [
-              LigaAvatarBadge(avatarId: profile.avatarId, radius: 48),
-              const SizedBox(height: 12),
-              Text(
-                profile.nickname,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium,
+              LigaPressable(
+                onTap: () => Navigator.of(
+                  context,
+                ).pushNamed(AvatarEditorScreen.routeName),
+                child: LigaAvatarStage(
+                  key: const Key('perfilAvatar'),
+                  look: profile.look,
+                  size: 200,
+                ),
               ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  LigaAvatarBadge(avatarId: profile.avatarId, radius: 18),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      profile.nickname,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                  ),
+                ],
+              ),
+              if (profile.leagueName != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'No ranking: ${profile.leagueName}',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
@@ -524,6 +561,29 @@ class _ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
+        ),
+        LigaActionButton(
+          key: const Key('editarAvatar'),
+          label: 'Editar avatar',
+          icon: Icons.checkroom_rounded,
+          color: LigaColors.cyanGlow,
+          onPressed: () =>
+              Navigator.of(context).pushNamed(AvatarEditorScreen.routeName),
+        ),
+        LigaActionButton(
+          key: const Key('editarPerfil'),
+          label: 'Editar perfil',
+          icon: Icons.edit_rounded,
+          color: LigaColors.primaryBlue,
+          onPressed: () =>
+              Navigator.of(context).pushNamed(ProfileEditorScreen.routeName),
+        ),
+        LigaActionButton(
+          label: 'Ranking da Liga',
+          icon: Icons.leaderboard_rounded,
+          color: LigaColors.achievementYellow,
+          onPressed: () =>
+              Navigator.of(context).pushNamed(RankingScreen.routeName),
         ),
         LigaActionButton(
           label: 'Sair da conta',

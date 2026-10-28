@@ -22,7 +22,8 @@ Do responsável:
 - os e-mails dos professores que ele liberou para acompanhar cada criança e o nome com que a criança aparece para eles.
 
 Da criança:
-- um apelido (recomendamos não usar o nome completo), o ano escolar, as áreas de foco escolhidas e o avatar;
+- um apelido (recomendamos não usar o nome completo), o ano escolar, as áreas de foco escolhidas, o herói parceiro e o visual do avatar em blocos (tom de pele, cabelo, olhos e roupas escolhidos pela criança);
+- o nome da Liga, usado só no ranking, sempre montado de listas do app (um bicho, uma qualidade e um número, como "Coruja Veloz 7"), nunca digitado livremente;
 - o usuário e a senha do login dela, criados pelo responsável (a senha é guardada de forma criptografada pelo serviço de login);
 - o progresso no app: missões, XP, nível, sequência de dias e conquistas;
 - os textos escritos na Oficina de Texto e as respostas dadas nas atividades;
@@ -32,7 +33,7 @@ Da criança:
 Do professor:
 - nome, e-mail e senha da conta dele e a versão dos documentos aceitos.
 
-Não coletamos localização, contatos, identificadores de publicidade, nome completo, foto do rosto, CPF ou endereço da criança. O app não tem anúncios, não tem chat entre usuários e não tem ranking público.
+Não coletamos localização, contatos, identificadores de publicidade, nome completo, foto do rosto, CPF ou endereço da criança. O app não tem anúncios e não tem chat entre usuários.
 
 ## Foto + IA
 
@@ -69,6 +70,10 @@ Os dados da criança são tratados com o consentimento específico do responsáv
 ## Professores
 
 O responsável pode liberar, criança por criança, professores que acompanham o desempenho dela, informando o e-mail do professor e o nome com que a criança vai aparecer para ele. Cada liberação é um consentimento específico do responsável (art. 14, § 1º, da LGPD) e pode ser removida a qualquer momento no painel do responsável. O professor entra com a conta dele, com o e-mail confirmado, e vê só um resumo: nível, XP, dias de prática, aproveitamento por matéria e os acertos nas questões de treino da Revanche da prova. O professor não vê os textos, as fotos, as provas, o apelido nem o e-mail do responsável.
+
+## Ranking da Liga
+
+O ranking (do dia, da semana, do mês e geral) conta o XP dos acertos. A criança só aparece para as outras crianças se o responsável ligar a opção "Aparecer no ranking da Liga" no painel dele; ela vem desligada e pode ser desligada a qualquer momento. No ranking aparecem apenas o nome da Liga, o nível, o XP e o avatar em blocos. O nome, o apelido, a idade, o ano escolar e a escola nunca aparecem. Com a opção desligada, a criança vê a própria posição só para ela.
 
 ## Com quem compartilhamos
 
