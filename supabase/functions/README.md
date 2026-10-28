@@ -201,4 +201,4 @@ Fora do código, confira no painel:
    e-mail). Mantenha o `gpmkt.art.br` renovado: quem for dono do domínio
    poderia pedir "esqueci a senha" e receber o link de troca de senha da
    criança. Logins criados antes com `@crianca.ligadosaber.app` passam para
-   o domínio novo com a migration 0017.
+   o domínio novo com a migration 0019.

@@ -1,5 +1,5 @@
 -- Liga do Saber - domínio dos logins das crianças.
--- Execute depois da 0016_seguranca_limites.sql no Supabase SQL Editor.
+-- Execute depois da 0016_seguranca_limites.sql e da 0017_avatar_meninas.sql (a 0018 é de outro módulo; a ordem com ela não importa) no Supabase SQL Editor.
 --
 -- Os logins das crianças (Edge Function `contas-liga`, migration 0014)
 -- usavam e-mails internos `<usuario>@crianca.ligadosaber.app`, um domínio
