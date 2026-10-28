@@ -100,3 +100,18 @@ sendo feitos em outras threads.
 Ficam para os próximos passos: Cruzadas da Liga, relatório semanal dos
 responsáveis, "Digitar atividade" e "Gerar questão parecida" na Foto + IA,
 progresso por área.
+
+## Atualização (28/10/2026): escopo do MVP completo
+
+- **Cruzadas da Liga** (7.8): novo jogo nos Jogos da Liga e no "Treine
+  jogando" de cada módulo. A Edge Function `minijogo` (ação `cruzadas`) pede
+  8 palavras com pista à IA e cruza as palavras numa grade de até 12 x 12
+  (`supabase/functions/minijogo/cruzadas.ts`). A criança digita a palavra;
+  do segundo erro em diante o herói mostra as primeiras letras. Completar vale
+  20 XP (10 se precisou de dica), dentro do limite diário dos jogos.
+- **Progresso por matéria** (7.9, 8.12, 4.31): na aba Conquistas, XP por área,
+  pontos fortes e para praticar (últimos 30 dias) e o XP dos últimos 7 dias.
+- **Relatório semanal** (7.10, 4.35): botão "Relatório da semana" na Área dos
+  responsáveis, com tempo de uso estimado, atividades, missões, destaques,
+  área para treinar e uma sugestão de apoio em casa. Calculado no app a partir
+  de `eventos_xp`, `correcoes_ia` e `provas_treino` (sem IA e sem migration).

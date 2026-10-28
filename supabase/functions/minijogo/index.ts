@@ -8,10 +8,15 @@
 //   - "quebra_cabeca": a IA cria peças com uma ordem certa (pedaços de
 //     frase, números, etapas de um processo); a função embaralha.
 //   - "relampago": 40 contas para 60 segundos, geradas aqui mesmo, sem IA.
+//   - "cruzadas": a IA escolhe palavras do tema com pista; a função cruza
+//     as palavras numa grade (cruzadas.ts). As respostas ficam no servidor.
 // acao "conferir_palavra": confere a palavra marcada na grade. Achar todas
 //   vale 20 XP.
 // acao "conferir_ordem": diz quais peças estão no lugar. Montar de
 //   primeira vale 20 XP; depois, 10.
+// acao "conferir_cruzada": confere a palavra digitada para uma pista. Do
+//   segundo erro em diante, a resposta traz uma dica (as primeiras letras).
+//   Completar vale 20 XP; se precisou de dica, 10.
 // acao "fechar_relampago": confere as respostas da rodada: 5 XP + 2 por
 //   acerto, até 25.
 //
@@ -38,6 +43,7 @@ import {
   type Contexto,
   type Perfil,
 } from "../_shared/liga.ts";
+import { montarCruzadas, paraGrade, type PalavraCruzada } from "./cruzadas.ts";
 
 const TIPO = "minijogo";
 const LIMITE_DIARIO = Number(Deno.env.get("LIMITE_MINIJOGOS_POR_DIA") ?? "60");
@@ -46,6 +52,8 @@ const XP_CACA_PALAVRAS = 20;
 const XP_QUEBRA_DE_PRIMEIRA = 20;
 const XP_QUEBRA_DEPOIS = 10;
 const XP_RELAMPAGO_MAXIMO = 25;
+const XP_CRUZADAS_SEM_DICA = 20;
+const XP_CRUZADAS_COM_DICA = 10;
 const TAMANHO_DA_GRADE = 10;
 const SEGUNDOS_DO_RELAMPAGO = 60;
 
@@ -247,15 +255,6 @@ async function salvar(ctx: Contexto, id: string, estado: Record<string, unknown>
 
 type Casa = [number, number];
 type PalavraNaGrade = { palavra: string; pista: string; casas: Casa[] };
-
-/// Só letras de A a Z, sem acento (a grade não tem acentos).
-function paraGrade(palavra: string): string {
-  return palavra
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toUpperCase()
-    .replace(/[^A-Z]/g, "");
-}
 
 /// Esconde as palavras numa grade. Do 6º ano em diante, elas também podem
 /// estar de trás para frente.
@@ -587,6 +586,143 @@ async function fecharRelampago(ctx: Contexto): Promise<Response> {
   return resposta(200, { acertos, respondidas, ...premio });
 }
 
+// ---------------------------------------------------------------- cruzadas
+
+type PalavraNaCruzada = PalavraCruzada & { erros: number; acertou: boolean };
+
+async function novasCruzadas(ctx: Contexto, perfil: Perfil) {
+  const { chave, materia } = materiaDoPedido(ctx);
+  const tema = sortear(materia.temas);
+  const { dados, modelo } = await perguntarIA({
+    instrucoes: `Você é ${materia.voz} Você cria as "Cruzadas da Liga" (palavras cruzadas) para uma criança do ${perfil.ano_escolar}º ano do ensino fundamental no Brasil. Siga a BNCC desse ano em ${materia.nome}.
+
+Crie palavras cruzadas sobre o tema pedido:
+- "titulo": nome curto e divertido.
+- "palavras": exatamente 8 palavras importantes do tema para esse ano. Cada uma com 3 a 10 letras, uma palavra só (sem espaço nem hífen), escrita com a acentuação correta. Prefira palavras com letras comuns (A, E, O, R, S), que cruzam com mais facilidade.
+- "pista" de cada palavra: uma frase curta que ensina o significado ou o uso, sem escrever a palavra nem parte dela. A criança vai digitar a palavra a partir da pista.
+
+Confira se cada pista leva a uma resposta só e se as informações estão corretas.
+
+${REGRAS_DE_SEGURANCA}`,
+    entrada: `Tema: ${tema}.`,
+    nomeDoEsquema: "cruzadas",
+    esquema: ESQUEMA_CACA_PALAVRAS,
+  });
+
+  const cruzadas = montarCruzadas(
+    dados.palavras as { palavra: string; pista: string }[],
+  );
+  if (cruzadas.palavras.length < 4) {
+    throw new ErroDaLiga(502, "As palavras não se cruzaram. Tente de novo.");
+  }
+  const palavras: PalavraNaCruzada[] = cruzadas.palavras.map((p) => ({
+    ...p,
+    erros: 0,
+    acertou: false,
+  }));
+
+  const id = await guardar(
+    ctx,
+    perfil,
+    `cruzadas ${chave}: ${tema}`,
+    {
+      jogo: "cruzadas",
+      materia: chave,
+      titulo: dados.titulo,
+      linhas: cruzadas.linhas,
+      colunas: cruzadas.colunas,
+      palavras,
+      usou_dica: false,
+      terminou: false,
+    },
+    modelo,
+  );
+
+  return resposta(200, {
+    jogo_id: id,
+    materia: chave,
+    titulo: dados.titulo,
+    linhas: cruzadas.linhas,
+    colunas: cruzadas.colunas,
+    pistas: palavras.map((p) => ({
+      numero: p.numero,
+      direcao: p.direcao,
+      linha: p.linha,
+      coluna: p.coluna,
+      letras: p.letras.length,
+      pista: p.pista,
+    })),
+    xp_possivel: XP_CRUZADAS_SEM_DICA,
+  });
+}
+
+/// Dica depois de errar: as primeiras letras, uma a mais a cada erro, até
+/// a metade da palavra (o resto a criança descobre pela pista).
+function dicaDaPalavra(letras: string, erros: number): string {
+  if (erros < 2) return "";
+  const mostrar = Math.min(erros - 1, Math.max(1, Math.floor(letras.length / 2)));
+  return `Começa com ${letras.slice(0, mostrar)}...`;
+}
+
+async function conferirCruzada(ctx: Contexto): Promise<Response> {
+  const { perfil, id, estado } = await carregarJogo(ctx, "cruzadas");
+  const palavras = estado.palavras as PalavraNaCruzada[];
+  const indice = ctx.corpo.indice;
+  if (
+    typeof indice !== "number" || !Number.isInteger(indice) ||
+    indice < 0 || indice >= palavras.length
+  ) {
+    throw new ErroDaLiga(400, "Escolha uma pista.");
+  }
+  const palavra = palavras[indice];
+  const tentativa = paraGrade(String(ctx.corpo.resposta ?? ""));
+  if (tentativa.length !== palavra.letras.length) {
+    throw new ErroDaLiga(400, `A palavra tem ${palavra.letras.length} letras.`);
+  }
+
+  if (palavra.acertou) {
+    return resposta(200, {
+      certa: true,
+      indice,
+      palavra: palavra.palavra,
+      letras: palavra.letras,
+      terminou: Boolean(estado.terminou),
+    });
+  }
+
+  if (tentativa !== palavra.letras) {
+    palavra.erros++;
+    const dica = dicaDaPalavra(palavra.letras, palavra.erros);
+    await salvar(ctx, id, {
+      ...estado,
+      palavras,
+      usou_dica: Boolean(estado.usou_dica) || dica !== "",
+    });
+    return resposta(200, { certa: false, indice, dica });
+  }
+
+  palavra.acertou = true;
+  const terminou = palavras.every((p) => p.acertou);
+  const premio = terminou && !estado.terminou
+    ? await darXp(
+      ctx,
+      perfil,
+      estado.usou_dica ? XP_CRUZADAS_COM_DICA : XP_CRUZADAS_SEM_DICA,
+      id,
+    )
+    : { xp: 0, progresso: null };
+  await salvar(ctx, id, { ...estado, palavras, terminou });
+
+  return resposta(200, {
+    certa: true,
+    indice,
+    palavra: palavra.palavra,
+    letras: palavra.letras,
+    terminou,
+    ...premio,
+  });
+}
+
 // ---------------------------------------------------------------- entrada
 
 async function novo(ctx: Contexto): Promise<Response> {
@@ -605,6 +741,8 @@ async function novo(ctx: Contexto): Promise<Response> {
       return novoQuebraCabeca(ctx, perfil);
     case "relampago":
       return novoRelampago(ctx, perfil);
+    case "cruzadas":
+      return novasCruzadas(ctx, perfil);
     default:
       throw new ErroDaLiga(400, "Jogo desconhecido.");
   }
@@ -618,6 +756,8 @@ servir("os Jogos da Liga", (ctx) => {
       return conferirPalavra(ctx);
     case "conferir_ordem":
       return conferirOrdem(ctx);
+    case "conferir_cruzada":
+      return conferirCruzada(ctx);
     case "fechar_relampago":
       return fecharRelampago(ctx);
     default:

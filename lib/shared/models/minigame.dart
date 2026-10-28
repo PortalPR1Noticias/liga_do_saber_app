@@ -267,3 +267,159 @@ class LightningResult {
   /// Aviso do servidor, por exemplo quando o XP de jogos do dia acabou.
   final String notice;
 }
+
+/// Direção de uma palavra nas Cruzadas da Liga.
+enum CrosswordDirection {
+  across('Horizontal'),
+  down('Vertical');
+
+  const CrosswordDirection(this.label);
+
+  final String label;
+}
+
+/// Pista das Cruzadas: onde a palavra começa, para que lado vai e quantas
+/// letras tem. A palavra só chega quando a criança acerta.
+class CrosswordClue {
+  const CrosswordClue({
+    required this.number,
+    required this.direction,
+    required this.row,
+    required this.col,
+    required this.length,
+    required this.clue,
+  });
+
+  factory CrosswordClue.fromJson(Map<String, dynamic> json) {
+    return CrosswordClue(
+      number: json['numero'] as int? ?? 0,
+      direction: json['direcao'] == 'v'
+          ? CrosswordDirection.down
+          : CrosswordDirection.across,
+      row: json['linha'] as int? ?? 0,
+      col: json['coluna'] as int? ?? 0,
+      length: json['letras'] as int? ?? 0,
+      clue: json['pista'] as String? ?? '',
+    );
+  }
+
+  final int number;
+  final CrosswordDirection direction;
+  final int row;
+  final int col;
+  final int length;
+  final String clue;
+
+  /// As casas da palavra na grade, da primeira à última letra.
+  List<GridCell> get cells => [
+    for (var k = 0; k < length; k++)
+      direction == CrosswordDirection.across
+          ? GridCell(row, col + k)
+          : GridCell(row + k, col),
+  ];
+}
+
+/// Cruzadas da Liga: a IA escolhe palavras do tema com pista e a Edge
+/// Function cruza as palavras numa grade (as respostas ficam no servidor).
+class CrosswordGame {
+  const CrosswordGame({
+    required this.id,
+    required this.subject,
+    required this.title,
+    required this.rows,
+    required this.cols,
+    required this.clues,
+    this.xp = 20,
+  });
+
+  factory CrosswordGame.fromJson(Map<String, dynamic> json) {
+    return CrosswordGame(
+      id: json['jogo_id'] as String,
+      subject: MinigameSubject.values.byName(
+        json['materia'] as String? ?? 'portugues',
+      ),
+      title: json['titulo'] as String? ?? '',
+      rows: json['linhas'] as int? ?? 0,
+      cols: json['colunas'] as int? ?? 0,
+      clues: [
+        for (final p in json['pistas'] as List? ?? const [])
+          CrosswordClue.fromJson(Map<String, dynamic>.from(p as Map)),
+      ],
+      xp: json['xp_possivel'] as int? ?? 20,
+    );
+  }
+
+  final String id;
+  final MinigameSubject subject;
+  final String title;
+  final int rows;
+  final int cols;
+  final List<CrosswordClue> clues;
+  final int xp;
+}
+
+/// Resposta ao conferir uma palavra das Cruzadas.
+class CrosswordCheck {
+  const CrosswordCheck({
+    required this.correct,
+    required this.index,
+    this.word = '',
+    this.letters = '',
+    this.hint = '',
+    this.finished = false,
+    this.xp = 0,
+    this.notice = '',
+    this.progress,
+  });
+
+  factory CrosswordCheck.fromJson(Map<String, dynamic> json) {
+    return CrosswordCheck(
+      correct: json['certa'] as bool? ?? false,
+      index: json['indice'] as int? ?? 0,
+      word: json['palavra'] as String? ?? '',
+      letters: json['letras'] as String? ?? '',
+      hint: json['dica'] as String? ?? '',
+      finished: json['terminou'] as bool? ?? false,
+      xp: json['xp'] as int? ?? 0,
+      notice: json['aviso'] as String? ?? '',
+      progress: ProgressUpdate.fromJson(json['progresso']),
+    );
+  }
+
+  final bool correct;
+  final int index;
+
+  /// A palavra como se escreve (com acento), para a lista de pistas.
+  final String word;
+
+  /// As letras que vão na grade (sem acento).
+  final String letters;
+
+  /// Do segundo erro em diante: as primeiras letras da palavra.
+  final String hint;
+  final bool finished;
+  final int xp;
+  final ProgressUpdate? progress;
+
+  /// Aviso do servidor, por exemplo quando o XP de jogos do dia acabou.
+  final String notice;
+}
+
+/// Letras da resposta como entram na grade: maiúsculas, sem acento e sem
+/// espaço (a mesma regra do servidor).
+String crosswordLetters(String text) {
+  const accents = {
+    'Á': 'A', 'À': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', //
+    'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E', //
+    'Í': 'I', 'Ì': 'I', 'Î': 'I', 'Ï': 'I', //
+    'Ó': 'O', 'Ò': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O', //
+    'Ú': 'U', 'Ù': 'U', 'Û': 'U', 'Ü': 'U', //
+    'Ç': 'C', 'Ñ': 'N',
+  };
+  final buffer = StringBuffer();
+  for (final char in text.toUpperCase().split('')) {
+    final plain = accents[char] ?? char;
+    if (RegExp('[A-Z]').hasMatch(plain)) buffer.write(plain);
+  }
+  return buffer.toString();
+}
