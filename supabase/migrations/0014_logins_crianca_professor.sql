@@ -1,6 +1,6 @@
 -- Liga do Saber - três logins: responsável, criança e professor.
 -- Execute depois das migrations anteriores no Supabase SQL Editor
--- (precisa da 0010 e da 0012, que criam os chefões e as denúncias).
+-- (precisa da 0010, 0011 e 0012: chefões, loja e denúncias).
 --
 -- O que este arquivo faz:
 --   1) a criança ganha um login próprio (usuário e senha criados pelo
@@ -162,6 +162,42 @@ $$;
 
 revoke all on function public.atividades_da_crianca() from public, anon;
 grant execute on function public.atividades_da_crianca() to authenticated;
+
+-- Loja de visuais (migration 0011): a criança vê e compra com as moedas
+-- dela. Todas as funções da loja passam por travar_perfil_do_dono, que
+-- agora aceita também o login da própria criança.
+drop policy if exists "compras_visuais_crianca_select" on public.compras_visuais;
+create policy "compras_visuais_crianca_select"
+on public.compras_visuais for select
+to authenticated
+using (perfil_crianca_id = public.perfil_da_crianca_logada());
+
+drop policy if exists "visuais_equipados_crianca_select" on public.visuais_equipados;
+create policy "visuais_equipados_crianca_select"
+on public.visuais_equipados for select
+to authenticated
+using (perfil_crianca_id = public.perfil_da_crianca_logada());
+
+create or replace function public.travar_perfil_do_dono(p_perfil uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform 1
+  from public.perfis_criancas p
+  left join public.responsaveis r on r.id = p.responsavel_id
+  where p.id = p_perfil
+    and (r.auth_user_id = auth.uid() or p.auth_user_id = auth.uid())
+  for update of p;
+  if not found then
+    raise exception 'Perfil não encontrado';
+  end if;
+end;
+$$;
+
+revoke all on function public.travar_perfil_do_dono(uuid) from public, anon, authenticated;
 
 -- Chefões (migration 0010): a própria criança registra a vitória. Mesmo
 -- corpo da 0010, aceitando também o login da criança.
