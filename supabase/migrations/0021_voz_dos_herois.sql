@@ -1,5 +1,5 @@
 -- Liga do Saber - voz dos heróis (out/2026).
--- Execute depois da 0019 (e da 0018, se já existir) no Supabase SQL Editor.
+-- Execute depois da 0020_convite_professor.sql no Supabase SQL Editor.
 --
 -- A Edge Function voz-heroi transforma as explicações dos heróis em áudio
 -- (text-to-speech da OpenAI). Cada áudio reserva uma vaga aqui antes de

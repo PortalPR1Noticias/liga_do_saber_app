@@ -7,7 +7,7 @@
 //
 // Só vai para a OpenAI o texto da explicação, que a própria IA ou o app
 // escreveram: nada de foto, nome ou dado da criança. O áudio não é guardado.
-// Cada áudio reserva uma vaga em public.reservar_uso_voz (migration 0020),
+// Cada áudio reserva uma vaga em public.reservar_uso_voz (migration 0021),
 // separada dos limites da IA de texto para a voz não gastar a cota deles.
 //
 // Deploy: veja supabase/functions/README.md.
@@ -79,7 +79,7 @@ async function reservarVaga(ctx: Contexto, perfilId: string): Promise<void> {
     p_limite_global: LIMITE_GLOBAL,
   });
   if (error) {
-    // Sem a migration 0020 a voz fica desligada; o texto continua na tela.
+    // Sem a migration 0021 a voz fica desligada; o texto continua na tela.
     console.error("Falha ao reservar a voz", error.message);
     throw new ErroDaLiga(503, "A voz dos heróis ainda está sendo preparada.");
   }
