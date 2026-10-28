@@ -22,10 +22,10 @@ enum _EditorTab {
     AvatarCategory.corOlhos,
     AvatarCategory.boca,
   ]),
-  camisa('Camisa', Icons.checkroom_rounded, [AvatarCategory.camisa]),
-  calca('Calça', Icons.straighten_rounded, [AvatarCategory.calca]),
+  camisa('Roupa', Icons.checkroom_rounded, [AvatarCategory.camisa]),
+  calca('Calça e saia', Icons.straighten_rounded, [AvatarCategory.calca]),
   tenis('Tênis', Icons.directions_run_rounded, [AvatarCategory.tenis]),
-  chapeu('Chapéu', Icons.school_rounded, [AvatarCategory.chapeu]),
+  chapeu('Cabeça', Icons.auto_awesome_rounded, [AvatarCategory.chapeu]),
   oculos('Óculos', Icons.visibility_rounded, [AvatarCategory.oculos]),
   costas('Costas', Icons.backpack_rounded, [AvatarCategory.costas]);
 

@@ -408,6 +408,30 @@ List<Offset> _star(double cu, double cv, double r) => [
     ),
 ];
 
+List<Offset> _heart(double cu, double cv, double r) => [
+  for (var i = 0; i < 20; i++)
+    () {
+      final t = 2 * math.pi * i / 20;
+      final x = 16 * math.pow(math.sin(t), 3);
+      final y =
+          13 * math.cos(t) -
+          5 * math.cos(2 * t) -
+          2 * math.cos(3 * t) -
+          math.cos(4 * t);
+      return Offset(cu + r * x / 17, cv - r * y / 17);
+    }(),
+];
+
+/// Florzinha de cinco pétalas.
+List<Offset> _flower(double cu, double cv, double r) => [
+  for (var i = 0; i < 30; i++)
+    () {
+      final t = 2 * math.pi * i / 30;
+      final rr = r * (0.6 + 0.4 * math.cos(5 * t).abs());
+      return Offset(cu + rr * math.cos(t), cv + rr * math.sin(t));
+    }(),
+];
+
 Color _darker(Color color, [double amount = 0.25]) =>
     Color.lerp(color, const Color(0xFF000000), amount)!;
 
@@ -432,8 +456,14 @@ List<_Box> _buildAvatarBoxes(AvatarLook look) {
   final boxes = <_Box>[];
 
   // Pés.
-  final boot = shoes.style == 'bota';
-  final shoeTop = boot ? 0.42 : 0.2;
+  final boot = shoes.style == 'bota' || shoes.style == 'bota_alta';
+  final flat = shoes.style == 'sapatilha';
+  final shoeTop = switch (shoes.style) {
+    'bota' => 0.42,
+    'bota_alta' => 0.62,
+    'sapatilha' => 0.12,
+    _ => 0.2,
+  };
   for (final side in const [-1.0, 1.0]) {
     final cx = 0.24 * side;
     final shoe = _Box(
@@ -442,21 +472,53 @@ List<_Box> _buildAvatarBoxes(AvatarLook look) {
       -0.22,
       cx + 0.23,
       shoeTop,
-      0.3,
+      flat ? 0.26 : 0.3,
       shoes.color,
     );
-    shoe.around(_rect(0, boot ? 0.78 : 0.62, 1, 1), shoes.detail);
-    if (boot) shoe.around(_rect(0, 0, 1, 0.16), _lighter(shoes.color, 0.2));
-    if (!boot) {
+    if (flat) {
+      shoe.decal(_Face.top, _ellipse(0.5, 0.82, 0.2, 0.1, 10), shoes.detail);
+      shoe.decal(_Face.front, _ellipse(0.5, 0.35, 0.18, 0.3, 10), shoes.detail);
+    } else {
+      shoe.around(_rect(0, boot ? 0.84 : 0.62, 1, 1), shoes.detail);
+    }
+    if (boot) shoe.around(_rect(0, 0, 1, 0.12), _lighter(shoes.color, 0.2));
+    if (shoes.style == 'brilho') {
+      for (final (u, v) in const [(0.25, 0.3), (0.7, 0.2), (0.5, 0.45)]) {
+        shoe.decal(_Face.front, _star(u, v, 0.12), shoes.detail);
+        shoe.decal(_Face.left, _star(u, v, 0.12), shoes.detail);
+        shoe.decal(_Face.right, _star(u, v, 0.12), shoes.detail);
+      }
+    }
+    if (!boot && !flat) {
       shoe.decal(_Face.top, _rect(0.3, 0.72, 0.7, 0.8), shoes.detail);
     }
     boxes.add(shoe);
   }
 
-  // Pernas.
+  // Pernas. Com vestido, a saia é do vestido e as pernas aparecem.
+  final dress = const {
+    'vestido',
+    'floral',
+    'estrelas',
+    'princesa',
+  }.contains(shirt.style);
+  final legStyle = dress
+      ? 'saia'
+      : const {'xadrez', 'tule'}.contains(pants.style)
+      ? 'saia'
+      : pants.style;
   for (final side in const [-1.0, 1.0]) {
     final cx = 0.24 * side;
-    switch (pants.style) {
+    if (shoeTop >= 0.6 && legStyle != 'calca' && legStyle != 'esportiva') {
+      // Bota de cano alto cobre a perna até a saia ou o shorts.
+      if (legStyle == 'shorts') {
+        boxes.add(
+          _Box(cx - 0.22, 0.6, -0.21, cx + 0.22, 0.95, 0.21, pants.color),
+        );
+      }
+      continue;
+    }
+    switch (legStyle) {
       case 'shorts':
         boxes
           ..add(_Box(cx - 0.19, shoeTop, -0.18, cx + 0.19, 0.6, 0.18, skin))
@@ -464,7 +526,19 @@ List<_Box> _buildAvatarBoxes(AvatarLook look) {
             _Box(cx - 0.22, 0.6, -0.21, cx + 0.22, 0.95, 0.21, pants.color),
           );
       case 'saia':
-        boxes.add(_Box(cx - 0.19, shoeTop, -0.18, cx + 0.19, 0.6, 0.18, skin));
+        // Legging com vestido vira meia-calça por baixo.
+        final tights = dress && pants.id.startsWith('legging');
+        boxes.add(
+          _Box(
+            cx - 0.19,
+            shoeTop,
+            -0.18,
+            cx + 0.19,
+            0.6,
+            0.18,
+            tights ? pants.color : skin,
+          ),
+        );
       default:
         final leg = _Box(
           cx - 0.21,
@@ -496,18 +570,48 @@ List<_Box> _buildAvatarBoxes(AvatarLook look) {
         boxes.add(leg);
     }
   }
-  if (pants.style == 'saia') {
+  if (legStyle == 'saia') {
+    final princess = shirt.style == 'princesa';
+    final wide = princess || (!dress && pants.style == 'tule') ? 0.68 : 0.58;
+    final color = dress ? shirt.color : pants.color;
+    // Duas camadas: a de baixo mais larga, para a saia abrir.
+    final waist = _Box(-0.53, 0.78, -0.28, 0.53, 0.95, 0.28, color, bias: 0.6);
+    waist.around(_rect(0, 0, 1, 0.25), _darker(color, 0.08));
+    boxes.add(waist);
     final skirt = _Box(
-      -0.56,
-      0.6,
-      -0.29,
-      0.56,
-      0.95,
-      0.29,
-      pants.color,
-      bias: 0.6,
+      -wide,
+      0.54,
+      -wide * 0.55,
+      wide,
+      0.78,
+      wide * 0.55,
+      color,
+      bias: 0.65,
     );
-    skirt.around(_rect(0, 0.8, 1, 1), _lighter(pants.color, 0.35));
+    skirt.around(_rect(0, 0.8, 1, 1), _lighter(color, 0.35));
+    if (!dress && pants.style == 'xadrez') {
+      for (final u in const [0.2, 0.5, 0.8]) {
+        skirt.around(_rect(u - 0.04, 0, u + 0.04, 0.8), pants.detail);
+      }
+      skirt.around(_rect(0, 0.35, 1, 0.43), pants.detail);
+    }
+    if (!dress && pants.style == 'tule') {
+      skirt.around(_rect(0, 0.4, 1, 0.48), pants.detail);
+    }
+    switch (shirt.style) {
+      case 'floral':
+        for (final (u, v) in const [(0.2, 0.4), (0.55, 0.6), (0.85, 0.3)]) {
+          skirt.around(_flower(u, v, 0.13), shirt.detail);
+          skirt.around(_ellipse(u, v, 0.04, 0.06, 8), Colors.white);
+        }
+      case 'estrelas':
+        for (final (u, v) in const [(0.2, 0.35), (0.5, 0.6), (0.8, 0.3)]) {
+          skirt.around(_star(u, v, 0.12), shirt.detail);
+        }
+      case 'princesa':
+        skirt.around(_rect(0, 0.45, 1, 0.55), shirt.detail);
+        skirt.decal(_Face.front, _star(0.5, 0.28, 0.1), shirt.detail);
+    }
     boxes.add(skirt);
   }
 
@@ -576,6 +680,35 @@ List<_Box> _buildAvatarBoxes(AvatarLook look) {
         torso.decal(_Face.front, _star(u, v, r), shirt.detail);
         torso.decal(_Face.back, _star(1 - u, v, r), shirt.detail);
       }
+    case 'coracao':
+      torso.decal(_Face.front, _heart(0.5, 0.48, 0.2), shirt.detail);
+      torso.around(_rect(0, 0.92, 1, 1), _darker(shirt.color, 0.08));
+    case 'babado':
+      torso.around(_rect(0, 0.84, 1, 1), shirt.detail);
+      for (var u = 0.1; u < 1; u += 0.2) {
+        torso.decal(_Face.front, _ellipse(u, 0.84, 0.1, 0.05, 8), shirt.detail);
+      }
+    case 'vestido' || 'floral' || 'estrelas':
+      torso.around(_rect(0, 0.82, 1, 0.92), shirt.detail);
+      if (shirt.style == 'floral') {
+        torso.decal(_Face.front, _flower(0.3, 0.45, 0.12), shirt.detail);
+        torso.decal(_Face.front, _flower(0.72, 0.6, 0.1), Colors.white);
+      }
+      if (shirt.style == 'estrelas') {
+        torso.decal(_Face.front, _star(0.5, 0.45, 0.16), shirt.detail);
+      }
+      if (shirt.style == 'vestido') {
+        torso.decal(_Face.front, _heart(0.5, 0.86, 0.07), shirt.detail);
+      }
+    case 'princesa':
+      torso.decal(_Face.front, const [
+        Offset(0.2, 0.18),
+        Offset(0.8, 0.18),
+        Offset(0.62, 0.82),
+        Offset(0.38, 0.82),
+      ], _lighter(shirt.color, 0.3));
+      torso.decal(_Face.front, _heart(0.5, 0.3, 0.08), shirt.detail);
+      torso.around(_rect(0, 0.82, 1, 0.92), shirt.detail);
     case 'armadura':
       torso.decal(
         _Face.front,
@@ -603,7 +736,19 @@ List<_Box> _buildAvatarBoxes(AvatarLook look) {
         ..add(sleeve)
         ..add(_Box(x0 + 0.02, 0.98, -0.17, x1 - 0.02, 1.12, 0.17, skin));
     } else {
-      final sleeve = _Box(x0, 1.52, -0.19, x1, 1.9, 0.19, shirt.color);
+      final puff = shirt.style == 'princesa' || shirt.style == 'babado';
+      final sleeve = puff
+          ? _Box(
+              x0 - side * 0.0,
+              1.5,
+              -0.23,
+              x1 + side * 0.05,
+              1.94,
+              0.23,
+              shirt.color,
+            )
+          : _Box(x0, 1.52, -0.19, x1, 1.9, 0.19, shirt.color);
+      if (puff) sleeve.around(_rect(0, 0.82, 1, 1), shirt.detail);
       if (shirt.style == 'listrada') {
         sleeve.around(_rect(0, 0.45, 1, 0.7), shirt.detail);
       }
@@ -641,7 +786,7 @@ List<_Box> _buildAvatarBoxes(AvatarLook look) {
   final lift = switch (hairPart.style) {
     'black' => 0.31,
     'cacheado' => 0.14,
-    'espetado' || 'coque' => 0.08,
+    'espetado' || 'coque' || 'coque_duplo' => 0.08,
     _ => 0.0,
   };
   if (hat != null) boxes.addAll(_hat(hat, lift));
@@ -672,14 +817,44 @@ void _face(_Box head, AvatarLook look, Color hair, Color skin) {
     } else {
       head.decal(_Face.front, _rect(cu - 0.09, 0.35, cu + 0.09, 0.39), brow);
     }
-    switch (eyes) {
+    final lashes = eyes.startsWith('cilios') || eyes == 'piscadinha';
+    final wink = eyes == 'piscadinha' && side < 0;
+    if (lashes && !wink) {
+      final big = eyes == 'cilios_grandes';
+      final top = cv - (big ? 0.11 : 0.08);
+      // Pálpebra e cílios para o lado de fora.
+      head.decal(
+        _Face.front,
+        _arc(
+          cu,
+          cv,
+          big ? 0.105 : 0.075,
+          big ? 0.12 : 0.09,
+          0.025,
+          1.1 * math.pi,
+          1.9 * math.pi,
+        ),
+        ink,
+      );
+      final out = side > 0 ? 1.0 : -1.0;
+      final edge = cu + out * (big ? 0.09 : 0.065);
+      for (final (dx, dy) in const [(0.0, 0.0), (0.035, 0.03)]) {
+        head.decal(_Face.front, [
+          Offset(edge + out * dx, top + 0.02 + dy),
+          Offset(edge + out * (dx + 0.06), top - 0.03 + dy),
+          Offset(edge + out * (dx + 0.065), top - 0.01 + dy),
+          Offset(edge + out * (dx + 0.01), top + 0.04 + dy),
+        ], ink);
+      }
+    }
+    switch (wink ? 'felizes' : eyes) {
       case 'felizes':
         head.decal(
           _Face.front,
           _arc(cu, cv + 0.05, 0.08, 0.08, 0.035, math.pi, 2 * math.pi),
           ink,
         );
-      case 'grandes':
+      case 'grandes' || 'cilios_grandes':
         head.decal(_Face.front, _ellipse(cu, cv, 0.095, 0.11), Colors.white);
         head.decal(_Face.front, _ellipse(cu, cv + 0.01, 0.065, 0.085), iris);
         head.decal(_Face.front, _ellipse(cu, cv + 0.015, 0.035, 0.045), ink);
@@ -705,7 +880,27 @@ void _face(_Box head, AvatarLook look, Color hair, Color skin) {
     );
   }
 
-  switch (look[AvatarCategory.boca]!.style) {
+  final mouthPart = look[AvatarCategory.boca]!;
+  switch (mouthPart.style) {
+    case 'doce':
+      head.decal(
+        _Face.front,
+        _arc(0.5, 0.71, 0.09, 0.08, 0.035, 0.2 * math.pi, 0.8 * math.pi),
+        mouthPart.color,
+      );
+    case 'brilho':
+      head.decal(_Face.front, [
+        for (var i = 0; i <= 10; i++)
+          Offset(
+            0.5 + 0.1 * math.cos(math.pi * i / 10),
+            0.74 + 0.07 * math.sin(math.pi * i / 10),
+          ),
+      ], mouthPart.color);
+      head.decal(
+        _Face.front,
+        _ellipse(0.47, 0.765, 0.025, 0.012, 6),
+        Colors.white.withValues(alpha: 0.7),
+      );
     case 'sorrisao':
       final mouth = [
         for (var i = 0; i <= 10; i++)
@@ -755,6 +950,30 @@ void _glasses(_Box head, AvatarPart glasses) {
           _arc(0.5 + 0.2 * side, 0.53, 0.12, 0.12, 0.03, 0, 2 * math.pi, 16),
           frame,
         );
+      }
+    case 'coracao':
+      for (final side in const [-1.0, 1.0]) {
+        head.decal(_Face.front, _heart(0.5 + 0.2 * side, 0.53, 0.14), frame);
+        head.decal(
+          _Face.front,
+          _heart(0.5 + 0.2 * side, 0.53, 0.1),
+          glasses.detail,
+        );
+      }
+    case 'gatinho':
+      for (final side in const [-1.0, 1.0]) {
+        final cu = 0.5 + 0.2 * side;
+        head.decal(_Face.front, _rect(cu - 0.13, 0.43, cu + 0.13, 0.46), frame);
+        head.decal(_Face.front, _rect(cu - 0.12, 0.61, cu + 0.12, 0.64), frame);
+        head.decal(_Face.front, _rect(cu - 0.13, 0.43, cu - 0.1, 0.62), frame);
+        head.decal(_Face.front, _rect(cu + 0.1, 0.43, cu + 0.13, 0.62), frame);
+        // Pontinha virada para cima, do lado de fora.
+        final out = cu + side * 0.13;
+        head.decal(_Face.front, [
+          Offset(out, 0.43),
+          Offset(out + side * 0.06, 0.37),
+          Offset(out + side * 0.04, 0.47),
+        ], frame);
       }
     case 'escuros':
       for (final side in const [-1.0, 1.0]) {
@@ -814,11 +1033,21 @@ List<_Box> _hair(String style, Color color, {required bool coversTop}) {
   }
 
   if (!coversTop) boxes.add(cap(0.48, 2.62, 2.84, -0.46, 0.44));
-  final long = style == 'longo';
+  final long = const {
+    'longo',
+    'longo_franja',
+    'ondulado',
+    'tranca_lateral',
+  }.contains(style);
+  final bob = style == 'chanel';
   boxes.add(
     _Box(
       -0.48,
-      long ? 1.62 : 2.18,
+      long
+          ? 1.62
+          : bob
+          ? 2.02
+          : 2.18,
       -0.47,
       0.48,
       2.62,
@@ -827,12 +1056,89 @@ List<_Box> _hair(String style, Color color, {required bool coversTop}) {
       bias: -0.05,
     ),
   );
-  sides(long ? 1.92 : 2.34, long ? 0.26 : 0.08);
+  if (long) {
+    // Mechas caindo pela frente dos ombros.
+    for (final side in const [-1.0, 1.0]) {
+      final lock = _Box(
+        side > 0 ? 0.3 : -0.5,
+        style == 'tranca_lateral' && side > 0 ? 1.92 : 1.46,
+        0.26,
+        side > 0 ? 0.5 : -0.3,
+        1.92,
+        0.38,
+        color,
+      );
+      if (style == 'ondulado') {
+        lock.around(_rect(0, 0.4, 1, 0.46), _darker(color, 0.2));
+      }
+      if (style != 'tranca_lateral') boxes.add(lock);
+    }
+  }
+  if (style == 'ondulado') {
+    // Volume dos lados, com ondas.
+    for (final side in const [-1.0, 1.0]) {
+      final wave = _Box(
+        side > 0 ? 0.44 : -0.56,
+        1.94,
+        -0.44,
+        side > 0 ? 0.56 : -0.44,
+        2.66,
+        0.28,
+        color,
+      );
+      for (final v in const [0.25, 0.5, 0.75]) {
+        wave.around(_rect(0, v, 1, v + 0.04), _darker(color, 0.2));
+      }
+      boxes.add(wave);
+    }
+  } else if (style == 'tranca_lateral') {
+    sides(2.34, 0.08);
+  } else {
+    sides(
+      long
+          ? 1.92
+          : bob
+          ? 2.02
+          : 2.34,
+      long
+          ? 0.26
+          : bob
+          ? 0.3
+          : 0.08,
+      bob ? 0.09 : 0.06,
+    );
+  }
 
   switch (style) {
-    case 'franja':
+    case 'franja' || 'longo_franja' || 'chanel':
       final fringe = _Box(-0.44, 2.44, 0.4, 0.44, 2.62, 0.46, color);
       boxes.add(fringe);
+    case 'rabo_alto':
+      boxes
+        ..add(
+          _Box(-0.12, 2.6, -0.58, 0.12, 2.8, -0.46, const Color(0xFFFF6FB5)),
+        )
+        ..add(_Box(-0.13, 1.95, -0.7, 0.13, 2.74, -0.56, color, bias: -0.1))
+        ..add(_Box(-0.44, 2.56, 0.4, 0.44, 2.62, 0.45, color));
+    case 'coque_duplo':
+      if (!coversTop) {
+        for (final x in const [-0.3, 0.3]) {
+          boxes.add(_Box(x - 0.15, 2.82, -0.18, x + 0.15, 3.08, 0.1, color));
+        }
+      }
+      boxes.add(_Box(-0.44, 2.56, 0.4, 0.44, 2.62, 0.45, color));
+    case 'tranca_lateral':
+      final upper = _Box(0.44, 1.92, 0.08, 0.58, 2.5, 0.24, color);
+      final lower = _Box(0.36, 1.48, 0.26, 0.52, 1.92, 0.4, color);
+      for (final braid in [upper, lower]) {
+        braid.around(_rect(0, 0.3, 1, 0.36), _darker(color, 0.3));
+        braid.around(_rect(0, 0.66, 1, 0.72), _darker(color, 0.3));
+      }
+      boxes
+        ..add(upper)
+        ..add(lower)
+        ..add(_Box(0.35, 1.42, 0.25, 0.53, 1.5, 0.41, const Color(0xFFFF6FB5)))
+        ..add(_Box(-0.44, 2.5, 0.4, 0.2, 2.62, 0.46, color));
     case 'espetado':
       if (!coversTop) {
         const spikes = [
@@ -948,6 +1254,65 @@ List<_Box> _hat(AvatarPart hat, double lift) {
             c,
           ),
       ];
+    case 'laco':
+      final y = 2.84 + lift;
+      return [
+        for (final (x0, x1) in const [(0.04, 0.24), (0.34, 0.54)])
+          _Box(x0, y - 0.02, -0.06, x1, y + 0.2, 0.08, c)
+            ..decal(_Face.front, _rect(0.2, 0.3, 0.8, 0.7), d),
+        _Box(0.22, y + 0.02, -0.07, 0.36, y + 0.16, 0.1, _darker(c, 0.15)),
+      ];
+    case 'tiara':
+      final band = _Box(-0.5, 2.82, 0.02, 0.5, 2.9, 0.14, c, bias: 0.2);
+      return [
+        band,
+        _Box(-0.08, 2.9, 0.04, 0.08, 3.02, 0.13, d)
+          ..decal(_Face.front, _heart(0.5, 0.5, 0.35), c),
+      ];
+    case 'flores':
+      return [
+        _Box(-0.5, 2.82, 0.02, 0.5, 2.88, 0.12, c, bias: 0.2),
+        for (final (x, col) in [(-0.3, d), (0.0, Colors.white), (0.3, d)])
+          _Box(x - 0.08, 2.86, 0.0, x + 0.08, 3.0, 0.14, col)..decal(
+            _Face.front,
+            _ellipse(0.5, 0.5, 0.25, 0.25, 8),
+            const Color(0xFFFFE066),
+          ),
+      ];
+    case 'coroa_flores':
+      const spots = [
+        (-0.32, 0.36),
+        (0.0, 0.4),
+        (0.32, 0.36),
+        (-0.42, 0.0),
+        (0.42, 0.0),
+        (-0.3, -0.36),
+        (0.3, -0.36),
+      ];
+      return [
+        for (var i = 0; i < spots.length; i++)
+          _Box(
+            spots[i].$1 - 0.08,
+            2.78 + lift,
+            spots[i].$2 - 0.08,
+            spots[i].$1 + 0.08,
+            2.92 + lift,
+            spots[i].$2 + 0.08,
+            i.isEven ? d : const Color(0xFFFF7EB6),
+          )..decal(_Face.top, _ellipse(0.5, 0.5, 0.25, 0.25, 8), c),
+      ];
+    case 'presilhas':
+      return [
+        for (final x in const [-0.3, 0.3])
+          _Box(x - 0.08, 2.6, 0.43, x + 0.08, 2.74, 0.48, c, bias: 0.3)
+            ..decal(_Face.front, _star(0.5, 0.5, 0.45), d),
+      ];
+    case 'coelho':
+      return [
+        for (final side in const [-1.0, 1.0])
+          _Box(side * 0.12, 2.74 + lift, -0.06, side * 0.3, 3.3 + lift, 0.06, c)
+            ..decal(_Face.front, _rect(0.25, 0.1, 0.75, 0.85), d),
+      ];
     case 'orelhas':
       return [
         for (final side in const [-1.0, 1.0])
@@ -991,6 +1356,27 @@ List<_Box> _back(AvatarPart part, _Box torso) {
       bag.decal(_Face.back, _rect(0.15, 0.5, 0.85, 0.85), _darker(c, 0.15));
       bag.decal(_Face.back, _rect(0.15, 0.48, 0.85, 0.53), d);
       return [bag];
+    case 'bolsa':
+      torso.decal(_Face.front, const [
+        Offset(0.7, 0),
+        Offset(0.86, 0),
+        Offset(0.3, 1),
+        Offset(0.14, 1),
+      ], d);
+      return [
+        _Box(-0.46, 0.92, 0.25, -0.12, 1.2, 0.36, c, bias: 0.3)
+          ..decal(_Face.front, _heart(0.5, 0.5, 0.25), d),
+      ];
+    case 'borboleta':
+      return [
+        for (final side in const [-1.0, 1.0]) ...[
+          _Box(side * 0.1, 1.55, -0.37, side * 1.0, 2.35, -0.31, c, bias: -0.3)
+            ..around(_ellipse(0.6, 0.45, 0.18, 0.2, 10), d)
+            ..around(_ellipse(0.25, 0.7, 0.08, 0.1, 8), Colors.white),
+          _Box(side * 0.1, 1.05, -0.37, side * 0.7, 1.55, -0.31, d, bias: -0.3)
+            ..around(_ellipse(0.5, 0.5, 0.15, 0.2, 8), c),
+        ],
+      ];
     case 'capa':
       final cape = _Box(-0.48, 0.5, -0.34, 0.48, 1.88, -0.27, c, bias: -0.05);
       cape.decal(_Face.back, _star(0.5, 0.3, 0.16), d);

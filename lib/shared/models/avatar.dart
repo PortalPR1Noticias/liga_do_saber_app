@@ -14,7 +14,7 @@ enum AvatarCategory {
   camisa('camisa', 'Camisa'),
   calca('calca', 'Calça'),
   tenis('tenis', 'Tênis'),
-  chapeu('chapeu', 'Chapéu', optional: true),
+  chapeu('chapeu', 'Na cabeça', optional: true),
   oculos('oculos', 'Óculos', optional: true),
   costas('costas', 'Costas', optional: true);
 
@@ -151,11 +151,25 @@ class AvatarPart {
       style: 'curto',
     ),
     AvatarPart(
+      'cabelo_ondulado',
+      AvatarCategory.cabelo,
+      'Ondulado longo',
+      colors: [_navy],
+      style: 'ondulado',
+    ),
+    AvatarPart(
       'cabelo_franja',
       AvatarCategory.cabelo,
       'Franja',
       colors: [_navy],
       style: 'franja',
+    ),
+    AvatarPart(
+      'cabelo_longo_franja',
+      AvatarCategory.cabelo,
+      'Longo com franja',
+      colors: [_navy],
+      style: 'longo_franja',
     ),
     AvatarPart(
       'cabelo_espetado',
@@ -165,11 +179,25 @@ class AvatarPart {
       style: 'espetado',
     ),
     AvatarPart(
+      'cabelo_chanel',
+      AvatarCategory.cabelo,
+      'Chanel',
+      colors: [_navy],
+      style: 'chanel',
+    ),
+    AvatarPart(
       'cabelo_cacheado',
       AvatarCategory.cabelo,
       'Cacheado',
       colors: [_navy],
       style: 'cacheado',
+    ),
+    AvatarPart(
+      'cabelo_rabo_alto',
+      AvatarCategory.cabelo,
+      'Rabo alto',
+      colors: [_navy],
+      style: 'rabo_alto',
     ),
     AvatarPart(
       'cabelo_black',
@@ -179,11 +207,25 @@ class AvatarPart {
       style: 'black',
     ),
     AvatarPart(
+      'cabelo_coque_duplo',
+      AvatarCategory.cabelo,
+      'Coque duplo',
+      colors: [_navy],
+      style: 'coque_duplo',
+    ),
+    AvatarPart(
       'cabelo_longo',
       AvatarCategory.cabelo,
       'Longo',
       colors: [_navy],
       style: 'longo',
+    ),
+    AvatarPart(
+      'cabelo_tranca_lateral',
+      AvatarCategory.cabelo,
+      'Trança de lado',
+      colors: [_navy],
+      style: 'tranca_lateral',
     ),
     AvatarPart(
       'cabelo_rabo',
@@ -229,10 +271,22 @@ class AvatarPart {
       colors: [Color(0xFF221C1C)],
     ),
     AvatarPart(
+      'cor_castanho_claro',
+      AvatarCategory.corCabelo,
+      'Castanho-claro',
+      colors: [Color(0xFF9A6A3E)],
+    ),
+    AvatarPart(
       'cor_castanho_escuro',
       AvatarCategory.corCabelo,
       'Castanho-escuro',
       colors: [Color(0xFF3E2617)],
+    ),
+    AvatarPart(
+      'cor_loiro_claro',
+      AvatarCategory.corCabelo,
+      'Loiro-claro',
+      colors: [Color(0xFFF3DE9C)],
     ),
     AvatarPart(
       'cor_castanho',
@@ -251,6 +305,13 @@ class AvatarPart {
       AvatarCategory.corCabelo,
       'Ruivo',
       colors: [Color(0xFFC4532B)],
+    ),
+    AvatarPart(
+      'cor_lilas',
+      AvatarCategory.corCabelo,
+      'Lilás',
+      colors: [Color(0xFFC59CFF)],
+      minLevel: 2,
     ),
     AvatarPart(
       'cor_azul',
@@ -290,6 +351,13 @@ class AvatarPart {
       style: 'redondos',
     ),
     AvatarPart(
+      'olhos_cilios',
+      AvatarCategory.olhos,
+      'Com cílios',
+      colors: [_navy],
+      style: 'cilios',
+    ),
+    AvatarPart(
       'olhos_grandes',
       AvatarCategory.olhos,
       'Brilhantes',
@@ -297,11 +365,25 @@ class AvatarPart {
       style: 'grandes',
     ),
     AvatarPart(
+      'olhos_cilios_grandes',
+      AvatarCategory.olhos,
+      'Brilhantes com cílios',
+      colors: [_navy],
+      style: 'cilios_grandes',
+    ),
+    AvatarPart(
       'olhos_felizes',
       AvatarCategory.olhos,
       'Felizes',
       colors: [_navy],
       style: 'felizes',
+    ),
+    AvatarPart(
+      'olhos_piscadinha',
+      AvatarCategory.olhos,
+      'Piscadinha',
+      colors: [_navy],
+      style: 'piscadinha',
     ),
     AvatarPart(
       'olhos_determinados',
@@ -350,11 +432,25 @@ class AvatarPart {
       style: 'sorriso',
     ),
     AvatarPart(
+      'boca_doce',
+      AvatarCategory.boca,
+      'Sorriso doce',
+      colors: [Color(0xFFD9506F)],
+      style: 'doce',
+    ),
+    AvatarPart(
       'boca_sorrisao',
       AvatarCategory.boca,
       'Sorrisão',
       colors: [_navy],
       style: 'sorrisao',
+    ),
+    AvatarPart(
+      'boca_brilho',
+      AvatarCategory.boca,
+      'Brilho rosa',
+      colors: [Color(0xFFE85C8A)],
+      style: 'brilho',
     ),
     AvatarPart(
       'boca_tranquila',
@@ -371,12 +467,19 @@ class AvatarPart {
       style: 'surpresa',
     ),
 
-    // Camisas.
+    // Roupa: camisetas, blusas e vestidos. Tudo livre para qualquer criança.
     AvatarPart(
       'camiseta_azul',
       AvatarCategory.camisa,
       'Camiseta azul',
       colors: [Color(0xFF2F80ED), _white],
+      style: 'camiseta',
+    ),
+    AvatarPart(
+      'camiseta_lilas',
+      AvatarCategory.camisa,
+      'Camiseta lilás',
+      colors: [Color(0xFFB48CF2), _white],
       style: 'camiseta',
     ),
     AvatarPart(
@@ -387,11 +490,25 @@ class AvatarPart {
       style: 'camiseta',
     ),
     AvatarPart(
+      'blusa_coracao',
+      AvatarCategory.camisa,
+      'Blusa coração',
+      colors: [Color(0xFFFFFFFF), Color(0xFFFF5C8A)],
+      style: 'coracao',
+    ),
+    AvatarPart(
       'camiseta_verde',
       AvatarCategory.camisa,
       'Camiseta verde',
       colors: [Color(0xFF27AE60), _white],
       style: 'camiseta',
+    ),
+    AvatarPart(
+      'blusa_babado',
+      AvatarCategory.camisa,
+      'Blusa de babado',
+      colors: [Color(0xFFFFB3D1), _white],
+      style: 'babado',
     ),
     AvatarPart(
       'camiseta_amarela',
@@ -401,11 +518,32 @@ class AvatarPart {
       style: 'camiseta',
     ),
     AvatarPart(
+      'vestido_rosa',
+      AvatarCategory.camisa,
+      'Vestido rosa',
+      colors: [Color(0xFFFF7EB6), _white],
+      style: 'vestido',
+    ),
+    AvatarPart(
       'camiseta_rosa',
       AvatarCategory.camisa,
       'Camiseta rosa',
       colors: [Color(0xFFFF7EB6), _white],
       style: 'camiseta',
+    ),
+    AvatarPart(
+      'vestido_floral',
+      AvatarCategory.camisa,
+      'Vestido floral',
+      colors: [Color(0xFF7FD6C2), Color(0xFFFFE066)],
+      style: 'floral',
+    ),
+    AvatarPart(
+      'vestido_amarelo',
+      AvatarCategory.camisa,
+      'Vestido amarelo',
+      colors: [Color(0xFFFFD45C), _white],
+      style: 'vestido',
     ),
     AvatarPart(
       'camiseta_liga',
@@ -416,11 +554,27 @@ class AvatarPart {
       minLevel: 2,
     ),
     AvatarPart(
+      'moletom_rosa',
+      AvatarCategory.camisa,
+      'Moletom rosa',
+      colors: [Color(0xFFFF8FC0), Color(0xFFFFE3EF)],
+      style: 'moletom',
+      minLevel: 2,
+    ),
+    AvatarPart(
       'camisa_listrada',
       AvatarCategory.camisa,
       'Listrada',
       colors: [_white, Color(0xFF2F80ED)],
       style: 'listrada',
+      minLevel: 3,
+    ),
+    AvatarPart(
+      'vestido_estrelas',
+      AvatarCategory.camisa,
+      'Vestido de estrelas',
+      colors: [Color(0xFF6C4BD8), Color(0xFFFFE066)],
+      style: 'estrelas',
       minLevel: 3,
     ),
     AvatarPart(
@@ -448,6 +602,14 @@ class AvatarPart {
       minLevel: 9,
     ),
     AvatarPart(
+      'vestido_princesa',
+      AvatarCategory.camisa,
+      'Vestido de princesa',
+      colors: [Color(0xFFE9A6FF), Color(0xFFFFD45C)],
+      style: 'princesa',
+      price: 100,
+    ),
+    AvatarPart(
       'camisa_galaxia',
       AvatarCategory.camisa,
       'Camisa Galáxia',
@@ -472,7 +634,7 @@ class AvatarPart {
       seasonLevel: 22,
     ),
 
-    // Calças.
+    // Calças, saias, leggings e shorts.
     AvatarPart(
       'calca_jeans',
       AvatarCategory.calca,
@@ -481,10 +643,24 @@ class AvatarPart {
       style: 'calca',
     ),
     AvatarPart(
+      'saia_jeans',
+      AvatarCategory.calca,
+      'Saia jeans',
+      colors: [Color(0xFF5B7BC0)],
+      style: 'saia',
+    ),
+    AvatarPart(
       'calca_preta',
       AvatarCategory.calca,
       'Calça preta',
       colors: [Color(0xFF2B2B36)],
+      style: 'calca',
+    ),
+    AvatarPart(
+      'legging_rosa',
+      AvatarCategory.calca,
+      'Legging rosa',
+      colors: [Color(0xFFFF8FC0)],
       style: 'calca',
     ),
     AvatarPart(
@@ -495,11 +671,33 @@ class AvatarPart {
       style: 'shorts',
     ),
     AvatarPart(
+      'legging_lilas',
+      AvatarCategory.calca,
+      'Legging lilás',
+      colors: [Color(0xFFB48CF2)],
+      style: 'calca',
+    ),
+    AvatarPart(
       'saia_rosa',
       AvatarCategory.calca,
       'Saia rosa',
       colors: [Color(0xFFFF8FC8)],
       style: 'saia',
+    ),
+    AvatarPart(
+      'shorts_jeans',
+      AvatarCategory.calca,
+      'Shorts jeans',
+      colors: [Color(0xFF5B7BC0)],
+      style: 'shorts',
+    ),
+    AvatarPart(
+      'saia_xadrez',
+      AvatarCategory.calca,
+      'Saia xadrez',
+      colors: [Color(0xFFE84545), Color(0xFF1B2A5E)],
+      style: 'xadrez',
+      minLevel: 2,
     ),
     AvatarPart(
       'bermuda_cargo',
@@ -508,6 +706,14 @@ class AvatarPart {
       colors: [Color(0xFF6E7B3C)],
       style: 'shorts',
       minLevel: 3,
+    ),
+    AvatarPart(
+      'saia_tule',
+      AvatarCategory.calca,
+      'Saia de tule',
+      colors: [Color(0xFFFFB3D1), _white],
+      style: 'tule',
+      minLevel: 4,
     ),
     AvatarPart(
       'calca_esportiva',
@@ -526,13 +732,20 @@ class AvatarPart {
       price: 70,
     ),
 
-    // Tênis.
+    // Tênis, sapatilhas e botas.
     AvatarPart(
       'tenis_branco',
       AvatarCategory.tenis,
       'Tênis branco',
       colors: [Color(0xFFF4F6FA), Color(0xFF9AA5BE)],
       style: 'tenis',
+    ),
+    AvatarPart(
+      'sapatilha_rosa',
+      AvatarCategory.tenis,
+      'Sapatilha rosa',
+      colors: [Color(0xFFFF8FC0), Color(0xFFFFE3EF)],
+      style: 'sapatilha',
     ),
     AvatarPart(
       'tenis_preto',
@@ -542,10 +755,31 @@ class AvatarPart {
       style: 'tenis',
     ),
     AvatarPart(
+      'sapatilha_dourada',
+      AvatarCategory.tenis,
+      'Sapatilha dourada',
+      colors: [Color(0xFFFFC94A), _white],
+      style: 'sapatilha',
+    ),
+    AvatarPart(
       'tenis_azul',
       AvatarCategory.tenis,
       'Tênis azul',
       colors: [Color(0xFF2F80ED), _white],
+      style: 'tenis',
+    ),
+    AvatarPart(
+      'tenis_rosa',
+      AvatarCategory.tenis,
+      'Tênis rosa',
+      colors: [Color(0xFFFF8FC0), _white],
+      style: 'tenis',
+    ),
+    AvatarPart(
+      'tenis_lilas',
+      AvatarCategory.tenis,
+      'Tênis lilás',
+      colors: [Color(0xFFB48CF2), _white],
       style: 'tenis',
     ),
     AvatarPart(
@@ -555,6 +789,14 @@ class AvatarPart {
       colors: [Color(0xFFE84545), _white],
       style: 'tenis',
       minLevel: 2,
+    ),
+    AvatarPart(
+      'tenis_brilho',
+      AvatarCategory.tenis,
+      'Tênis de brilho',
+      colors: [Color(0xFFE9A6FF), Color(0xFFFFFFFF)],
+      style: 'brilho',
+      minLevel: 3,
     ),
     AvatarPart(
       'botas_explorador',
@@ -573,6 +815,14 @@ class AvatarPart {
       price: 60,
     ),
     AvatarPart(
+      'botas_cano_alto',
+      AvatarCategory.tenis,
+      'Botas de cano alto',
+      colors: [Color(0xFF8E4DFF), Color(0xFF3A2A8C)],
+      style: 'bota_alta',
+      price: 70,
+    ),
+    AvatarPart(
       'tenis_dourado',
       AvatarCategory.tenis,
       'Tênis Dourado',
@@ -581,7 +831,35 @@ class AvatarPart {
       seasonLevel: 12,
     ),
 
-    // Chapéus.
+    // Na cabeça: bonés, laços, tiaras e coroas.
+    AvatarPart(
+      'laco_rosa',
+      AvatarCategory.chapeu,
+      'Laço rosa',
+      colors: [Color(0xFFFF5C9E), Color(0xFFFFB3D1)],
+      style: 'laco',
+    ),
+    AvatarPart(
+      'laco_vermelho',
+      AvatarCategory.chapeu,
+      'Laço vermelho',
+      colors: [Color(0xFFE84545), Color(0xFFFF9E9E)],
+      style: 'laco',
+    ),
+    AvatarPart(
+      'tiara_rosa',
+      AvatarCategory.chapeu,
+      'Tiara rosa',
+      colors: [Color(0xFFFF7EB6), Color(0xFFFFFFFF)],
+      style: 'tiara',
+    ),
+    AvatarPart(
+      'presilhas_estrela',
+      AvatarCategory.chapeu,
+      'Presilhas de estrela',
+      colors: [Color(0xFFFFD45C), Color(0xFFFF7EB6)],
+      style: 'presilhas',
+    ),
     AvatarPart(
       'bone_azul',
       AvatarCategory.chapeu,
@@ -591,12 +869,28 @@ class AvatarPart {
       minLevel: 2,
     ),
     AvatarPart(
+      'tiara_flores',
+      AvatarCategory.chapeu,
+      'Tiara de flores',
+      colors: [Color(0xFF7FD6C2), Color(0xFFFF7EB6)],
+      style: 'flores',
+      minLevel: 2,
+    ),
+    AvatarPart(
       'gorro_listrado',
       AvatarCategory.chapeu,
       'Gorro listrado',
       colors: [Color(0xFFE84545), _white],
       style: 'gorro',
       minLevel: 4,
+    ),
+    AvatarPart(
+      'coroa_flores',
+      AvatarCategory.chapeu,
+      'Coroa de flores',
+      colors: [Color(0xFF5DBB63), Color(0xFFFFE066)],
+      style: 'coroa_flores',
+      minLevel: 5,
     ),
     AvatarPart(
       'chapeu_explorador',
@@ -630,6 +924,14 @@ class AvatarPart {
       style: 'coroa',
       seasonLevel: 18,
     ),
+    AvatarPart(
+      'orelhas_coelho',
+      AvatarCategory.chapeu,
+      'Orelhas de coelho',
+      colors: [Color(0xFFFFFFFF), Color(0xFFFFB3D1)],
+      style: 'coelho',
+      price: 70,
+    ),
 
     // Óculos (os de grau são livres: muita criança usa).
     AvatarPart(
@@ -640,11 +942,26 @@ class AvatarPart {
       style: 'grau',
     ),
     AvatarPart(
+      'oculos_gatinho',
+      AvatarCategory.oculos,
+      'Óculos gatinho',
+      colors: [Color(0xFFFF5C9E)],
+      style: 'gatinho',
+    ),
+    AvatarPart(
       'oculos_redondos',
       AvatarCategory.oculos,
       'Óculos redondos',
       colors: [Color(0xFFC9963A)],
       style: 'redondos',
+    ),
+    AvatarPart(
+      'oculos_coracao',
+      AvatarCategory.oculos,
+      'Óculos de coração',
+      colors: [Color(0xFFFF5C9E), Color(0xFFFF9EC7)],
+      style: 'coracao',
+      minLevel: 4,
     ),
     AvatarPart(
       'oculos_escuros',
@@ -665,12 +982,27 @@ class AvatarPart {
 
     // Costas.
     AvatarPart(
+      'bolsa_transversal',
+      AvatarCategory.costas,
+      'Bolsinha',
+      colors: [Color(0xFFFF7EB6), Color(0xFFFFD45C)],
+      style: 'bolsa',
+    ),
+    AvatarPart(
       'mochila',
       AvatarCategory.costas,
       'Mochila',
       colors: [Color(0xFFFF8A1F), Color(0xFF1B2A5E)],
       style: 'mochila',
       minLevel: 3,
+    ),
+    AvatarPart(
+      'capa_estrelas',
+      AvatarCategory.costas,
+      'Capa de estrelas',
+      colors: [Color(0xFF8E4DFF), Color(0xFFFFE066)],
+      style: 'capa',
+      minLevel: 6,
     ),
     AvatarPart(
       'capa_heroi',
@@ -687,6 +1019,14 @@ class AvatarPart {
       colors: [Color(0xFFB7BCC9), Color(0xFFFF8A1F)],
       style: 'jetpack',
       price: 150,
+    ),
+    AvatarPart(
+      'asas_borboleta',
+      AvatarCategory.costas,
+      'Asas de borboleta',
+      colors: [Color(0xFFFF9EC7), Color(0xFF8E4DFF)],
+      style: 'borboleta',
+      price: 130,
     ),
     AvatarPart(
       'asas_luz',

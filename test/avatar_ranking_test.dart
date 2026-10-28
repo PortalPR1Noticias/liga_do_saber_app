@@ -25,6 +25,20 @@ void usePhoneScreen(WidgetTester tester) {
 }
 
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  // Listas e grades longas montam os itens sob demanda: rola até achar.
+  if (finder.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(
+      finder,
+      200,
+      scrollable: find
+          .byWidgetPredicate(
+            (widget) =>
+                widget is Scrollable &&
+                widget.axisDirection == AxisDirection.down,
+          )
+          .last,
+    );
+  }
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
   await tester.tap(finder);
@@ -82,6 +96,31 @@ void main() {
       expect(jetpack.isUnlocked(level: 1, owned: const {'jetpack'}), isTrue);
     });
 
+    test('desde o nível 1 há cabelo longo, cílios, vestido e saia', () {
+      for (final id in [
+        'cabelo_longo_franja',
+        'cabelo_tranca_lateral',
+        'olhos_cilios',
+        'vestido_rosa',
+        'saia_jeans',
+        'sapatilha_rosa',
+        'laco_rosa',
+        'tiara_rosa',
+      ]) {
+        expect(
+          AvatarPart.byId(id)!.isUnlocked(level: 1, owned: const {}),
+          isTrue,
+          reason: id,
+        );
+      }
+      final wings = AvatarPart.byId('asas_borboleta')!;
+      expect(wings.isUnlocked(level: 99, owned: const {}), isFalse);
+      expect(
+        wings.isUnlocked(level: 1, owned: const {'asas_borboleta'}),
+        isTrue,
+      );
+    });
+
     test('o sorteio usa só peças liberadas', () {
       for (var i = 0; i < 30; i++) {
         final look = AvatarLook.random(level: 1, owned: const {});
@@ -105,10 +144,11 @@ void main() {
       }
     });
 
-    test('a migration 0015 tem as mesmas peças, níveis e preços do app', () {
-      final sql = File(
+    test('as migrations têm as mesmas peças, níveis e preços do app', () {
+      final sql = [
         'supabase/migrations/0015_avatar_perfil_ranking.sql',
-      ).readAsStringSync();
+        'supabase/migrations/0017_avatar_meninas.sql',
+      ].map((path) => File(path).readAsStringSync()).join('\n');
       for (final part in AvatarPart.all) {
         final level = part.fromShop ? 'null' : '${part.minLevel}';
         expect(
