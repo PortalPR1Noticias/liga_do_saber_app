@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/models/minigame.dart';
 import '../../../shared/models/progress_update.dart';
 import '../../../shared/services/app_repository.dart';
@@ -89,7 +90,12 @@ class _OrderPuzzleScreenState extends State<OrderPuzzleScreen> {
     final textTheme = Theme.of(context).textTheme;
     final rightCount = _locked.where((r) => r).length;
     return Scaffold(
-      appBar: AppBar(title: const Text('Quebra-cabeça')),
+      appBar: AppBar(
+        title: const Text('Quebra-cabeça'),
+        actions: [
+          LigaReportAiButton(module: 'minijogo', reference: () => _puzzle?.id),
+        ],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,

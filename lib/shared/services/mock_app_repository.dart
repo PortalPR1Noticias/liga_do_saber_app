@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import '../models/ai_report.dart';
 import '../models/archive_case.dart';
 import '../models/atelier.dart';
 import '../models/child_profile.dart';
@@ -411,8 +412,9 @@ class MockAppRepository extends AppRepository {
     learningEvents.add(
       LearningEvent(origin: origin, xp: xp, at: now, area: area),
     );
-    if (area != null)
+    if (area != null) {
       learningAttempts.add(LearningAttempt(area: area, at: now));
+    }
     final current = childProfile;
     var bonus = 0;
     String? missionTitle;
@@ -1269,6 +1271,14 @@ class MockAppRepository extends AppRepository {
   @override
   Future<Map<String, int>> loadActivityCounts() async =>
       Map.of(_activityCounts);
+
+  /// Denúncias feitas nesta sessão (os testes conferem aqui).
+  final aiReports = <AiReport>[];
+
+  @override
+  Future<void> reportAiContent(AiReport report) async {
+    aiReports.add(report);
+  }
 
   @override
   Future<LearningLog> loadLearningLog() async => LearningLog(

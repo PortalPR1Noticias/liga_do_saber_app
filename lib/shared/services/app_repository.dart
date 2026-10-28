@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/ai_report.dart';
 import '../models/atelier.dart';
 import '../models/archive_case.dart';
 import '../models/child_profile.dart';
@@ -220,6 +221,10 @@ abstract class AppRepository extends ChangeNotifier {
   /// Histórico de atividades com a matéria de cada uma: base do progresso
   /// por matéria e do relatório semanal dos responsáveis.
   Future<LearningLog> loadLearningLog();
+
+  /// Botão "Avisar um problema": guarda a denúncia de uma resposta da IA
+  /// para a equipe revisar (exigência do Google Play para conteúdo de IA).
+  Future<void> reportAiContent(AiReport report);
 
   /// Liga ou desliga a autorização do responsável para a Foto + IA.
   Future<void> setAiConsent(bool allowed);

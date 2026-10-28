@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/ai_report.dart';
 import '../models/archive_case.dart';
 import '../models/atelier.dart';
 import '../models/child_profile.dart';
@@ -909,6 +910,27 @@ class SupabaseAppRepository extends AppRepository {
           ),
       ];
       return LearningLog(events: events, attempts: attempts);
+    });
+  }
+
+  @override
+  Future<void> reportAiContent(AiReport report) {
+    return _guard(() async {
+      if (_childProfileId == null) {
+        throw const AppRepositoryException(
+          'Cadastre o perfil da criança antes de avisar um problema.',
+        );
+      }
+      final comment = report.comment.trim();
+      await _client.from('denuncias_ia').insert({
+        'perfil_crianca_id': _childProfileId,
+        'modulo': report.module,
+        'motivo': report.reason.name,
+        'comentario': comment.isEmpty
+            ? null
+            : comment.substring(0, comment.length.clamp(0, 500)),
+        'referencia': report.reference,
+      });
     });
   }
 

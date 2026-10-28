@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../shared/design_system/liga_mascots.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_widgets.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/models/writing_feedback.dart';
 import '../../../shared/models/minigame.dart';
 import '../../../shared/services/app_repository.dart';
@@ -113,7 +114,15 @@ class _WritingWorkshopScreenState extends State<WritingWorkshopScreen> {
     final rewriteFeedback = _rewriteFeedback;
     final canRewrite = feedback != null && feedback.appropriate;
     return Scaffold(
-      appBar: AppBar(title: const Text('Oficina de Texto')),
+      appBar: AppBar(
+        title: const Text('Oficina de Texto'),
+        actions: [
+          LigaReportAiButton(
+            module: 'texto',
+            reference: () => _feedback?.productionId,
+          ),
+        ],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../shared/design_system/liga_report_button.dart';
 import '../../../shared/design_system/liga_rewards.dart';
 import '../../../shared/design_system/liga_sound.dart';
 import '../../../shared/design_system/liga_widgets.dart';
@@ -155,7 +156,12 @@ class _CrosswordScreenState extends State<CrosswordScreen> {
         : null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Cruzadas da Liga')),
+      appBar: AppBar(
+        title: const Text('Cruzadas da Liga'),
+        actions: [
+          LigaReportAiButton(module: 'minijogo', reference: () => _game?.id),
+        ],
+      ),
       body: LigaBackground(
         child: SafeArea(
           top: false,
