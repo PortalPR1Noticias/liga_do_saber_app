@@ -1,0 +1,155 @@
+# Compila a versão de iPhone da Liga do Saber num Mac da nuvem do GitHub,
+# sem precisar de Mac em casa. O repositório é público, então os minutos
+# de Mac são gratuitos.
+#
+# - Em todo PR e push na main: roda os testes e compila o app para iPhone
+#   (sem assinatura). O arquivo "LigaDoSaber-sem-assinatura.ipa" fica em
+#   Actions > (execução) > Artifacts.
+# - Para mandar para o TestFlight: Actions > iOS > Run workflow, marque
+#   "Enviar para o TestFlight". Precisa dos segredos descritos em
+#   docs/app-store/README.md (APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID,
+#   ASC_KEY_P8).
+name: iOS
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "site/**"
+      - "supabase/**"
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "site/**"
+      - "supabase/**"
+      - "**.md"
+  workflow_dispatch:
+    inputs:
+      enviar_testflight:
+        description: "Enviar para o TestFlight (precisa dos segredos da Apple)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.47.8"
+
+jobs:
+  testes:
+    name: Testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  compilar:
+    name: Compilar para iPhone (sem assinatura)
+    needs: testes
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Compilar
+        run: flutter build ios --release --no-codesign --build-number=${{ github.run_number }}
+      - name: Empacotar .ipa sem assinatura
+        run: |
+          mkdir -p saida/Payload
+          cp -R build/ios/iphoneos/Runner.app saida/Payload/
+          cd saida && zip -qry LigaDoSaber-sem-assinatura.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LigaDoSaber-iOS-sem-assinatura
+          path: saida/LigaDoSaber-sem-assinatura.ipa
+          retention-days: 14
+
+  testflight:
+    name: Enviar para o TestFlight
+    needs: testes
+    if: github.event_name == 'workflow_dispatch' && inputs.enviar_testflight
+    runs-on: macos-latest
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+    steps:
+      - name: Conferir segredos da Apple
+        run: |
+          faltando=""
+          for s in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            [ -z "${!s}" ] && faltando="$faltando $s"
+          done
+          if [ -n "$faltando" ]; then
+            echo "::error::Faltam os segredos:$faltando. Veja docs/app-store/README.md."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Preparar o projeto Xcode
+        run: |
+          # Número do build sobe a cada execução (o TestFlight não aceita repetido).
+          flutter build ios --release --config-only --build-number=$(( 100 + ${{ github.run_number }} ))
+          # Coloca o Team ID da Apple só no alvo do app.
+          sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = br.com.gplabs.ligaDoSaberApp;/PRODUCT_BUNDLE_IDENTIFIER = br.com.gplabs.ligaDoSaberApp; DEVELOPMENT_TEAM = $APPLE_TEAM_ID; CODE_SIGN_STYLE = Automatic;/" ios/Runner.xcodeproj/project.pbxproj
+          printf '%s' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          EOF
+      - name: Gerar o arquivo assinado
+        run: |
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" archive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: Enviar para o App Store Connect
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: Apagar a chave
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
